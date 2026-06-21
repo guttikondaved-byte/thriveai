@@ -1,0 +1,109 @@
+import { useGetTrainingPlan } from "@workspace/api-client-react";
+import { useParams, Link } from "wouter";
+import { ArrowLeft, CheckCircle2, Circle } from "lucide-react";
+import { format } from "date-fns";
+
+const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+const SESSION_COLORS: Record<string, string> = {
+  easy_run: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
+  tempo_run: "text-cyan-400 bg-cyan-400/10 border-cyan-400/20",
+  interval: "text-violet-400 bg-violet-400/10 border-violet-400/20",
+  long_run: "text-blue-400 bg-blue-400/10 border-blue-400/20",
+  race: "text-amber-400 bg-amber-400/10 border-amber-400/20",
+  cross_training: "text-slate-400 bg-slate-400/10 border-slate-400/20",
+  rest: "text-muted-foreground bg-secondary border-border",
+};
+
+const SESSION_LABELS: Record<string, string> = {
+  easy_run: "Easy", tempo_run: "Tempo", interval: "Interval",
+  long_run: "Long Run", race: "Race", cross_training: "X-Train", rest: "Rest",
+};
+
+export default function PlanDetail() {
+  const params = useParams<{ id: string }>();
+  const id = parseInt(params.id, 10);
+  const { data: plan, isLoading } = useGetTrainingPlan(id, { query: { enabled: !!id, queryKey: ["getTrainingPlan", id] } });
+
+  if (isLoading) {
+    return (
+      <div className="p-8">
+        <div className="h-8 w-48 bg-card border border-border rounded animate-pulse mb-8" />
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => <div key={i} className="h-32 bg-card border border-border rounded-lg animate-pulse" />)}
+        </div>
+      </div>
+    );
+  }
+
+  if (!plan) {
+    return (
+      <div className="p-8">
+        <p className="text-muted-foreground">Plan not found.</p>
+      </div>
+    );
+  }
+
+  const weeks = Array.from(new Set(plan.sessions.map(s => s.weekNumber))).sort((a, b) => a - b);
+
+  return (
+    <div className="p-8">
+      <div className="mb-6">
+        <Link href="/plans" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-4 transition-colors" data-testid="link-back-to-plans">
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Back to Plans
+        </Link>
+        <h1 className="text-2xl font-semibold text-foreground" data-testid="plan-detail-title">{plan.name}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{plan.goal}</p>
+        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+          <span>{format(new Date(plan.startDate), "MMM d, yyyy")} – {format(new Date(plan.endDate), "MMM d, yyyy")}</span>
+          {plan.weeklyMileage && <span>{plan.weeklyMileage} km/week target</span>}
+        </div>
+      </div>
+
+      {weeks.length === 0 ? (
+        <div className="bg-card border border-border rounded-lg py-12 text-center">
+          <p className="text-sm text-muted-foreground">No sessions scheduled yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {weeks.map(week => {
+            const weekSessions = plan.sessions.filter(s => s.weekNumber === week);
+            const completedCount = weekSessions.filter(s => s.completed).length;
+            return (
+              <div key={week} className="bg-card border border-border rounded-lg overflow-hidden" data-testid={`week-${week}`}>
+                <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-secondary/30">
+                  <h2 className="text-sm font-medium text-foreground">Week {week}</h2>
+                  <span className="text-xs text-muted-foreground">{completedCount}/{weekSessions.length} sessions done</span>
+                </div>
+                <div className="divide-y divide-border">
+                  {weekSessions.map(session => (
+                    <div key={session.id} className="flex items-start gap-4 px-5 py-4" data-testid={`session-${session.id}`}>
+                      {session.completed
+                        ? <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                        : <Circle className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                      }
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-xs px-2 py-0.5 rounded border font-medium ${SESSION_COLORS[session.sessionType] ?? "text-muted-foreground bg-secondary border-border"}`}>
+                            {SESSION_LABELS[session.sessionType] ?? session.sessionType}
+                          </span>
+                          <span className="text-xs text-muted-foreground">{DAY_LABELS[(session.dayOfWeek - 1) % 7]}</span>
+                        </div>
+                        <p className="text-sm text-foreground">{session.description}</p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                          {session.distanceKm && <span>{session.distanceKm} km</span>}
+                          {session.durationMinutes && <span>{session.durationMinutes} min</span>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,1 @@
+- [Thrive app architecture](thrive-architecture.md) — full-stack running app: routes, DB schema, frontend pages, AI coach Avera

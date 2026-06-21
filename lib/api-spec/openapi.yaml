@@ -1,22 +1,32 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Thrive API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: athlete
+    description: Athlete profile
+  - name: activities
+    description: Training activities
+  - name: plans
+    description: Training plans
+  - name: alerts
+    description: Injury risk alerts
+  - name: dashboard
+    description: Dashboard summaries
+  - name: openai
+    description: Avera AI coach chat
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +34,329 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /athlete/profile:
+    get:
+      operationId: getAthleteProfile
+      tags: [athlete]
+      summary: Get athlete profile
+      responses:
+        "200":
+          description: Athlete profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AthleteProfile"
+    patch:
+      operationId: updateAthleteProfile
+      tags: [athlete]
+      summary: Update athlete profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AthleteProfileInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AthleteProfile"
+
+  /activities:
+    get:
+      operationId: listActivities
+      tags: [activities]
+      summary: List recent activities
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of activities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Activity"
+    post:
+      operationId: createActivity
+      tags: [activities]
+      summary: Log a new activity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivityInput"
+      responses:
+        "201":
+          description: Created activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+
+  /activities/{id}:
+    get:
+      operationId: getActivity
+      tags: [activities]
+      summary: Get a single activity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "404":
+          description: Not found
+
+  /plans:
+    get:
+      operationId: listTrainingPlans
+      tags: [plans]
+      summary: List training plans
+      responses:
+        "200":
+          description: List of training plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrainingPlan"
+    post:
+      operationId: createTrainingPlan
+      tags: [plans]
+      summary: Create a training plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingPlanInput"
+      responses:
+        "201":
+          description: Created plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingPlan"
+
+  /plans/{id}:
+    get:
+      operationId: getTrainingPlan
+      tags: [plans]
+      summary: Get a training plan with sessions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Training plan with sessions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingPlanDetail"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteTrainingPlan
+      tags: [plans]
+      summary: Delete a training plan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /alerts:
+    get:
+      operationId: listInjuryAlerts
+      tags: [alerts]
+      summary: List injury risk alerts
+      responses:
+        "200":
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InjuryAlert"
+
+  /alerts/{id}/acknowledge:
+    post:
+      operationId: acknowledgeAlert
+      tags: [alerts]
+      summary: Acknowledge an injury alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated alert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InjuryAlert"
+        "404":
+          description: Not found
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary stats
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /openai/conversations:
+    get:
+      operationId: listOpenaiConversations
+      tags: [openai]
+      summary: List all Avera conversations
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpenaiConversation"
+    post:
+      operationId: createOpenaiConversation
+      tags: [openai]
+      summary: Create a new Avera conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenaiConversationInput"
+      responses:
+        "201":
+          description: Created conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiConversation"
+
+  /openai/conversations/{id}:
+    get:
+      operationId: getOpenaiConversation
+      tags: [openai]
+      summary: Get conversation with messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Conversation with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiConversationWithMessages"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+    delete:
+      operationId: deleteOpenaiConversation
+      tags: [openai]
+      summary: Delete a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+
+  /openai/conversations/{id}/messages:
+    get:
+      operationId: listOpenaiMessages
+      tags: [openai]
+      summary: List messages in a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpenaiMessage"
+    post:
+      operationId: sendOpenaiMessage
+      tags: [openai]
+      summary: Send a message to Avera and receive a streaming response
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenaiMessageInput"
+      responses:
+        "200":
+          description: SSE stream of assistant text chunks
+          content:
+            text/event-stream: {}
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +367,363 @@ components:
       required:
         - status
 
+    AthleteProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        age:
+          type: ["integer", "null"]
+        weeklyMileageGoal:
+          type: ["number", "null"]
+        fitnessLevel:
+          type: string
+          enum: [beginner, intermediate, advanced, elite]
+        primaryGoal:
+          type: string
+        restingHeartRate:
+          type: ["integer", "null"]
+        hrv:
+          type: ["number", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - fitnessLevel
+        - primaryGoal
+        - createdAt
+
+    AthleteProfileInput:
+      type: object
+      properties:
+        name:
+          type: string
+        age:
+          type: integer
+        weeklyMileageGoal:
+          type: number
+        fitnessLevel:
+          type: string
+          enum: [beginner, intermediate, advanced, elite]
+        primaryGoal:
+          type: string
+        restingHeartRate:
+          type: integer
+        hrv:
+          type: number
+
+    Activity:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [easy_run, tempo_run, interval, long_run, race, cross_training, rest]
+        distanceKm:
+          type: ["number", "null"]
+        durationMinutes:
+          type: ["integer", "null"]
+        avgHeartRate:
+          type: ["integer", "null"]
+        perceivedEffort:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+        activityDate:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - activityDate
+        - createdAt
+
+    ActivityInput:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [easy_run, tempo_run, interval, long_run, race, cross_training, rest]
+        distanceKm:
+          type: number
+        durationMinutes:
+          type: integer
+        avgHeartRate:
+          type: integer
+        perceivedEffort:
+          type: integer
+        notes:
+          type: string
+        activityDate:
+          type: string
+          format: date
+      required:
+        - type
+        - activityDate
+
+    TrainingPlan:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        goal:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        weeklyMileage:
+          type: ["number", "null"]
+        status:
+          type: string
+          enum: [active, completed, paused]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - goal
+        - startDate
+        - endDate
+        - status
+        - createdAt
+
+    TrainingPlanDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        goal:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        weeklyMileage:
+          type: ["number", "null"]
+        status:
+          type: string
+          enum: [active, completed, paused]
+        createdAt:
+          type: string
+          format: date-time
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlanSession"
+      required:
+        - id
+        - name
+        - goal
+        - startDate
+        - endDate
+        - status
+        - createdAt
+        - sessions
+
+    PlanSession:
+      type: object
+      properties:
+        id:
+          type: integer
+        planId:
+          type: integer
+        weekNumber:
+          type: integer
+        dayOfWeek:
+          type: integer
+        sessionType:
+          type: string
+        description:
+          type: string
+        distanceKm:
+          type: ["number", "null"]
+        durationMinutes:
+          type: ["integer", "null"]
+        completed:
+          type: boolean
+      required:
+        - id
+        - planId
+        - weekNumber
+        - dayOfWeek
+        - sessionType
+        - description
+        - completed
+
+    TrainingPlanInput:
+      type: object
+      properties:
+        name:
+          type: string
+        goal:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        weeklyMileage:
+          type: number
+      required:
+        - name
+        - goal
+        - startDate
+        - endDate
+
+    InjuryAlert:
+      type: object
+      properties:
+        id:
+          type: integer
+        riskLevel:
+          type: string
+          enum: [low, medium, high, critical]
+        bodyPart:
+          type: string
+        message:
+          type: string
+        recommendation:
+          type: string
+        acknowledged:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - riskLevel
+        - bodyPart
+        - message
+        - recommendation
+        - acknowledged
+        - createdAt
+
+    DashboardSummary:
+      type: object
+      properties:
+        weeklyDistanceKm:
+          type: number
+        weeklyRuns:
+          type: integer
+        avgPaceMinPerKm:
+          type: ["number", "null"]
+        activeAlerts:
+          type: integer
+        currentPlanName:
+          type: ["string", "null"]
+        currentPlanProgress:
+          type: ["number", "null"]
+        recentActivities:
+          type: array
+          items:
+            $ref: "#/components/schemas/Activity"
+        hrvTrend:
+          type: ["number", "null"]
+        trainingLoad:
+          type: string
+          enum: [low, moderate, high, very_high]
+      required:
+        - weeklyDistanceKm
+        - weeklyRuns
+        - activeAlerts
+        - recentActivities
+        - trainingLoad
+
+    OpenaiConversation:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - createdAt
+
+    OpenaiMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        conversationId:
+          type: integer
+        role:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - conversationId
+        - role
+        - content
+        - createdAt
+
+    OpenaiConversationInput:
+      type: object
+      properties:
+        title:
+          type: string
+      required:
+        - title
+
+    OpenaiMessageInput:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+        - content
+
+    OpenaiConversationWithMessages:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/OpenaiMessage"
+      required:
+        - id
+        - title
+        - createdAt
+        - messages
+
+    OpenaiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
