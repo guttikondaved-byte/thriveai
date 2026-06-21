@@ -12,6 +12,7 @@ export const athleteProfileTable = pgTable("athlete_profile", {
   restingHeartRate: integer("resting_heart_rate"),
   hrv: numeric("hrv", { precision: 6, scale: 2 }),
   selectedCoach: text("selected_coach"),
+  userRole: text("user_role"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

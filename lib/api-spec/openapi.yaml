@@ -390,6 +390,9 @@ components:
         selectedCoach:
           type: ["string", "null"]
           enum: [avera, kai, nova, rex, null]
+        userRole:
+          type: ["string", "null"]
+          enum: [athlete, coach, null]
         createdAt:
           type: string
           format: date-time
@@ -421,6 +424,9 @@ components:
         selectedCoach:
           type: string
           enum: [avera, kai, nova, rex]
+        userRole:
+          type: string
+          enum: [athlete, coach]
 
     Activity:
       type: object

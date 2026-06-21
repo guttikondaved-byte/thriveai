@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Layout from "@/components/Layout";
+import CoachLayout from "@/components/CoachLayout";
 import Dashboard from "@/pages/dashboard";
 import Activities from "@/pages/activities";
 import Plans from "@/pages/plans";
@@ -11,6 +12,7 @@ import Alerts from "@/pages/alerts";
 import Coach from "@/pages/coach";
 import Profile from "@/pages/profile";
 import Onboarding from "@/pages/onboarding";
+import CoachDashboard from "@/pages/coach-dashboard";
 import NotFound from "@/pages/not-found";
 import { useGetAthleteProfile } from "@workspace/api-client-react";
 import { useEffect } from "react";
@@ -23,7 +25,7 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isLoading) return;
-    const needsOnboarding = !profile?.selectedCoach;
+    const needsOnboarding = !profile?.userRole;
     if (needsOnboarding && location !== "/onboarding") {
       navigate("/onboarding");
     } else if (!needsOnboarding && location === "/onboarding") {
@@ -42,23 +44,44 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AthleteRouter() {
+  return (
+    <Layout>
+      <Switch>
+        <Route path="/" component={Dashboard} />
+        <Route path="/activities" component={Activities} />
+        <Route path="/plans" component={Plans} />
+        <Route path="/plans/:id" component={PlanDetail} />
+        <Route path="/alerts" component={Alerts} />
+        <Route path="/coach" component={Coach} />
+        <Route path="/profile" component={Profile} />
+        <Route component={NotFound} />
+      </Switch>
+    </Layout>
+  );
+}
+
+function CoachRouter() {
+  return (
+    <CoachLayout>
+      <Switch>
+        <Route path="/" component={CoachDashboard} />
+        <Route path="/alerts" component={Alerts} />
+        <Route path="/profile" component={Profile} />
+        <Route component={CoachDashboard} />
+      </Switch>
+    </CoachLayout>
+  );
+}
+
 function Router() {
+  const { data: profile } = useGetAthleteProfile();
+
   return (
     <Switch>
       <Route path="/onboarding" component={Onboarding} />
       <Route>
-        <Layout>
-          <Switch>
-            <Route path="/" component={Dashboard} />
-            <Route path="/activities" component={Activities} />
-            <Route path="/plans" component={Plans} />
-            <Route path="/plans/:id" component={PlanDetail} />
-            <Route path="/alerts" component={Alerts} />
-            <Route path="/coach" component={Coach} />
-            <Route path="/profile" component={Profile} />
-            <Route component={NotFound} />
-          </Switch>
-        </Layout>
+        {profile?.userRole === "coach" ? <CoachRouter /> : <AthleteRouter />}
       </Route>
     </Switch>
   );

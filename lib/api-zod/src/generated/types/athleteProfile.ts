@@ -7,6 +7,7 @@
  */
 import type { AthleteProfileFitnessLevel } from './athleteProfileFitnessLevel';
 import type { AthleteProfileSelectedCoach } from './athleteProfileSelectedCoach';
+import type { AthleteProfileUserRole } from './athleteProfileUserRole';
 
 export interface AthleteProfile {
   id: number;
@@ -23,5 +24,7 @@ export interface AthleteProfile {
   hrv?: number | null;
   /** @nullable */
   selectedCoach?: AthleteProfileSelectedCoach;
+  /** @nullable */
+  userRole?: AthleteProfileUserRole;
   createdAt: Date;
 }

@@ -7,6 +7,7 @@
  */
 import type { AthleteProfileInputFitnessLevel } from './athleteProfileInputFitnessLevel';
 import type { AthleteProfileInputSelectedCoach } from './athleteProfileInputSelectedCoach';
+import type { AthleteProfileInputUserRole } from './athleteProfileInputUserRole';
 
 export interface AthleteProfileInput {
   name?: string;
@@ -17,4 +18,5 @@ export interface AthleteProfileInput {
   restingHeartRate?: number;
   hrv?: number;
   selectedCoach?: AthleteProfileInputSelectedCoach;
+  userRole?: AthleteProfileInputUserRole;
 }

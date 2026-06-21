@@ -32,6 +32,17 @@ export const AthleteProfileSelectedCoach = {
   rex: 'rex',
 } as const;
 
+/**
+ * @nullable
+ */
+export type AthleteProfileUserRole = typeof AthleteProfileUserRole[keyof typeof AthleteProfileUserRole] | null;
+
+
+export const AthleteProfileUserRole = {
+  athlete: 'athlete',
+  coach: 'coach',
+} as const;
+
 export interface AthleteProfile {
   id: number;
   name: string;
@@ -47,6 +58,8 @@ export interface AthleteProfile {
   hrv?: number | null;
   /** @nullable */
   selectedCoach?: AthleteProfileSelectedCoach;
+  /** @nullable */
+  userRole?: AthleteProfileUserRole;
   createdAt: string;
 }
 
@@ -70,6 +83,14 @@ export const AthleteProfileInputSelectedCoach = {
   rex: 'rex',
 } as const;
 
+export type AthleteProfileInputUserRole = typeof AthleteProfileInputUserRole[keyof typeof AthleteProfileInputUserRole];
+
+
+export const AthleteProfileInputUserRole = {
+  athlete: 'athlete',
+  coach: 'coach',
+} as const;
+
 export interface AthleteProfileInput {
   name?: string;
   age?: number;
@@ -79,6 +100,7 @@ export interface AthleteProfileInput {
   restingHeartRate?: number;
   hrv?: number;
   selectedCoach?: AthleteProfileInputSelectedCoach;
+  userRole?: AthleteProfileInputUserRole;
 }
 
 export type ActivityType = typeof ActivityType[keyof typeof ActivityType];
