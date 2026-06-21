@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useListActivities, useCreateActivity, getListActivitiesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Upload } from "lucide-react";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import GpxImport from "@/components/GpxImport";
+import type { GpxResult } from "@/lib/parseGpx";
 
 const ACTIVITY_TYPES = ["easy_run", "tempo_run", "interval", "long_run", "race", "cross_training", "rest"] as const;
 
@@ -43,6 +45,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function Activities() {
   const [showForm, setShowForm] = useState(false);
+  const [showGpx, setShowGpx] = useState(false);
   const qc = useQueryClient();
   const { toast } = useToast();
   const { data: activities, isLoading } = useListActivities({ limit: 50 });
@@ -74,6 +77,36 @@ export default function Activities() {
     });
   }
 
+  function handleGpxImport(gpx: GpxResult) {
+    const type = ACTIVITY_TYPES.includes(gpx.suggestedType as typeof ACTIVITY_TYPES[number])
+      ? (gpx.suggestedType as typeof ACTIVITY_TYPES[number])
+      : "easy_run";
+
+    createActivity.mutate({
+      data: {
+        type,
+        activityDate: gpx.activityDate,
+        distanceKm: gpx.distanceKm,
+        durationMinutes: gpx.durationMinutes,
+        ...(gpx.avgHeartRate ? { avgHeartRate: gpx.avgHeartRate } : {}),
+        notes: gpx.name
+          ? `${gpx.name}${gpx.elevationGainM ? ` · +${gpx.elevationGainM}m elevation` : ""}${gpx.avgCadence ? ` · ${gpx.avgCadence} spm` : ""}`
+          : gpx.elevationGainM
+          ? `+${gpx.elevationGainM}m elevation${gpx.avgCadence ? ` · ${gpx.avgCadence} spm` : ""}`
+          : undefined,
+      }
+    }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListActivitiesQueryKey() });
+        toast({ title: "GPX activity imported", description: `${gpx.distanceKm} km · ${gpx.durationMinutes} min` });
+        setShowGpx(false);
+      },
+      onError: () => {
+        toast({ title: "Import failed", description: "Could not save the activity.", variant: "destructive" });
+      },
+    });
+  }
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
@@ -81,15 +114,32 @@ export default function Activities() {
           <h1 className="text-2xl font-semibold text-foreground" data-testid="activities-title">Activities</h1>
           <p className="text-sm text-muted-foreground mt-1">Your training log</p>
         </div>
-        <Button
-          onClick={() => setShowForm(!showForm)}
-          data-testid="button-log-activity"
-          className="gap-2"
-        >
-          {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          {showForm ? "Cancel" : "Log Activity"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => { setShowGpx(!showGpx); setShowForm(false); }}
+            className="gap-2 border-slate-700 text-slate-300 hover:text-white hover:border-cyan-500"
+          >
+            <Upload className="w-4 h-4" />
+            Import GPX
+          </Button>
+          <Button
+            onClick={() => { setShowForm(!showForm); setShowGpx(false); }}
+            data-testid="button-log-activity"
+            className="gap-2"
+          >
+            {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            {showForm ? "Cancel" : "Log Activity"}
+          </Button>
+        </div>
       </div>
+
+      {showGpx && (
+        <GpxImport
+          onImport={handleGpxImport}
+          onClose={() => setShowGpx(false)}
+        />
+      )}
 
       {showForm && (
         <div className="bg-card border border-border rounded-lg p-6 mb-6" data-testid="form-log-activity">
@@ -170,8 +220,9 @@ export default function Activities() {
         </div>
       ) : !activities?.length ? (
         <div className="bg-card border border-border rounded-lg py-16 text-center">
-          <Activity className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">No activities logged yet. Start by logging your first run.</p>
+          <ActivityIcon className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">No activities logged yet.</p>
+          <p className="text-xs text-muted-foreground mt-1">Log a run manually or import a GPX file from your GPS watch.</p>
         </div>
       ) : (
         <div className="bg-card border border-border rounded-lg divide-y divide-border">
@@ -202,7 +253,7 @@ export default function Activities() {
   );
 }
 
-function Activity({ className }: { className?: string }) {
+function ActivityIcon({ className }: { className?: string }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
