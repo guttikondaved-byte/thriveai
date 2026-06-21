@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "StrideIQ"
+version = "1.0.0"
+id = "artifacts/stride-iq"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18983
+
+[services.development]
+run = "pnpm --filter @workspace/stride-iq run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/stride-iq", "run", "build" ]
+publicDir = "artifacts/stride-iq/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18983"
+BASE_PATH = "/"
