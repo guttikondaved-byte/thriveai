@@ -17,8 +17,10 @@ import OpenAI from "openai";
 
 const router: IRouter = Router();
 
-const apiKey = process.env.OPENAI_API_KEY;
-const openaiClient = apiKey ? new OpenAI({ apiKey }) : null;
+const apiKey = process.env.GLM_API_KEY;
+const openaiClient = apiKey
+  ? new OpenAI({ apiKey, baseURL: "https://open.bigmodel.cn/api/paas/v4/" })
+  : null;
 
 const AVERA_SYSTEM_PROMPT = `You are Avera, an expert AI running coach built into the Thrive app. You specialize in injury prevention, personalized training plans, and performance optimization for running athletes at all levels.
 
@@ -147,7 +149,7 @@ router.post("/openai/conversations/:id/messages", async (req, res): Promise<void
 
   let fullResponse = "";
   const stream = await client.chat.completions.create({
-    model: "gpt-4o",
+    model: "glm-4-flash",
     max_tokens: 2048,
     messages: [{ role: "system", content: AVERA_SYSTEM_PROMPT }, ...chatMessages],
     stream: true,
