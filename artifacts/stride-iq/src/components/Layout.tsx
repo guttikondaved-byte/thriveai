@@ -6,7 +6,7 @@ const navItems = [
   { href: "/activities", label: "Activities", icon: Activity },
   { href: "/plans", label: "Training Plans", icon: Calendar },
   { href: "/alerts", label: "Injury Alerts", icon: AlertTriangle },
-  { href: "/coach", label: "Avera", icon: Bot },
+  { href: "/coach", label: "AveraAI", icon: Bot },
   { href: "/profile", label: "Profile", icon: User },
 ];
 
