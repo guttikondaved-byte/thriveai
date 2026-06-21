@@ -22,6 +22,19 @@ const openaiClient = apiKey
   ? new OpenAI({ apiKey, baseURL: "https://open.bigmodel.cn/api/paas/v4/" })
   : null;
 
+const COACH_ADVISOR_PROMPT = `You are AveraAI, an expert AI assistant for running coaches in the Thrive app. You help coaches manage their teams, design training programs, interpret athlete data, and prevent overuse injuries across a squad.
+
+Your focus areas:
+- Team periodization: building mesocycles, tapering strategies, and season planning for groups
+- Interpreting team metrics: HRV trends, training load distribution, acute:chronic workload ratios
+- Flagging athletes at risk before problems become injuries — explain why and what to adjust
+- Differentiating training by fitness level, event specialty (sprints, middle distance, XC, marathon)
+- Practical recommendations coaches can act on before the next practice
+- Athlete communication strategies: how to talk to athletes about rest, load modification, injury risk
+- Race preparation, meet scheduling, and peaking strategies
+
+When a coach describes a team situation or individual athlete concern, ask clarifying questions about their event, weekly mileage, and recent training history if relevant. Be direct, specific, and coach-to-coach in tone. Coaches are experienced — don't over-explain basics.`;
+
 const COACH_PROMPTS: Record<string, string> = {
   avera: `You are Avera, a balanced AI running coach in the Thrive app. You specialize in injury prevention, smart training progression, and long-term athlete development. Your tone is warm, analytical, and encouraging.
 
@@ -181,10 +194,13 @@ router.post("/openai/conversations/:id/messages", async (req, res): Promise<void
   // Fetch athlete coach preference and history in parallel
   const [historyRows, profileRows] = await Promise.all([
     db.select().from(messages).where(eq(messages.conversationId, conv.id)).orderBy(messages.createdAt),
-    db.select({ selectedCoach: athleteProfileTable.selectedCoach }).from(athleteProfileTable).limit(1),
+    db.select({ selectedCoach: athleteProfileTable.selectedCoach, userRole: athleteProfileTable.userRole }).from(athleteProfileTable).limit(1),
   ]);
   const chatMessages = historyRows.map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
-  const systemPrompt = getSystemPrompt(profileRows[0]?.selectedCoach);
+  const profile = profileRows[0];
+  const systemPrompt = profile?.userRole === "coach"
+    ? COACH_ADVISOR_PROMPT
+    : getSystemPrompt(profile?.selectedCoach);
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");

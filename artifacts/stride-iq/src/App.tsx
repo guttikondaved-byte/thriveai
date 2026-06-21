@@ -67,6 +67,7 @@ function CoachRouter() {
       <Switch>
         <Route path="/" component={CoachDashboard} />
         <Route path="/alerts" component={Alerts} />
+        <Route path="/ai-assistant" component={Coach} />
         <Route path="/profile" component={Profile} />
         <Route component={CoachDashboard} />
       </Switch>

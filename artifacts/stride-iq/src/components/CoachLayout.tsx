@@ -1,11 +1,12 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, AlertTriangle, BarChart2, Settings } from "lucide-react";
+import { LayoutDashboard, Users, AlertTriangle, BarChart2, Settings, Bot } from "lucide-react";
 
 const NAV = [
   { href: "/", label: "Team Dashboard", icon: LayoutDashboard },
   { href: "/team", label: "Athlete Roster", icon: Users },
   { href: "/alerts", label: "Injury Alerts", icon: AlertTriangle },
   { href: "/analytics", label: "Analytics", icon: BarChart2 },
+  { href: "/ai-assistant", label: "AveraAI", icon: Bot },
   { href: "/profile", label: "Settings", icon: Settings },
 ];
 
