@@ -23,9 +23,9 @@ const ROLES = [
     description: "Oversee your entire team's workload, flag injury risks before practice, and keep every athlete on track.",
     icon: "📋",
     features: ["Team roster & risk dashboard", "Athlete workload monitoring", "Team-wide injury alerts", "Training load analytics"],
-    gradient: "from-orange-500/20 to-amber-600/20",
-    border: "border-orange-500",
-    shadow: "shadow-orange-500/20",
+    gradient: "from-cyan-500/20 to-blue-700/20",
+    border: "border-cyan-500",
+    shadow: "shadow-cyan-500/20",
     cta: "I'm a Coach",
   },
 ];

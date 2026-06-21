@@ -75,7 +75,7 @@ export default function CoachDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard label="Total Athletes" value={TEAM.length} sub="Active this week" icon={Users} accent="bg-cyan-500/10 text-cyan-400" />
         <StatCard label="Injury Risk" value={highRisk} sub={`${caution} on caution`} icon={AlertTriangle} accent="bg-red-500/10 text-red-400" />
-        <StatCard label="Team Avg km" value="71.3" sub="km this week" icon={Activity} accent="bg-orange-500/10 text-orange-400" />
+        <StatCard label="Team Avg km" value="71.3" sub="km this week" icon={Activity} accent="bg-cyan-500/10 text-cyan-400" />
         <StatCard label="Avg HRV" value="59.7" sub="↓ 4 pts from last week" icon={TrendingUp} accent="bg-violet-500/10 text-violet-400" />
       </div>
 
