@@ -13,8 +13,12 @@ import {
   ListOpenaiMessagesResponse,
 } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
+import OpenAI from "openai";
 
 const router: IRouter = Router();
+
+const apiKey = process.env.OPENAI_API_KEY;
+const openaiClient = apiKey ? new OpenAI({ apiKey }) : null;
 
 const AVERA_SYSTEM_PROMPT = `You are Avera, an expert AI running coach built into the Thrive app. You specialize in injury prevention, personalized training plans, and performance optimization for running athletes at all levels.
 
@@ -37,21 +41,7 @@ function serializeMessage(m: typeof messages.$inferSelect) {
   return { ...m, createdAt: m.createdAt.toISOString() };
 }
 
-const aiAvailable = !!(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL && process.env.AI_INTEGRATIONS_OPENAI_API_KEY);
-
-let openaiClient: { chat: { completions: { create: Function } } } | null = null;
-
-async function getOpenaiClient() {
-  if (!aiAvailable) return null;
-  if (!openaiClient) {
-    try {
-      const mod = await import("@workspace/integrations-openai-ai-server");
-      openaiClient = mod.openai;
-    } catch (err) {
-      logger.warn({ err }, "Failed to load OpenAI client");
-      return null;
-    }
-  }
+function getOpenaiClient() {
   return openaiClient;
 }
 
@@ -134,12 +124,10 @@ router.post("/openai/conversations/:id/messages", async (req, res): Promise<void
   // Save user message
   await db.insert(messages).values({ conversationId: conv.id, role: "user", content: parsed.data.content });
 
-  const client = await getOpenaiClient();
+  const client = getOpenaiClient();
   if (!client) {
-    // AI not configured — return a helpful fallback so the UI still works
-    const fallbackContent = "Avera AI is not yet configured. To enable the AI coach, please set up the OpenAI integration in your Replit project settings.";
+    const fallbackContent = "Avera AI is not yet configured. Please add your OPENAI_API_KEY to Replit Secrets.";
     await db.insert(messages).values({ conversationId: conv.id, role: "assistant", content: fallbackContent });
-
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
@@ -159,8 +147,8 @@ router.post("/openai/conversations/:id/messages", async (req, res): Promise<void
 
   let fullResponse = "";
   const stream = await client.chat.completions.create({
-    model: "gpt-5.4",
-    max_completion_tokens: 8192,
+    model: "gpt-4o",
+    max_tokens: 2048,
     messages: [{ role: "system", content: AVERA_SYSTEM_PROMPT }, ...chatMessages],
     stream: true,
   });
