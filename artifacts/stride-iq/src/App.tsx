@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,21 +10,56 @@ import PlanDetail from "@/pages/plan-detail";
 import Alerts from "@/pages/alerts";
 import Coach from "@/pages/coach";
 import Profile from "@/pages/profile";
+import Onboarding from "@/pages/onboarding";
 import NotFound from "@/pages/not-found";
+import { useGetAthleteProfile } from "@workspace/api-client-react";
+import { useEffect } from "react";
 
 const queryClient = new QueryClient();
+
+function OnboardingGuard({ children }: { children: React.ReactNode }) {
+  const { data: profile, isLoading } = useGetAthleteProfile();
+  const [location, navigate] = useLocation();
+
+  useEffect(() => {
+    if (isLoading) return;
+    const needsOnboarding = !profile?.selectedCoach;
+    if (needsOnboarding && location !== "/onboarding") {
+      navigate("/onboarding");
+    } else if (!needsOnboarding && location === "/onboarding") {
+      navigate("/");
+    }
+  }, [profile, isLoading, location, navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/activities" component={Activities} />
-      <Route path="/plans" component={Plans} />
-      <Route path="/plans/:id" component={PlanDetail} />
-      <Route path="/alerts" component={Alerts} />
-      <Route path="/coach" component={Coach} />
-      <Route path="/profile" component={Profile} />
-      <Route component={NotFound} />
+      <Route path="/onboarding" component={Onboarding} />
+      <Route>
+        <Layout>
+          <Switch>
+            <Route path="/" component={Dashboard} />
+            <Route path="/activities" component={Activities} />
+            <Route path="/plans" component={Plans} />
+            <Route path="/plans/:id" component={PlanDetail} />
+            <Route path="/alerts" component={Alerts} />
+            <Route path="/coach" component={Coach} />
+            <Route path="/profile" component={Profile} />
+            <Route component={NotFound} />
+          </Switch>
+        </Layout>
+      </Route>
     </Switch>
   );
 }
@@ -34,9 +69,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Layout>
+          <OnboardingGuard>
             <Router />
-          </Layout>
+          </OnboardingGuard>
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

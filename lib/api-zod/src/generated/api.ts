@@ -28,6 +28,7 @@ export const GetAthleteProfileResponse = zod.object({
   "primaryGoal": zod.string(),
   "restingHeartRate": zod.number().nullish(),
   "hrv": zod.number().nullish(),
+  "selectedCoach": zod.union([zod.literal('avera'),zod.literal('kai'),zod.literal('nova'),zod.literal('rex'),zod.literal(null)]).nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -42,7 +43,8 @@ export const UpdateAthleteProfileBody = zod.object({
   "fitnessLevel": zod.enum(['beginner', 'intermediate', 'advanced', 'elite']).optional(),
   "primaryGoal": zod.string().optional(),
   "restingHeartRate": zod.number().optional(),
-  "hrv": zod.number().optional()
+  "hrv": zod.number().optional(),
+  "selectedCoach": zod.enum(['avera', 'kai', 'nova', 'rex']).optional()
 })
 
 export const UpdateAthleteProfileResponse = zod.object({
@@ -54,6 +56,7 @@ export const UpdateAthleteProfileResponse = zod.object({
   "primaryGoal": zod.string(),
   "restingHeartRate": zod.number().nullish(),
   "hrv": zod.number().nullish(),
+  "selectedCoach": zod.union([zod.literal('avera'),zod.literal('kai'),zod.literal('nova'),zod.literal('rex'),zod.literal(null)]).nullish(),
   "createdAt": zod.coerce.date()
 })
 

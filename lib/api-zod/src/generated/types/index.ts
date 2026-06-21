@@ -14,6 +14,8 @@ export * from './athleteProfile';
 export * from './athleteProfileFitnessLevel';
 export * from './athleteProfileInput';
 export * from './athleteProfileInputFitnessLevel';
+export * from './athleteProfileInputSelectedCoach';
+export * from './athleteProfileSelectedCoach';
 export * from './dashboardSummary';
 export * from './dashboardSummaryTrainingLoad';
 export * from './healthStatus';

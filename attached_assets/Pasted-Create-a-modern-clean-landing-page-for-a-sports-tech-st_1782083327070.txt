@@ -1,0 +1,45 @@
+Create a modern, clean landing page for a sports tech startup called "MileMarker". The app helps high school track and cross country coaches and athletes optimize training data and prevent overuse injuries. 
+
+Use a sleek, athletic, yet professional color palette (e.g., high-visibility electric green or neon orange as an accent, mixed with dark charcoal/navy backgrounds and crisp white typography). The design should feel fast, metric-driven, and highly credible to coaches, athletic directors, and high school runners.
+
+Please structure the landing page with the following sections and interactive features:
+
+1. HERO SECTION:
+- Main Headline: "Stop Training Errors Before They Become Season-Ending Injuries."
+- Sub-headline: "MileMarker automatically syncs wearable data to help high school running coaches monitor team workloads, track recovery, and protect their athletes."
+- Primary Call to Action (CTA) Button: "Get Early Access" (Smoothly scrolls to the survey section).
+- Secondary CTA: "See How It Works".
+- Visual placeholder: An elegant dashboard mockup showing an athlete roster with simple "Injury Risk" color indicators (Green/Yellow/Red).
+
+2. THE PROBLEM (Stat Callouts):
+- Present these three statistics cleanly using bold counters or distinct cards:
+  * "1.5 Million" -> High schoolers compete in track & cross country every year.
+  * "38%" -> Of those athletes get injured every single season.
+  * "60-70%" -> Of injuries are caused directly by avoidable training errors.
+- Include a short "Coach's Reality" quote block: "Coaches are managing dozens of runners on top of full-time teaching jobs—it's nearly impossible to track everyone's daily load manually."
+
+3. THE SOLUTION (Dual-Sided Value Proposition):
+- Split this section into two distinct columns or toggle views:
+  * FOR COACHES ($100/mo): A comprehensive team dashboard. Syncs athlete data from Strava & Garmin automatically, groups runners by fitness/recovery levels, and flags acute injury risks before practice starts.
+  * FOR ATHLETES ($10/mo): Personal performance hub. Tracks pace trends, mileage progression, and recovery. Includes supplemental workout suggestions and an AI chatbot that answers training questions based on their actual wearable data.
+
+4. TARGET AUDIO & EXPANSION:
+- A brief section highlighting our rollout focus: "Built first for private schools and running clubs with fast adoption cycles, scaling next to public high schools nationwide."
+
+5. INTERACTIVE VALIDATION SURVEY (Embedded Form):
+Recreate this survey elegantly using customized form fields that fit the site's theme:
+- Section Header: "Help Us Build the Future of High School Running"
+- Question 1 (Radio buttons): "Would you use an app that synced with your Strava or watch and told you exactly whether your training was working?" [Options: Yes absolutely, Maybe, No]
+- Question 2 (Radio buttons): "Would you use an AI chatbot that answered your training questions based on your actual data?" [Options: Yes, Maybe, No]
+- Question 3 (Radio buttons): "If this app existed, would you pay $10 a month for it?" [Options: Yes, Maybe if it proved it worked, No I wouldn't pay for it]
+- Question 4 (Radio buttons): "If you're a coach, would you pay $100 a month for a dashboard showing every athlete's workload and injury risk?" [Options: Yes, Maybe, No]
+- Question 5 (Textarea): "What is the single biggest problem with your current training situation?"
+- Question 6 (Textarea): "What would make you immediately download and pay for a running app?"
+- Email Input: "Drop your email if you want early access when we launch (Optional)"
+- Submit Button: "Submit Feedback & Join Waitlist"
+
+6. FOUNDER'S NOTE & FOOTER:
+- "Built by Aditya Garg — Cross Country Captain, MVP, and competitive runner for 5 years. Living the problem every season to fix it for teams everywhere."
+- Simple copyright and placeholder links.
+
+Make the form operational so that clicking submit simulates saving the data (or logs it to the console) and shows a beautiful "Thank you for helping us change high school running!" success state. the name is thrive and the ai chatbot is AveraAI

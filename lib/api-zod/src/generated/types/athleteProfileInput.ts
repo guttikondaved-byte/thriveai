@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AthleteProfileInputFitnessLevel } from './athleteProfileInputFitnessLevel';
+import type { AthleteProfileInputSelectedCoach } from './athleteProfileInputSelectedCoach';
 
 export interface AthleteProfileInput {
   name?: string;
@@ -15,4 +16,5 @@ export interface AthleteProfileInput {
   primaryGoal?: string;
   restingHeartRate?: number;
   hrv?: number;
+  selectedCoach?: AthleteProfileInputSelectedCoach;
 }

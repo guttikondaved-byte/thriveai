@@ -47,6 +47,7 @@ router.patch("/athlete/profile", async (req, res): Promise<void> => {
   if (parsed.data.primaryGoal !== undefined) updateData.primaryGoal = parsed.data.primaryGoal;
   if (parsed.data.restingHeartRate !== undefined) updateData.restingHeartRate = parsed.data.restingHeartRate;
   if (parsed.data.hrv !== undefined) updateData.hrv = String(parsed.data.hrv);
+  if (parsed.data.selectedCoach !== undefined) updateData.selectedCoach = parsed.data.selectedCoach;
 
   const { eq } = await import("drizzle-orm");
   const [updated] = await db.update(athleteProfileTable).set(updateData).where(eq(athleteProfileTable.id, existing.id)).returning();

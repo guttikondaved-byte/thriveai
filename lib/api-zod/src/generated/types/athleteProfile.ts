@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AthleteProfileFitnessLevel } from './athleteProfileFitnessLevel';
+import type { AthleteProfileSelectedCoach } from './athleteProfileSelectedCoach';
 
 export interface AthleteProfile {
   id: number;
@@ -20,5 +21,7 @@ export interface AthleteProfile {
   restingHeartRate?: number | null;
   /** @nullable */
   hrv?: number | null;
+  /** @nullable */
+  selectedCoach?: AthleteProfileSelectedCoach;
   createdAt: Date;
 }

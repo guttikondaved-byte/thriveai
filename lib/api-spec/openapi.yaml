@@ -387,6 +387,9 @@ components:
           type: ["integer", "null"]
         hrv:
           type: ["number", "null"]
+        selectedCoach:
+          type: ["string", "null"]
+          enum: [avera, kai, nova, rex, null]
         createdAt:
           type: string
           format: date-time
@@ -415,6 +418,9 @@ components:
           type: integer
         hrv:
           type: number
+        selectedCoach:
+          type: string
+          enum: [avera, kai, nova, rex]
 
     Activity:
       type: object
