@@ -27,6 +27,7 @@ router.get("/athlete/profile", async (req, res): Promise<void> => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+  res.set("Cache-Control", "no-store");
   const profile = await getOrCreateProfile(req.user.id);
   res.json(GetAthleteProfileResponse.parse({
     ...profile,

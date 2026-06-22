@@ -1,5 +1,5 @@
-import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { Router, type Request, type IRouter } from "express";
+import { eq, and } from "drizzle-orm";
 import { db, trainingPlansTable, planSessionsTable } from "@workspace/db";
 import {
   ListTrainingPlansResponse,
@@ -26,30 +26,38 @@ function serializeSession(s: typeof planSessionsTable.$inferSelect) {
   };
 }
 
-router.get("/plans", async (_req, res): Promise<void> => {
-  const plans = await db.select().from(trainingPlansTable).orderBy(trainingPlansTable.createdAt);
+router.get("/plans", async (req: Request, res): Promise<void> => {
+  const userId = req.user!.id;
+  const plans = await db
+    .select()
+    .from(trainingPlansTable)
+    .where(eq(trainingPlansTable.userId, userId))
+    .orderBy(trainingPlansTable.createdAt);
   res.json(ListTrainingPlansResponse.parse(plans.map(serializePlan)));
 });
 
-router.post("/plans", async (req, res): Promise<void> => {
+router.post("/plans", async (req: Request, res): Promise<void> => {
   const parsed = CreateTrainingPlanBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
-  const insertData: Record<string, unknown> = {
+  const userId = req.user!.id;
+  const toDateStr = (d: Date) => d.toISOString().split("T")[0]!;
+  const insertValues: typeof trainingPlansTable.$inferInsert = {
+    userId,
     name: parsed.data.name,
     goal: parsed.data.goal,
-    startDate: parsed.data.startDate,
-    endDate: parsed.data.endDate,
+    startDate: toDateStr(parsed.data.startDate),
+    endDate: toDateStr(parsed.data.endDate),
     status: "active",
   };
-  if (parsed.data.weeklyMileage !== undefined) insertData.weeklyMileage = String(parsed.data.weeklyMileage);
+  if (parsed.data.weeklyMileage !== undefined) {
+    insertValues.weeklyMileage = String(parsed.data.weeklyMileage);
+  }
+  const [plan] = await db.insert(trainingPlansTable).values(insertValues).returning();
 
-  const [plan] = await db.insert(trainingPlansTable).values(insertData as Parameters<typeof db.insert>[0] extends { values: (v: infer V) => unknown } ? V : never).returning();
-
-  // Auto-generate basic sessions
   const start = new Date(plan.startDate);
   const end = new Date(plan.endDate);
   const weeks = Math.ceil((end.getTime() - start.getTime()) / (7 * 24 * 3600 * 1000));
@@ -72,30 +80,42 @@ router.post("/plans", async (req, res): Promise<void> => {
   res.status(201).json(serializePlan(plan));
 });
 
-router.get("/plans/:id", async (req, res): Promise<void> => {
+router.get("/plans/:id", async (req: Request, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = GetTrainingPlanParams.safeParse({ id: parseInt(raw, 10) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const [plan] = await db.select().from(trainingPlansTable).where(eq(trainingPlansTable.id, params.data.id));
+  const userId = req.user!.id;
+  const [plan] = await db
+    .select()
+    .from(trainingPlansTable)
+    .where(and(eq(trainingPlansTable.id, params.data.id), eq(trainingPlansTable.userId, userId)));
   if (!plan) {
     res.status(404).json({ error: "Training plan not found" });
     return;
   }
-  const sessions = await db.select().from(planSessionsTable).where(eq(planSessionsTable.planId, plan.id)).orderBy(planSessionsTable.weekNumber, planSessionsTable.dayOfWeek);
+  const sessions = await db
+    .select()
+    .from(planSessionsTable)
+    .where(eq(planSessionsTable.planId, plan.id))
+    .orderBy(planSessionsTable.weekNumber, planSessionsTable.dayOfWeek);
   res.json(GetTrainingPlanResponse.parse({ ...serializePlan(plan), sessions: sessions.map(serializeSession) }));
 });
 
-router.delete("/plans/:id", async (req, res): Promise<void> => {
+router.delete("/plans/:id", async (req: Request, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = DeleteTrainingPlanParams.safeParse({ id: parseInt(raw, 10) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const [plan] = await db.delete(trainingPlansTable).where(eq(trainingPlansTable.id, params.data.id)).returning();
+  const userId = req.user!.id;
+  const [plan] = await db
+    .delete(trainingPlansTable)
+    .where(and(eq(trainingPlansTable.id, params.data.id), eq(trainingPlansTable.userId, userId)))
+    .returning();
   if (!plan) {
     res.status(404).json({ error: "Training plan not found" });
     return;

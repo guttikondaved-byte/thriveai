@@ -1,9 +1,11 @@
 import { pgTable, text, serial, integer, numeric, timestamp, date, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./auth";
 
 export const trainingPlansTable = pgTable("training_plans", {
   id: serial("id").primaryKey(),
+  userId: text("user_id").references(() => usersTable.id),
   name: text("name").notNull(),
   goal: text("goal").notNull(),
   startDate: date("start_date", { mode: "string" }).notNull(),

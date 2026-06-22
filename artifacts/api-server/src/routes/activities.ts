@@ -1,5 +1,5 @@
-import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { Router, type Request, type IRouter } from "express";
+import { eq, and, desc } from "drizzle-orm";
 import { db, activitiesTable } from "@workspace/db";
 import {
   ListActivitiesResponse,
@@ -8,7 +8,6 @@ import {
   GetActivityResponse,
   ListActivitiesQueryParams,
 } from "@workspace/api-zod";
-import { desc } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -20,21 +19,29 @@ function serializeActivity(a: typeof activitiesTable.$inferSelect) {
   };
 }
 
-router.get("/activities", async (req, res): Promise<void> => {
+router.get("/activities", async (req: Request, res): Promise<void> => {
   const query = ListActivitiesQueryParams.safeParse(req.query);
   const limit = query.success ? (query.data.limit ?? 20) : 20;
-  const activities = await db.select().from(activitiesTable).orderBy(desc(activitiesTable.activityDate)).limit(limit);
+  const userId = req.user!.id;
+  const activities = await db
+    .select()
+    .from(activitiesTable)
+    .where(eq(activitiesTable.userId, userId))
+    .orderBy(desc(activitiesTable.activityDate))
+    .limit(limit);
   res.json(ListActivitiesResponse.parse(activities.map(serializeActivity)));
 });
 
-router.post("/activities", async (req, res): Promise<void> => {
+router.post("/activities", async (req: Request, res): Promise<void> => {
   const parsed = CreateActivityBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
+  const userId = req.user!.id;
   const insertData: Record<string, unknown> = {
+    userId,
     type: parsed.data.type,
     activityDate: parsed.data.activityDate,
   };
@@ -48,14 +55,18 @@ router.post("/activities", async (req, res): Promise<void> => {
   res.status(201).json(GetActivityResponse.parse(serializeActivity(activity)));
 });
 
-router.get("/activities/:id", async (req, res): Promise<void> => {
+router.get("/activities/:id", async (req: Request, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = GetActivityParams.safeParse({ id: parseInt(raw, 10) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const [activity] = await db.select().from(activitiesTable).where(eq(activitiesTable.id, params.data.id));
+  const userId = req.user!.id;
+  const [activity] = await db
+    .select()
+    .from(activitiesTable)
+    .where(and(eq(activitiesTable.id, params.data.id), eq(activitiesTable.userId, userId)));
   if (!activity) {
     res.status(404).json({ error: "Activity not found" });
     return;

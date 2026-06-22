@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type Request, type IRouter } from "express";
 import { gte, and } from "drizzle-orm";
 import { db, activitiesTable, injuryAlertsTable, trainingPlansTable } from "@workspace/db";
 import { GetDashboardSummaryResponse } from "@workspace/api-zod";
@@ -6,18 +6,24 @@ import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-router.get("/dashboard/summary", async (_req, res): Promise<void> => {
+router.get("/dashboard/summary", async (req: Request, res): Promise<void> => {
+  const userId = req.user!.id;
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   const oneWeekAgoStr = oneWeekAgo.toISOString().split("T")[0];
 
   const [allActivities, allAlerts, allPlans] = await Promise.all([
-    db.select().from(activitiesTable).where(gte(activitiesTable.activityDate, oneWeekAgoStr)),
-    db.select().from(injuryAlertsTable).where(eq(injuryAlertsTable.acknowledged, false)),
-    db.select().from(trainingPlansTable).where(eq(trainingPlansTable.status, "active")).limit(1),
+    db.select().from(activitiesTable).where(and(eq(activitiesTable.userId, userId), gte(activitiesTable.activityDate, oneWeekAgoStr))),
+    db.select().from(injuryAlertsTable).where(and(eq(injuryAlertsTable.userId, userId), eq(injuryAlertsTable.acknowledged, false))),
+    db.select().from(trainingPlansTable).where(and(eq(trainingPlansTable.userId, userId), eq(trainingPlansTable.status, "active"))).limit(1),
   ]);
 
-  const recentActivities = await db.select().from(activitiesTable).orderBy(activitiesTable.activityDate).limit(5);
+  const recentActivities = await db
+    .select()
+    .from(activitiesTable)
+    .where(eq(activitiesTable.userId, userId))
+    .orderBy(activitiesTable.activityDate)
+    .limit(5);
 
   const runs = allActivities.filter(a => ["easy_run", "tempo_run", "interval", "long_run", "race"].includes(a.type));
   const weeklyDistanceKm = runs.reduce((sum, a) => sum + (a.distanceKm ? Number(a.distanceKm) : 0), 0);

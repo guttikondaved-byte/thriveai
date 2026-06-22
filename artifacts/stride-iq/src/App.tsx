@@ -23,46 +23,17 @@ import { useEffect } from "react";
 
 const queryClient = new QueryClient();
 
+const Spinner = () => (
+  <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+    <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
+
 function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { isLoading, isAuthenticated, login } = useAuth();
+  const { isLoading, isAuthenticated } = useAuth();
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Login />;
-  }
-
-  return <>{children}</>;
-}
-
-function OnboardingGuard({ children }: { children: React.ReactNode }) {
-  const { data: profile, isLoading } = useGetAthleteProfile();
-  const [location, navigate] = useLocation();
-
-  useEffect(() => {
-    if (isLoading) return;
-    const needsOnboarding = !profile?.userRole;
-    if (needsOnboarding && location !== "/onboarding") {
-      navigate("/onboarding");
-    } else if (!needsOnboarding && location === "/onboarding") {
-      navigate("/");
-    }
-  }, [profile, isLoading, location, navigate]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
+  if (isLoading) return <Spinner />;
+  if (!isAuthenticated) return <Login />;
   return <>{children}</>;
 }
 
@@ -100,8 +71,21 @@ function CoachRouter() {
   );
 }
 
-function Router() {
-  const { data: profile } = useGetAthleteProfile();
+function AppContent() {
+  const { data: profile, isLoading } = useGetAthleteProfile();
+  const [location, navigate] = useLocation();
+
+  useEffect(() => {
+    if (isLoading) return;
+    const needsOnboarding = !profile?.userRole;
+    if (needsOnboarding && location !== "/onboarding") {
+      navigate("/onboarding");
+    } else if (!needsOnboarding && location === "/onboarding") {
+      navigate("/");
+    }
+  }, [profile, isLoading, location, navigate]);
+
+  if (isLoading) return <Spinner />;
 
   return (
     <Switch>
@@ -119,9 +103,7 @@ function App() {
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <AuthGuard>
-            <OnboardingGuard>
-              <Router />
-            </OnboardingGuard>
+            <AppContent />
           </AuthGuard>
         </WouterRouter>
         <Toaster />
