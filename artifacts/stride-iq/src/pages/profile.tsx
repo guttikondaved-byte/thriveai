@@ -222,6 +222,7 @@ export default function Profile() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { data: profile, isLoading } = useGetAthleteProfile();
+  const isCoach = profile?.userRole === "coach";
   const updateProfile = useUpdateAthleteProfile();
   const [activeGuide, setActiveGuide] = useState<GuideKey>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -286,8 +287,12 @@ export default function Profile() {
 
       <div className="p-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-foreground" data-testid="profile-title">Athlete Profile</h1>
-          <p className="text-sm text-muted-foreground mt-1">Your training profile and physiological metrics</p>
+          <h1 className="text-2xl font-semibold text-foreground" data-testid="profile-title">
+            {isCoach ? "Coach Profile" : "Athlete Profile"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {isCoach ? "Your coaching profile and account settings" : "Your training profile and physiological metrics"}
+          </p>
         </div>
 
         <div className="max-w-xl space-y-6">
