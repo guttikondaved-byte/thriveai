@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { X, Activity, AlertTriangle, Heart, Target } from "lucide-react";
 
-const KM_TO_MI = 0.621371;
-const toMiles = (km: number) => km * KM_TO_MI;
 
 export interface AthleteProfileDetail {
   userId: string;
@@ -148,7 +146,7 @@ export default function AthleteProfileModal({ teamId, userId, onClose }: Props) 
                   <Activity className="w-3 h-3" /> This week
                 </p>
                 <p className="text-base font-bold text-foreground mt-1">
-                  {toMiles(data.weeklyDistanceKm).toFixed(1)} mi
+                  {data.weeklyDistanceKm.toFixed(1)} mi
                 </p>
               </div>
               <div className="bg-background border border-border rounded-xl p-3">
@@ -157,7 +155,7 @@ export default function AthleteProfileModal({ teamId, userId, onClose }: Props) 
                 </p>
                 <p className="text-base font-bold text-foreground mt-1">
                   {data.profile?.weeklyMileageGoal != null
-                    ? `${toMiles(data.profile.weeklyMileageGoal).toFixed(0)} mi`
+                    ? `${data.profile.weeklyMileageGoal.toFixed(0)} mi`
                     : "—"}
                 </p>
               </div>
@@ -262,7 +260,7 @@ export default function AthleteProfileModal({ teamId, userId, onClose }: Props) 
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-sm font-semibold text-foreground">
-                          {a.distanceKm != null ? `${toMiles(a.distanceKm).toFixed(1)} mi` : "—"}
+                          {a.distanceKm != null ? `${a.distanceKm.toFixed(1)} mi` : "—"}
                         </p>
                         {a.durationMinutes != null && (
                           <p className="text-[11px] text-muted-foreground">{a.durationMinutes} min</p>

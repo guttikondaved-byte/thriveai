@@ -172,7 +172,7 @@ async function buildCoachContext(userId: string): Promise<string> {
     const p = profileByUser.get(mid);
     const u = userByUser.get(mid);
     const name = (p?.name ?? `${u?.firstName ?? ""} ${u?.lastName ?? ""}`.trim()) || "Athlete";
-    const weeklyMi = ((weeklyByUser.get(mid) ?? 0) * 0.621371).toFixed(1);
+    const weeklyMi = (weeklyByUser.get(mid) ?? 0).toFixed(1);
     const parts = [
       `Name: ${name}`,
       p?.fitnessLevel ? `Level: ${p.fitnessLevel}` : null,

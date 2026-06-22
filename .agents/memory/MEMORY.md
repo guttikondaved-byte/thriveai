@@ -1,2 +1,3 @@
 - [Thrive app architecture](thrive-architecture.md) — full-stack running app: routes, DB schema, frontend pages, AI coach Avera
+- [Thrive distance units](thrive-distance-units.md) — distance_km/weeklyDistanceKm fields store MILES not km; never multiply by 0.621371.
 - [esbuild nullish-coalescing pitfall](esbuild-nullish.md) — esbuild rejects `x ?? y || z` without parens; always write `(x ?? y) || z`.

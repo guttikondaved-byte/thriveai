@@ -3,9 +3,6 @@ import { AlertTriangle, TrendingUp, Users, Activity, ChevronRight, Flame } from 
 import { useAuth } from "@workspace/replit-auth-web";
 import AthleteProfileModal from "../components/AthleteProfileModal";
 
-const KM_TO_MI = 0.621371;
-const toMiles = (km: number) => km * KM_TO_MI;
-
 type RiskLevel = "high" | "medium" | "low";
 
 interface TeamInfo {
@@ -82,7 +79,7 @@ export default function CoachDashboard() {
 
   const highRisk = members.filter(m => m.riskLevel === "high").length;
   const caution = members.filter(m => m.riskLevel === "medium" || m.riskLevel === "low").length;
-  const weeklyMiles = members.map(m => toMiles(m.weeklyDistanceKm));
+  const weeklyMiles = members.map(m => m.weeklyDistanceKm);
   const avgMiles = members.length > 0 ? (weeklyMiles.reduce((a, b) => a + b, 0) / members.length) : 0;
   const hrvVals = members.map(m => m.hrv).filter((v): v is number => v != null);
   const avgHrv = hrvVals.length > 0 ? (hrvVals.reduce((a, b) => a + b, 0) / hrvVals.length) : null;
@@ -161,7 +158,7 @@ export default function CoachDashboard() {
                       <div className="text-xs text-slate-500 truncate">{athlete.primaryGoal ?? (athlete.fitnessLevel ? `${athlete.fitnessLevel} runner` : "Athlete")}</div>
                     </div>
                     <div className="text-right hidden sm:block">
-                      <div className="text-xs text-slate-300 font-medium">{toMiles(athlete.weeklyDistanceKm).toFixed(1)} mi</div>
+                      <div className="text-xs text-slate-300 font-medium">{athlete.weeklyDistanceKm.toFixed(1)} mi</div>
                       <div className="text-[10px] text-slate-600">this week</div>
                     </div>
                     <div className="text-right hidden md:block">
