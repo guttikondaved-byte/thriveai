@@ -260,7 +260,7 @@ function AthleteSignup({ onBack }: { onBack: () => void }) {
         primaryGoal: goal,
         ...(weeklyKm ? { weeklyMileageGoal: parseFloat(weeklyKm) } : {}),
       });
-      window.location.href = "/";
+      window.location.href = dataSource === "strava" ? "/api/strava/connect" : "/";
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Something went wrong");
       setLoading(false);

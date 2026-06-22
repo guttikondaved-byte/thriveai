@@ -16,15 +16,24 @@ const router: IRouter = Router();
 
 // ── OAuth: redirect user to Strava ─────────────────────────────────────────
 
+function getCallbackUrl(): string {
+  // Use the known public Replit domain so the redirect_uri is always consistent
+  // and matches what is registered in the Strava app settings.
+  const domain =
+    process.env.REPLIT_DOMAINS?.split(",")[0]?.trim() ||
+    process.env.REPLIT_DEV_DOMAIN ||
+    "localhost";
+  const proto = domain === "localhost" ? "http" : "https";
+  return `${proto}://${domain}/api/strava/callback`;
+}
+
 router.get("/strava/connect", (req, res): void => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
-  const proto = req.headers["x-forwarded-proto"] || "https";
-  const host = req.headers["x-forwarded-host"] || req.headers["host"] || "localhost";
-  const callbackUrl = `${proto}://${host}/api/strava/callback`;
+  const callbackUrl = getCallbackUrl();
 
   const params = new URLSearchParams({
     client_id: process.env.STRAVA_CLIENT_ID ?? "",
@@ -53,9 +62,7 @@ router.get("/strava/callback", async (req, res): Promise<void> => {
     return;
   }
 
-  const proto = req.headers["x-forwarded-proto"] || "https";
-  const host = req.headers["x-forwarded-host"] || req.headers["host"] || "localhost";
-  const callbackUrl = `${proto}://${host}/api/strava/callback`;
+  const callbackUrl = getCallbackUrl();
 
   const tokenResp = await fetch(STRAVA_TOKEN_URL, {
     method: "POST",
