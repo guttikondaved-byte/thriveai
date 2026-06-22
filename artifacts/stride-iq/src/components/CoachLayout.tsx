@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, Bot, Settings, LogOut, Calendar, X, Zap } from "lucide-react";
+import { LayoutDashboard, Users, Bot, Settings, LogOut, Calendar, X, Zap, Check } from "lucide-react";
 import { useAuth } from "@workspace/replit-auth-web";
 import NotificationBell from "./NotificationBell";
 import { useState, useEffect, useRef } from "react";
@@ -167,7 +167,7 @@ function AveraTipPopup() {
 
         {flow === "done" && proposal && (
           <div className="mx-4 mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
-            <p className="text-sm font-medium text-emerald-300">✓ Plan added for {proposal.athleteName}</p>
+            <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-300"><Check className="w-4 h-4" /> Plan added for {proposal.athleteName}</p>
           </div>
         )}
 

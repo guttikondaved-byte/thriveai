@@ -59,10 +59,10 @@ function StravaBanner() {
   if (dismissed || stravaStatus.isLoading || stravaStatus.data?.connected) return null;
 
   return (
-    <div className={`mb-6 flex items-center gap-4 rounded-xl border px-5 py-4 ${autoPrompt ? "border-[#FC4C02]/50 bg-[#FC4C02]/10" : "border-slate-700/60 bg-slate-800/40"}`}>
-      <span className="text-2xl shrink-0">🟠</span>
+    <div className={`mb-6 flex items-center gap-4 rounded-xl border px-5 py-4 ${autoPrompt ? "border-[#FC4C02]/30 bg-[#FC4C02]/5" : "border-slate-800 bg-slate-900"}`}>
+      <Activity className="w-6 h-6 shrink-0 text-[#FC4C02]" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-white">
+        <p className="text-sm font-medium text-white">
           {autoPrompt ? "One more step — connect Strava" : "Connect Strava for automatic run syncing"}
         </p>
         <p className="text-xs text-slate-400 mt-0.5">Every run will appear in Thrive automatically. No imports needed.</p>

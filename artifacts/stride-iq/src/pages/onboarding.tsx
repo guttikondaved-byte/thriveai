@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useUpdateAthleteProfile, getGetAthleteProfileQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, ChevronLeft, Check, Upload, Zap, Users, User, Mail, Phone } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, Upload, Zap, Users, User, Mail, Phone, LayoutDashboard, ShieldAlert, Bot, TrendingUp, Activity } from "lucide-react";
 
 type Role = "athlete" | "coach";
 type FitnessLevel = "beginner" | "intermediate" | "advanced" | "elite";
@@ -63,30 +63,30 @@ const COACH_FOCUSES = [
 const DATA_SOURCES = [
   {
     id: "strava" as const,
-    icon: "🟠",
+    Icon: Activity,
     title: "Connect Strava",
     subtitle: "Real-time automatic sync",
     desc: "Every run you record on Strava appears in Thrive automatically — no manual imports ever.",
-    badge: "⚡ Recommended",
-    badgeColor: "bg-[#FC4C02]/15 text-[#FC4C02] border-[#FC4C02]/30",
+    badge: "Recommended",
+    badgeColor: "bg-transparent text-[#FC4C02] border-[#FC4C02]/30",
   },
   {
     id: "gpx" as const,
-    icon: "📁",
+    Icon: Upload,
     title: "Import GPX Files",
     subtitle: "Works with every GPS watch",
     desc: "Export a .gpx file from Garmin Connect, Apple Health, Coros, Polar, or any GPS watch.",
     badge: "Free",
-    badgeColor: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
+    badgeColor: "bg-transparent text-cyan-400 border-cyan-500/30",
   },
   {
     id: "manual" as const,
-    icon: "✏️",
+    Icon: Check,
     title: "Manual Logging",
     subtitle: "Log runs by hand",
     desc: "Enter distance, duration, heart rate, and effort directly — no GPS required.",
     badge: "Always available",
-    badgeColor: "bg-slate-700/60 text-slate-400 border-slate-600/40",
+    badgeColor: "bg-transparent text-slate-400 border-slate-600/40",
   },
 ];
 
@@ -275,7 +275,6 @@ export default function Onboarding() {
                 {
                   id: "email" as ContactMethod,
                   Icon: Mail,
-                  emoji: "📧",
                   label: "Email",
                   desc: "Get training summaries, alerts, and updates by email.",
                   placeholder: "you@example.com",
@@ -284,7 +283,6 @@ export default function Onboarding() {
                 {
                   id: "phone" as ContactMethod,
                   Icon: Phone,
-                  emoji: "📱",
                   label: "Phone number",
                   desc: "Receive quick notifications and reminders via text.",
                   placeholder: "+1 (555) 000-0000",
@@ -297,18 +295,22 @@ export default function Onboarding() {
                     key={opt.id}
                     type="button"
                     onClick={() => { set("contactMethod", opt.id); }}
-                    className={`relative text-left rounded-2xl border-2 p-6 transition-all duration-200
+                    className={`relative text-left rounded-xl border p-6 transition-all duration-200
                       ${selected
-                        ? "border-cyan-500 bg-cyan-500/10 shadow-xl shadow-cyan-500/15 scale-[1.02]"
-                        : "border-slate-700/60 bg-slate-800/30 hover:border-slate-500 hover:scale-[1.01]"}`}
+                        ? "border-cyan-500 bg-cyan-500/5 shadow-sm scale-[1.01]"
+                        : "border-slate-800 bg-slate-900/50 hover:border-slate-700 hover:bg-slate-800"}`}
                   >
                     {selected && (
-                      <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-cyan-500 flex items-center justify-center">
-                        <Check size={13} className="text-slate-900" />
+                      <div className="absolute top-4 right-4 w-5 h-5 rounded-full bg-cyan-500 flex items-center justify-center">
+                        <Check size={12} className="text-slate-900" />
                       </div>
                     )}
-                    <div className="text-4xl mb-4">{opt.emoji}</div>
-                    <h2 className="text-xl font-bold text-white mb-1">{opt.label}</h2>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                        <opt.Icon className="w-5 h-5 text-slate-400" />
+                      </div>
+                      <h2 className="text-lg font-medium text-white">{opt.label}</h2>
+                    </div>
                     <p className="text-slate-400 text-sm leading-relaxed">{opt.desc}</p>
                   </button>
                 );
@@ -349,7 +351,6 @@ export default function Onboarding() {
                 {
                   id: "athlete" as Role,
                   Icon: User,
-                  emoji: "🏃",
                   label: "Student Athlete",
                   desc: "I want to track my own training, monitor injury risk, and get personalised AI coaching.",
                   features: ["Personal dashboard & activity log", "AI coach AveraAI", "Injury risk alerts", "Custom training plans"],
@@ -357,7 +358,6 @@ export default function Onboarding() {
                 {
                   id: "coach" as Role,
                   Icon: Users,
-                  emoji: "📋",
                   label: "Coach",
                   desc: "I manage a team or group of athletes and want to monitor their workload and health.",
                   features: ["Team roster & risk dashboard", "Athlete workload monitoring", "Team-wide alerts", "Load analytics"],
@@ -368,18 +368,22 @@ export default function Onboarding() {
                   <button
                     key={role.id}
                     onClick={() => { set("role", role.id); setErrors({}); }}
-                    className={`relative text-left rounded-2xl border-2 p-6 transition-all duration-200
+                    className={`relative text-left rounded-xl border p-6 transition-all duration-200
                       ${selected
-                        ? "border-cyan-500 bg-cyan-500/10 shadow-xl shadow-cyan-500/15 scale-[1.02]"
-                        : "border-slate-700/60 bg-slate-800/30 hover:border-slate-500 hover:scale-[1.01]"}`}
+                        ? "border-cyan-500 bg-cyan-500/5 shadow-sm scale-[1.01]"
+                        : "border-slate-800 bg-slate-900/50 hover:border-slate-700 hover:bg-slate-800"}`}
                   >
                     {selected && (
-                      <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-cyan-500 flex items-center justify-center">
-                        <Check size={13} className="text-slate-900" />
+                      <div className="absolute top-4 right-4 w-5 h-5 rounded-full bg-cyan-500 flex items-center justify-center">
+                        <Check size={12} className="text-slate-900" />
                       </div>
                     )}
-                    <div className="text-4xl mb-4">{role.emoji}</div>
-                    <h2 className="text-xl font-bold text-white mb-1.5">{role.label}</h2>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                        <role.Icon className="w-5 h-5 text-slate-400" />
+                      </div>
+                      <h2 className="text-lg font-medium text-white">{role.label}</h2>
+                    </div>
                     <p className="text-slate-400 text-sm leading-relaxed mb-4">{role.desc}</p>
                     <ul className="space-y-1.5">
                       {role.features.map(f => (
@@ -581,7 +585,7 @@ export default function Onboarding() {
                         : "border-slate-700/60 bg-slate-800/30 hover:border-slate-500"}`}
                   >
                     <div className="flex items-start gap-4">
-                      <span className="text-3xl mt-0.5">{src.icon}</span>
+                      <src.Icon className="w-6 h-6 text-slate-300 shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
                           <span className="font-semibold text-white">{src.title}</span>
@@ -616,16 +620,16 @@ export default function Onboarding() {
 
             <div className="space-y-3 mb-8">
               {[
-                { icon: "📊", title: "Team Dashboard", desc: "See all your athletes' workload, heart rate, and training status at a glance." },
-                { icon: "⚠️", title: "Injury Risk Alerts", desc: "Thrive flags athletes with dangerous mileage spikes, low HRV, or early overtraining signals." },
-                { icon: "🤖", title: "AveraAI Assistant", desc: "Ask AveraAI for advice on periodisation, athlete management, and recovery decisions." },
-                { icon: "📈", title: "Load Analytics", desc: "Track team-wide training load trends week by week to keep everyone healthy." },
-              ].map(item => (
-                <div key={item.title} className="flex gap-4 rounded-xl bg-slate-800/40 border border-slate-700/50 p-4">
-                  <span className="text-2xl shrink-0">{item.icon}</span>
+                { Icon: LayoutDashboard, title: "Team Dashboard", desc: "See all your athletes' workload, heart rate, and training status at a glance." },
+                { Icon: ShieldAlert, title: "Injury Risk Alerts", desc: "Thrive flags athletes with dangerous mileage spikes, low HRV, or early overtraining signals." },
+                { Icon: Bot, title: "AveraAI Assistant", desc: "Ask AveraAI for advice on periodisation, athlete management, and recovery decisions." },
+                { Icon: TrendingUp, title: "Load Analytics", desc: "Track team-wide training load trends week by week to keep everyone healthy." },
+              ].map(({ Icon, title, desc }) => (
+                <div key={title} className="flex gap-4 rounded-xl bg-slate-800/40 border border-slate-700/50 p-4">
+                  <Icon className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-semibold text-white mb-0.5">{item.title}</p>
-                    <p className="text-sm text-slate-400 leading-relaxed">{item.desc}</p>
+                    <p className="text-sm font-semibold text-white mb-0.5">{title}</p>
+                    <p className="text-sm text-slate-400 leading-relaxed">{desc}</p>
                   </div>
                 </div>
               ))}

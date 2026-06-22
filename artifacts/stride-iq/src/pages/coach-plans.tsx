@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, X, Trash2, Calendar, ChevronDown, ChevronUp, Zap, Loader2 } from "lucide-react";
+import { Plus, X, Trash2, Calendar, ChevronDown, ChevronUp, Zap, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -285,7 +285,7 @@ export default function CoachPlans() {
 
               {averaFlow === "done" ? (
                 <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
-                  <span>✓</span> Plan added to {averaProposal.athleteName}'s profile
+                  <Check className="w-4 h-4" /> Plan added to {averaProposal.athleteName}'s profile
                 </div>
               ) : (
                 <div className="flex items-center gap-3 pt-1">

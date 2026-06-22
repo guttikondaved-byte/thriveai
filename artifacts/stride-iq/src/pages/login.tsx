@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Zap, Eye, EyeOff, ChevronLeft, ChevronRight, Check, Brain, ShieldCheck, LineChart, MessageSquare, Users, Dumbbell } from "lucide-react";
+import { Zap, Eye, EyeOff, ChevronLeft, ChevronRight, Check, Brain, ShieldCheck, LineChart, MessageSquare, Users, Dumbbell, User, Activity, Bot, Upload, AlertCircle } from "lucide-react";
 
 type View = "landing" | "athlete" | "coach" | "login";
 
@@ -31,9 +31,9 @@ const COACH_FOCUSES = [
 ];
 
 const DATA_SOURCES = [
-  { id: "strava",  icon: "🟠", title: "Connect Strava",    badge: "⚡ Recommended", badgeColor: "text-[#FC4C02] border-[#FC4C02]/40 bg-[#FC4C02]/10", desc: "Every run syncs automatically — no imports ever." },
-  { id: "gpx",    icon: "📁", title: "Import GPX Files",   badge: "Free",            badgeColor: "text-cyan-400 border-cyan-500/30 bg-cyan-500/10",    desc: "Export from Garmin, Apple Health, Coros, Polar, etc." },
-  { id: "manual", icon: "✏️", title: "Manual Logging",     badge: "Always available", badgeColor: "text-slate-400 border-slate-600/40 bg-slate-700/30", desc: "Enter distance, duration, and effort by hand." },
+  { id: "strava",  icon: <Activity className="w-5 h-5" />, title: "Connect Strava",    badge: "Recommended", badgeColor: "text-[#FC4C02] border-[#FC4C02]/40 bg-transparent", desc: "Every run syncs automatically — no imports ever." },
+  { id: "gpx",     icon: <Upload className="w-5 h-5" />, title: "Import GPX Files",   badge: "Free",            badgeColor: "text-cyan-400 border-cyan-500/30 bg-transparent",    desc: "Export from Garmin, Apple Health, Coros, Polar, etc." },
+  { id: "manual",  icon: <MessageSquare className="w-5 h-5" />, title: "Manual Logging",     badge: "Always available", badgeColor: "text-slate-400 border-slate-600/40 bg-transparent", desc: "Enter distance, duration, and effort by hand." },
 ];
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -109,16 +109,16 @@ function Steps({ current, labels }: { current: number; labels: string[] }) {
 // ── Landing ──────────────────────────────────────────────────────────────────
 
 const STATS = [
-  { value: "10K+", label: "Runs tracked" },
-  { value: "94%",  label: "Injury-free rate" },
-  { value: "500+", label: "Athletes & coaches" },
+  { value: "Track", label: "Every session" },
+  { value: "Monitor",  label: "Injury risk" },
+  { value: "Connect", label: "Athletes & coaches" },
 ];
 
 const FEATURES = [
-  { icon: "🤖", title: "AveraAI Coach",       desc: "Ask anything — pace strategy, recovery, race prep. Your AI coach answers in seconds." },
-  { icon: "⚠️", title: "Injury Risk Alerts",  desc: "Thrive flags dangerous mileage spikes, low HRV, and early overtraining before it becomes an injury." },
-  { icon: "🟠", title: "Strava Auto-Sync",    desc: "Connect Strava once and every run appears in Thrive automatically — zero manual imports." },
-  { icon: "📈", title: "Training Plans",      desc: "Personalised plans built around your goal, fitness level, and schedule — updated as you progress." },
+  { icon: <Brain className="w-5 h-5" />, title: "AveraAI Coach",       desc: "Ask anything — pace strategy, recovery, race prep. Your AI coach answers in seconds." },
+  { icon: <ShieldCheck className="w-5 h-5" />, title: "Injury Risk Alerts",  desc: "Thrive flags dangerous mileage spikes, low HRV, and early overtraining before it becomes an injury." },
+  { icon: <Activity className="w-5 h-5" />, title: "Strava Auto-Sync",    desc: "Connect Strava once and every run appears in Thrive automatically — zero manual imports." },
+  { icon: <LineChart className="w-5 h-5" />, title: "Training Plans",      desc: "Personalised plans built around your goal, fitness level, and schedule — updated as you progress." },
 ];
 
 function Landing({ onSelect }: { onSelect: (v: View) => void }) {
@@ -153,17 +153,15 @@ function Landing({ onSelect }: { onSelect: (v: View) => void }) {
       </div>
 
       {/* ── Thrive AI Section ─────────────────────────────────────── */}
-      <div className="mb-8 text-left rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/30 overflow-hidden">
+      <div className="mb-8 text-left rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
         {/* Header */}
         <div className="px-5 pt-5 pb-4 border-b border-slate-800/60">
           <div className="flex items-center gap-2.5 mb-1.5">
-            <div className="w-7 h-7 rounded-lg bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center">
-              <Brain className="w-3.5 h-3.5 text-cyan-400" />
-            </div>
-            <span className="text-[10px] font-bold tracking-widest uppercase text-cyan-400">Powered by Thrive AI</span>
+            <Brain className="w-4 h-4 text-cyan-500" />
+            <span className="text-[10px] font-medium tracking-wide uppercase text-slate-400">Powered by Thrive AI</span>
           </div>
-          <h2 className="text-lg font-extrabold text-white leading-tight">
-            Your AI coach. <span className="text-cyan-400">Always on.</span>
+          <h2 className="text-lg font-medium text-white leading-tight">
+            Your AI coach. <span className="text-cyan-500">Always on.</span>
           </h2>
           <p className="text-xs text-slate-400 mt-1 leading-relaxed">
             Thrive AI learns from your training data to give personalised coaching, catch injury risk early, and build plans that adapt as you grow.
@@ -172,10 +170,10 @@ function Landing({ onSelect }: { onSelect: (v: View) => void }) {
 
         {/* Meet AveraAI */}
         <div className="px-5 py-4 border-b border-slate-800/60">
-          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Meet AveraAI</p>
+          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-3">Meet AveraAI</p>
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-violet-500/20 border border-cyan-500/25 flex items-center justify-center shrink-0">
-              <span className="text-lg">🤖</span>
+            <div className="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+              <Bot className="w-5 h-5 text-slate-400" />
             </div>
             <div>
               <p className="text-sm font-bold text-white">AveraAI</p>
@@ -193,18 +191,16 @@ function Landing({ onSelect }: { onSelect: (v: View) => void }) {
 
         {/* AI Capabilities grid */}
         <div className="px-5 py-4 border-b border-slate-800/60">
-          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-3">What Thrive AI does</p>
+          <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-3">What Thrive AI does</p>
           <div className="space-y-3">
             {[
-              { Icon: ShieldCheck, color: "text-red-400", bg: "bg-red-500/10 border-red-500/20", title: "Injury Risk Detection", desc: "Flags mileage spikes, HRV dips, and overtraining patterns before they cause an injury." },
-              { Icon: Dumbbell,    color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20", title: "Adaptive Training Plans", desc: "AI builds week-by-week plans around your goal, fitness level, and real progress." },
-              { Icon: LineChart,   color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20", title: "Load & Recovery Monitoring", desc: "Tracks cumulative fatigue vs. fitness to tell you when to push and when to rest." },
-              { Icon: Users,       color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20", title: "Coach Intelligence", desc: "Coaches get AI-powered roster summaries, per-athlete risk flags, and team-wide insights." },
-            ].map(({ Icon, color, bg, title, desc }) => (
+              { Icon: ShieldCheck, color: "text-slate-400", title: "Injury Risk Detection", desc: "Flags mileage spikes, HRV dips, and overtraining patterns before they cause an injury." },
+              { Icon: Dumbbell,    color: "text-slate-400", title: "Adaptive Training Plans", desc: "AI builds week-by-week plans around your goal, fitness level, and real progress." },
+              { Icon: LineChart,   color: "text-slate-400", title: "Load & Recovery Monitoring", desc: "Tracks cumulative fatigue vs. fitness to tell you when to push and when to rest." },
+              { Icon: Users,       color: "text-slate-400", title: "Coach Intelligence", desc: "Coaches get AI-powered roster summaries, per-athlete risk flags, and team-wide insights." },
+            ].map(({ Icon, color, title, desc }) => (
               <div key={title} className="flex items-start gap-3">
-                <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 ${bg}`}>
-                  <Icon className={`w-3.5 h-3.5 ${color}`} />
-                </div>
+                <Icon className={`w-4 h-4 ${color} shrink-0 mt-0.5`} />
                 <div>
                   <p className="text-xs font-semibold text-white">{title}</p>
                   <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5">{desc}</p>
@@ -228,7 +224,7 @@ function Landing({ onSelect }: { onSelect: (v: View) => void }) {
                   <p className="text-[11px] text-slate-300 italic">"{q}"</p>
                 </div>
                 <div className="flex items-start gap-2 pl-1">
-                  <span className="text-[10px] shrink-0 mt-0.5">🤖</span>
+                  <Bot className="w-3 h-3 text-cyan-500 mt-0.5 shrink-0" />
                   <p className="text-[11px] text-cyan-300/90 leading-relaxed">{a}</p>
                 </div>
               </div>
@@ -253,11 +249,11 @@ function Landing({ onSelect }: { onSelect: (v: View) => void }) {
 
       <div className="space-y-3 mb-6">
         <button onClick={() => onSelect("athlete")}
-          className="w-full text-left rounded-xl border-2 border-slate-700/60 bg-slate-800/30 hover:border-cyan-500/60 hover:bg-cyan-500/5 p-5 transition-all group">
+          className="w-full text-left rounded-xl border border-slate-700/60 bg-slate-800/30 hover:border-slate-500 hover:bg-slate-800/50 p-5 transition-all group">
           <div className="flex items-center gap-4">
-            <span className="text-3xl">🏃</span>
+            <User className="w-6 h-6 text-slate-400 group-hover:text-cyan-400 transition-colors" />
             <div className="flex-1">
-              <p className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors">Student Athlete</p>
+              <p className="text-sm font-medium text-white group-hover:text-cyan-300 transition-colors">Student Athlete</p>
               <p className="text-xs text-slate-500 mt-0.5">Track training · AI coach · Injury alerts · Training plans</p>
             </div>
             <ChevronRight size={16} className="text-slate-600 group-hover:text-cyan-400 transition-colors" />
@@ -265,14 +261,14 @@ function Landing({ onSelect }: { onSelect: (v: View) => void }) {
         </button>
 
         <button onClick={() => onSelect("coach")}
-          className="w-full text-left rounded-xl border-2 border-slate-700/60 bg-slate-800/30 hover:border-violet-500/60 hover:bg-violet-500/5 p-5 transition-all group">
+          className="w-full text-left rounded-xl border border-slate-700/60 bg-slate-800/30 hover:border-slate-500 hover:bg-slate-800/50 p-5 transition-all group">
           <div className="flex items-center gap-4">
-            <span className="text-3xl">📋</span>
+            <Users className="w-6 h-6 text-slate-400 group-hover:text-cyan-400 transition-colors" />
             <div className="flex-1">
-              <p className="text-base font-bold text-white group-hover:text-violet-300 transition-colors">Coach</p>
+              <p className="text-sm font-medium text-white group-hover:text-cyan-300 transition-colors">Coach</p>
               <p className="text-xs text-slate-500 mt-0.5">Team roster · Workload monitoring · Risk dashboard · Alerts</p>
             </div>
-            <ChevronRight size={16} className="text-slate-600 group-hover:text-violet-400 transition-colors" />
+            <ChevronRight size={16} className="text-slate-600 group-hover:text-cyan-400 transition-colors" />
           </div>
         </button>
       </div>
@@ -370,8 +366,8 @@ function AthleteSignup({ onBack }: { onBack: () => void }) {
       </button>
 
       <div className="flex items-center gap-2 mb-1">
-        <span className="text-2xl">🏃</span>
-        <h2 className="text-xl font-bold text-white">Athlete Sign Up</h2>
+        <User className="w-5 h-5 text-slate-400" />
+        <h2 className="text-lg font-medium text-white">Athlete Sign Up</h2>
       </div>
       <p className="text-slate-500 text-sm mb-6">Create your account and training profile.</p>
 
@@ -475,7 +471,7 @@ function AthleteSignup({ onBack }: { onBack: () => void }) {
 
       {err && (
         <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3">
-          <span className="text-red-400 text-base leading-none mt-0.5">⚠️</span>
+          <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
           <p className="text-red-300 text-sm leading-snug">{err}</p>
         </div>
       )}
@@ -582,8 +578,8 @@ function CoachSignup({ onBack }: { onBack: () => void }) {
       </button>
 
       <div className="flex items-center gap-2 mb-1">
-        <span className="text-2xl">📋</span>
-        <h2 className="text-xl font-bold text-white">Coach Sign Up</h2>
+        <Users className="w-5 h-5 text-slate-400" />
+        <h2 className="text-lg font-medium text-white">Coach Sign Up</h2>
       </div>
       <p className="text-slate-500 text-sm mb-6">Set up your coaching portal and team tools.</p>
 
@@ -661,7 +657,7 @@ function CoachSignup({ onBack }: { onBack: () => void }) {
 
       {err && (
         <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3">
-          <span className="text-red-400 text-base leading-none mt-0.5">⚠️</span>
+          <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
           <p className="text-red-300 text-sm leading-snug">{err}</p>
         </div>
       )}
@@ -750,7 +746,7 @@ function LoginForm({ onBack }: { onBack: () => void }) {
 
         {err && (
           <div className="flex items-start gap-2.5 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3">
-            <span className="text-red-400 text-base leading-none mt-0.5">⚠️</span>
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
             <p className="text-red-300 text-sm leading-snug">{err}</p>
           </div>
         )}

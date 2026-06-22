@@ -31,34 +31,29 @@ type CoachFormValues = z.infer<typeof coachSchema>;
 
 type GuideKey = "rhr" | "hrv" | null;
 
-const GUIDES: Record<NonNullable<GuideKey>, { title: string; subtitle: string; steps: { app: string; icon: string; how: string }[]; tip: string }> = {
+const GUIDES: Record<NonNullable<GuideKey>, { title: string; subtitle: string; steps: { app: string; how: string }[]; tip: string }> = {
   rhr: {
     title: "Finding Your Resting Heart Rate",
     subtitle: "Resting HR (RHR) is your heart rate when fully at rest — ideally measured first thing in the morning before getting out of bed.",
     steps: [
       {
         app: "Garmin Connect",
-        icon: "⌚",
         how: "Open Garmin Connect app → tap your profile photo → scroll to \"Heart Rate\" → look for \"Resting Heart Rate\" (7-day average shown at the top).",
       },
       {
         app: "Apple Health",
-        icon: "🍎",
         how: "Open Health app → tap \"Browse\" → search \"Resting Heart Rate\" → view your latest reading or daily average.",
       },
       {
         app: "Polar Flow",
-        icon: "🔵",
         how: "Open Polar Flow → tap a recent activity → scroll to the Heart Rate section. Or open your watch and check the daily summary.",
       },
       {
         app: "Coros",
-        icon: "🟠",
         how: "Open the Coros app → tap your profile → Health Data → Heart Rate → Resting HR.",
       },
       {
         app: "Whoop / Oura",
-        icon: "💍",
         how: "Both apps display resting HR prominently on the home/recovery screen. Use the value shown for last night.",
       },
     ],
@@ -70,27 +65,22 @@ const GUIDES: Record<NonNullable<GuideKey>, { title: string; subtitle: string; s
     steps: [
       {
         app: "Garmin Connect",
-        icon: "⌚",
         how: "Open Garmin Connect → tap your profile → scroll to \"HRV Status\". Your daily HRV is shown in the HRV Status card. Use the most recent overnight reading.",
       },
       {
         app: "Apple Health + HRV4Training",
-        icon: "🍎",
         how: "Open Health → Browse → \"Heart Rate Variability\". Apple measures HRV during sleep. Alternatively use the free HRV4Training app for a 1-minute morning reading.",
       },
       {
         app: "Polar Flow",
-        icon: "🔵",
         how: "Polar measures HRV as part of Nightly Recharge. Open Polar Flow → tap last night's sleep → scroll to Nightly Recharge for your ANS charge score (this correlates to HRV).",
       },
       {
         app: "Whoop",
-        icon: "💜",
         how: "Open Whoop → tap the Recovery screen. Your HRV is displayed prominently (ms). Use the overnight reading.",
       },
       {
         app: "Oura Ring",
-        icon: "💍",
         how: "Open the Oura app → tap the Readiness or Sleep tab → scroll to HRV. The value is in milliseconds.",
       },
     ],
@@ -117,7 +107,6 @@ function HelpModal({ guideKey, onClose }: { guideKey: NonNullable<GuideKey>; onC
         <div className="px-5 py-4 space-y-3">
           {guide.steps.map(step => (
             <div key={step.app} className="flex gap-3 bg-secondary/30 border border-border rounded-xl p-3.5">
-              <span className="text-xl shrink-0 mt-0.5">{step.icon}</span>
               <div>
                 <p className="text-sm font-semibold text-foreground mb-1">{step.app}</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">{step.how}</p>
@@ -126,7 +115,6 @@ function HelpModal({ guideKey, onClose }: { guideKey: NonNullable<GuideKey>; onC
           ))}
 
           <div className="flex gap-2.5 bg-primary/10 border border-primary/20 rounded-xl p-3.5 mt-1">
-            <span className="text-base shrink-0">💡</span>
             <p className="text-xs text-primary/90 leading-relaxed">{guide.tip}</p>
           </div>
         </div>
@@ -202,7 +190,6 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
 
         {err && (
           <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2.5">
-            <span className="text-red-400 text-sm">⚠️</span>
             <p className="text-red-300 text-xs">{err}</p>
           </div>
         )}
