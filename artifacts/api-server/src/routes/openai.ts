@@ -40,15 +40,22 @@ const RESPONSE_STRATEGY = `You are an AI chatbot response strategist supporting 
 RESPONSE GUIDELINES
 - Give fast, trustworthy answers that help users understand the platform, make good decisions, and take clear next steps.
 - Be helpful, concise, and accurate. Adapt your tone to the user's level — technical with experienced athletes and coaches, plain and simple with beginners.
-- If a request is ambiguous, ask one focused clarifying question rather than guessing.
 - If guidance is needed, provide practical next steps the user can act on immediately.
 - Sound knowledgeable, supportive, and easy to follow — never robotic or overly formal.
 
-FORMAT
-- 1 to 3 short paragraphs or a brief bullet list unless the user asks for detail.
-- Tone: professional, friendly, and confident.
-- Language: plain English. No unnecessary jargon.
-- Lead with the most useful information. Example style: "Here's the simplest way to think about it: …"
+ASK CLARIFYING QUESTIONS (IMPORTANT — this takes precedence over any persona instinct to deliver a plan)
+- If the user's request is vague or broad — e.g. "I want to get faster", "help me train", "build me a plan", "how do I improve" — and you do NOT yet know the key details that would change your advice (their goal/target race, timeline, current weekly mileage, recent training, and injury history), then your ENTIRE reply must be a short friendly intro plus 1 to 2 clarifying questions. Do NOT provide a training plan, workout list, or detailed advice in that first reply. Stop after the questions and wait for their answer.
+- Example — user: "I want to get faster" → good reply: "Happy to help you get faster! To point you in the right direction, what distance or race are you training for, and what does your current weekly mileage look like?" (no plan yet).
+- Only skip the questions when the user has already given enough specifics to give genuinely tailored advice. When details are present, answer directly — don't ask for the sake of asking.
+- Keep it light: one or two short questions, never an interrogation.
+
+FORMAT (Markdown)
+- Always respond in clean, well-structured Markdown so it renders nicely.
+- Use **bold** for key terms and numbers, \`-\` bullet lists for options or steps, and numbered lists for ordered sequences.
+- For longer answers, group content under short \`###\` headings. Keep paragraphs to 1–3 sentences and leave a blank line between sections.
+- Default to 1–3 short paragraphs or a brief list unless the user asks for more detail.
+- Tone: professional, friendly, and confident. Plain English, no unnecessary jargon.
+- Lead with the most useful information.
 
 HEALTH & TRAINING SAFETY
 - Keep health, training, and injury-risk responses informational.
@@ -127,6 +134,31 @@ function getSystemPrompt(coach: string | null | undefined): string {
 
 function serializeConversation(c: typeof conversations.$inferSelect) {
   return { ...c, createdAt: c.createdAt.toISOString() };
+}
+
+// Generate a short, descriptive conversation title from the user's first message.
+async function generateConversationTitle(client: OpenAI, userMessage: string): Promise<string | null> {
+  try {
+    const completion = await client.chat.completions.create({
+      model: "glm-4-flash",
+      max_tokens: 24,
+      messages: [
+        {
+          role: "system",
+          content:
+            "Generate a concise 3-6 word title summarizing the user's message for a chat sidebar. Output ONLY the title text — no surrounding quotes, no trailing punctuation, no 'Title:' prefix.",
+        },
+        { role: "user", content: userMessage },
+      ],
+    });
+    const raw = completion.choices[0]?.message?.content?.trim();
+    if (!raw) return null;
+    const cleaned = raw.replace(/^["'#\s]+|["'.\s]+$/g, "").slice(0, 80);
+    return cleaned || null;
+  } catch (err) {
+    logger.error({ err }, "Conversation title generation failed");
+    return null;
+  }
 }
 
 function serializeMessage(m: typeof messages.$inferSelect) {
@@ -478,6 +510,27 @@ router.post("/openai/conversations/:id/messages", async (req: Request, res): Pro
   const profile = profileRows[0];
   const userContext = await buildUserContext(userId, profile?.userRole);
   const chatMessages = historyRows.map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
+
+  // On the first user message of a conversation, auto-generate a descriptive
+  // title from what they asked. Run concurrently with the reply stream and await
+  // before ending so the client's post-stream refresh picks it up.
+  const isFirstMessage = chatMessages.length === 1;
+  let generatedTitle: string | null = null;
+  const titlePromise: Promise<void> = isFirstMessage
+    ? generateConversationTitle(client, parsed.data.content)
+        .then(async (title) => {
+          if (title) {
+            await db.update(conversations).set({ title }).where(eq(conversations.id, conv.id));
+            generatedTitle = title;
+          }
+        })
+        .catch((err) => {
+          // Never let title persistence break stream completion.
+          generatedTitle = null;
+          logger.error({ err }, "Conversation title persistence failed");
+        })
+    : Promise.resolve();
+
   const basePrompt = profile?.userRole === "coach"
     ? `${RESPONSE_STRATEGY}\n\n${COACH_ADVISOR_PROMPT}`
     : getSystemPrompt(profile?.selectedCoach);
@@ -511,7 +564,8 @@ router.post("/openai/conversations/:id/messages", async (req: Request, res): Pro
   }
 
   await db.insert(messages).values({ conversationId: conv.id, role: "assistant", content: fullResponse });
-  res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+  await titlePromise;
+  res.write(`data: ${JSON.stringify(generatedTitle ? { done: true, title: generatedTitle } : { done: true })}\n\n`);
   res.end();
 });
 

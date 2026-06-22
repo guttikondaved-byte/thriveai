@@ -12,8 +12,53 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type StreamMessage = { role: "user" | "assistant"; content: string; streaming?: boolean };
+
+function AssistantMarkdown({ content }: { content: string }) {
+  return (
+    <div className="space-y-2.5 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          p: ({ children }) => <p className="leading-relaxed">{children}</p>,
+          ul: ({ children }) => <ul className="list-disc pl-5 space-y-1">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1">{children}</ol>,
+          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+          h1: ({ children }) => <h3 className="text-sm font-semibold text-foreground mt-3 mb-1">{children}</h3>,
+          h2: ({ children }) => <h3 className="text-sm font-semibold text-foreground mt-3 mb-1">{children}</h3>,
+          h3: ({ children }) => <h3 className="text-sm font-semibold text-foreground mt-3 mb-1">{children}</h3>,
+          strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+          em: ({ children }) => <em className="italic">{children}</em>,
+          a: ({ children, href }) => (
+            <a href={href} target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline underline-offset-2 hover:text-cyan-300">
+              {children}
+            </a>
+          ),
+          code: ({ children }) => (
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-[0.85em] font-mono text-cyan-200">{children}</code>
+          ),
+          pre: ({ children }) => (
+            <pre className="overflow-x-auto rounded-lg bg-black/30 border border-white/10 p-3 text-xs font-mono">{children}</pre>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-2 border-cyan-500/40 pl-3 italic text-slate-300">{children}</blockquote>
+          ),
+          hr: () => <hr className="border-white/10" />,
+          table: ({ children }) => (
+            <div className="overflow-x-auto"><table className="w-full text-xs border-collapse">{children}</table></div>
+          ),
+          th: ({ children }) => <th className="border border-white/10 px-2 py-1 text-left font-semibold">{children}</th>,
+          td: ({ children }) => <td className="border border-white/10 px-2 py-1">{children}</td>,
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+}
 
 export default function CoachAI() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -97,6 +142,7 @@ export default function CoachAI() {
       const decoder = new TextDecoder();
       let buffer = "";
       let fullContent = "";
+      let newTitle: string | null = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -109,7 +155,7 @@ export default function CoachAI() {
             try {
               const data = JSON.parse(line.slice(6));
               if (data.done) {
-                // done
+                if (typeof data.title === "string") newTitle = data.title;
               } else if (data.content) {
                 fullContent += data.content;
                 setStreamMessages(prev => {
@@ -131,6 +177,16 @@ export default function CoachAI() {
         return updated;
       });
       qc.invalidateQueries({ queryKey: getGetOpenaiConversationQueryKey(selectedId) });
+      if (newTitle) {
+        const listKey = getListOpenaiConversationsQueryKey();
+        qc.setQueryData(listKey, (old: unknown) => {
+          if (!Array.isArray(old)) return old;
+          return old.map((c: { id: number; title?: string }) =>
+            c.id === selectedId ? { ...c, title: newTitle } : c
+          );
+        });
+      }
+      qc.invalidateQueries({ queryKey: getListOpenaiConversationsQueryKey() });
     } catch {
       toast({ title: "Error", description: "Failed to send message", variant: "destructive" });
       setStreamMessages(prev => prev.slice(0, -1));
@@ -232,10 +288,14 @@ export default function CoachAI() {
                   )}
                   <div className={`max-w-[80%] rounded-2xl px-5 py-3.5 text-sm leading-relaxed ${
                     msg.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-tr-sm shadow-md"
+                      ? "bg-primary text-primary-foreground rounded-tr-sm shadow-md whitespace-pre-wrap"
                       : "bg-card border border-border text-foreground rounded-tl-sm shadow-sm"
                   }`}>
-                    {msg.content || (msg.streaming && <span className="inline-block w-2 h-4 bg-primary opacity-70 animate-pulse rounded-sm" />)}
+                    {msg.role === "assistant"
+                      ? (msg.content
+                          ? <AssistantMarkdown content={msg.content} />
+                          : (msg.streaming && <span className="inline-block w-2 h-4 bg-primary opacity-70 animate-pulse rounded-sm" />))
+                      : msg.content}
                   </div>
                   {msg.role === "user" && (
                     <div className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center shrink-0 mt-0.5">

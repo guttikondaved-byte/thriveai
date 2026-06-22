@@ -27,6 +27,11 @@ description: Key decisions, file locations, and quirks for the Thrive running co
 - POST `/api/openai/conversations/:id/messages` returns `text/event-stream`
 - Frontend uses raw `fetch` + `ReadableStream` — NOT the generated hook
 - Messages stored in DB after streaming completes
+- Conversation auto-titling: server generates a title on the first user message and ships it in the SSE `done` event (`{done:true,title}`); client applies via `setQueryData` on the list cache + invalidate. Any work awaited after the stream loop (e.g. title persistence) MUST be made non-rejecting (`.catch`) or it aborts `res.end()` and the client shows "failed to send message".
+
+## AI prompt layering — persona vs global strategy
+- System prompt = global `RESPONSE_STRATEGY` + a persona prompt (avera/kai/nova/rex or coach advisor). Personas push "give a plan / actionable steps", which overrides soft global instructions.
+- **Why:** glm-4-flash ignored a politely-worded "ask clarifying questions" rule because the persona told it to deliver plans. To make a global behavior stick, state it takes precedence over persona instinct AND give a concrete example of the desired reply.
 
 ## Mutation shape
 - All generated mutations use `{ data: T }` wrapper shape (orval convention)
