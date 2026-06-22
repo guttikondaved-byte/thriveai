@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, teamsTable, teamMembershipsTable, usersTable, athleteProfileTable, notificationsTable, stravaTokensTable } from "@workspace/db";
-import { eq, and, inArray } from "drizzle-orm";
+import { db, teamsTable, teamMembershipsTable, usersTable, athleteProfileTable, notificationsTable, stravaTokensTable, activitiesTable, injuryAlertsTable } from "@workspace/db";
+import { eq, and, inArray, desc, gte } from "drizzle-orm";
 import crypto from "crypto";
 
 const router: IRouter = Router();
@@ -206,6 +206,98 @@ router.get("/teams/:teamId/strava-status", async (req, res): Promise<void> => {
     connected: stravaMap.has(uid),
     lastSync: stravaMap.get(uid)?.updatedAt?.toISOString() ?? null,
   })));
+});
+
+// GET /teams/:teamId/members/:userId/profile — coach views a single athlete's full profile
+router.get("/teams/:teamId/members/:userId/profile", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const teamId = Number(req.params.teamId);
+  if (isNaN(teamId)) {
+    res.status(400).json({ error: "Invalid team id" });
+    return;
+  }
+  const athleteUserId = req.params.userId;
+
+  const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId)).limit(1);
+  if (!team || team.coachUserId !== req.user.id) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const [membership] = await db.select()
+    .from(teamMembershipsTable)
+    .where(and(eq(teamMembershipsTable.teamId, teamId), eq(teamMembershipsTable.athleteUserId, athleteUserId)))
+    .limit(1);
+  if (!membership) {
+    res.status(404).json({ error: "Athlete is not a member of this team" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, athleteUserId)).limit(1);
+  const [profile] = await db.select().from(athleteProfileTable).where(eq(athleteProfileTable.userId, athleteUserId)).limit(1);
+
+  const recentActivities = await db.select()
+    .from(activitiesTable)
+    .where(eq(activitiesTable.userId, athleteUserId))
+    .orderBy(desc(activitiesTable.activityDate))
+    .limit(10);
+
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const last7 = await db.select()
+    .from(activitiesTable)
+    .where(and(
+      eq(activitiesTable.userId, athleteUserId),
+      gte(activitiesTable.activityDate, sevenDaysAgo.toISOString().slice(0, 10)),
+    ));
+  const weeklyDistanceKm = last7.reduce((sum, a) => sum + Number(a.distanceKm ?? 0), 0);
+
+  const alerts = await db.select()
+    .from(injuryAlertsTable)
+    .where(and(eq(injuryAlertsTable.userId, athleteUserId), eq(injuryAlertsTable.acknowledged, false)))
+    .orderBy(desc(injuryAlertsTable.createdAt))
+    .limit(5);
+
+  res.json({
+    userId: athleteUserId,
+    name: (profile?.name ?? `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim()) || "Athlete",
+    email: user?.email ?? null,
+    joinedAt: membership.joinedAt.toISOString(),
+    profile: profile ? {
+      age: profile.age,
+      fitnessLevel: profile.fitnessLevel,
+      primaryGoal: profile.primaryGoal,
+      weeklyMileageGoal: profile.weeklyMileageGoal != null ? Number(profile.weeklyMileageGoal) : null,
+      restingHeartRate: profile.restingHeartRate,
+      hrv: profile.hrv != null ? Number(profile.hrv) : null,
+      pr5k: profile.pr5k,
+      pr10k: profile.pr10k,
+      prHalf: profile.prHalf,
+      prMarathon: profile.prMarathon,
+      healthNotes: profile.healthNotes,
+    } : null,
+    weeklyDistanceKm,
+    recentActivities: recentActivities.map(a => ({
+      id: a.id,
+      type: a.type,
+      distanceKm: a.distanceKm != null ? Number(a.distanceKm) : null,
+      durationMinutes: a.durationMinutes,
+      avgHeartRate: a.avgHeartRate,
+      perceivedEffort: a.perceivedEffort,
+      activityDate: a.activityDate,
+    })),
+    alerts: alerts.map(al => ({
+      id: al.id,
+      riskLevel: al.riskLevel,
+      bodyPart: al.bodyPart,
+      message: al.message,
+      recommendation: al.recommendation,
+      createdAt: al.createdAt.toISOString(),
+    })),
+  });
 });
 
 export default router;
