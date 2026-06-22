@@ -109,16 +109,16 @@ function Steps({ current, labels }: { current: number; labels: string[] }) {
 // ── Landing ──────────────────────────────────────────────────────────────────
 
 const STATS = [
-  { value: "Track", label: "Every session" },
-  { value: "Monitor",  label: "Injury risk" },
-  { value: "Connect", label: "Athletes & coaches" },
+  { value: "Track",   label: "Every session",      color: "text-cyan-300",   bg: "bg-cyan-500/10 border-cyan-500/25" },
+  { value: "Monitor", label: "Injury risk",         color: "text-red-300",    bg: "bg-red-500/10 border-red-500/25" },
+  { value: "Connect", label: "Athletes & coaches",  color: "text-violet-300", bg: "bg-violet-500/10 border-violet-500/25" },
 ];
 
 const FEATURES = [
-  { icon: <Brain className="w-5 h-5" />, title: "AveraAI Coach",       desc: "Ask anything — pace strategy, recovery, race prep. Your AI coach answers in seconds." },
-  { icon: <ShieldCheck className="w-5 h-5" />, title: "Injury Risk Alerts",  desc: "Thrive flags dangerous mileage spikes, low HRV, and early overtraining before it becomes an injury." },
-  { icon: <Activity className="w-5 h-5" />, title: "Strava Auto-Sync",    desc: "Connect Strava once and every run appears in Thrive automatically — zero manual imports." },
-  { icon: <LineChart className="w-5 h-5" />, title: "Training Plans",      desc: "Personalised plans built around your goal, fitness level, and schedule — updated as you progress." },
+  { icon: <Brain className="w-5 h-5 text-violet-400" />,   iconBg: "bg-violet-500/15 border-violet-500/20", title: "AveraAI Coach",      desc: "Ask anything — pace strategy, recovery, race prep. Your AI coach answers in seconds." },
+  { icon: <ShieldCheck className="w-5 h-5 text-red-400" />, iconBg: "bg-red-500/15 border-red-500/20",      title: "Injury Risk Alerts", desc: "Thrive flags dangerous mileage spikes, low HRV, and early overtraining before it becomes an injury." },
+  { icon: <Activity className="w-5 h-5 text-orange-400" />, iconBg: "bg-orange-500/15 border-orange-500/20", title: "Strava Auto-Sync",   desc: "Connect Strava once and every run appears in Thrive automatically — zero manual imports." },
+  { icon: <LineChart className="w-5 h-5 text-blue-400" />,  iconBg: "bg-blue-500/15 border-blue-500/20",    title: "Training Plans",     desc: "Personalised plans built around your goal, fitness level, and schedule — updated as you progress." },
 ];
 
 function Landing({ onSelect }: { onSelect: (v: View) => void }) {
@@ -145,8 +145,8 @@ function Landing({ onSelect }: { onSelect: (v: View) => void }) {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-8">
         {STATS.map(s => (
-          <div key={s.label} className="rounded-xl bg-slate-800/40 border border-slate-700/50 py-4 px-2">
-            <p className="text-2xl font-extrabold text-white mb-0.5">{s.value}</p>
+          <div key={s.label} className={`rounded-xl border py-4 px-2 ${s.bg}`}>
+            <p className={`text-2xl font-extrabold mb-0.5 ${s.color}`}>{s.value}</p>
             <p className="text-[11px] text-slate-500">{s.label}</p>
           </div>
         ))}
@@ -172,8 +172,8 @@ function Landing({ onSelect }: { onSelect: (v: View) => void }) {
         <div className="px-5 py-4 border-b border-slate-800/60">
           <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-3">Meet AveraAI</p>
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-              <Bot className="w-5 h-5 text-slate-400" />
+            <div className="w-10 h-10 rounded-lg bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center shrink-0">
+              <Bot className="w-5 h-5 text-cyan-400" />
             </div>
             <div>
               <p className="text-sm font-bold text-white">AveraAI</p>
@@ -194,13 +194,15 @@ function Landing({ onSelect }: { onSelect: (v: View) => void }) {
           <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-3">What Thrive AI does</p>
           <div className="space-y-3">
             {[
-              { Icon: ShieldCheck, color: "text-slate-400", title: "Injury Risk Detection", desc: "Flags mileage spikes, HRV dips, and overtraining patterns before they cause an injury." },
-              { Icon: Dumbbell,    color: "text-slate-400", title: "Adaptive Training Plans", desc: "AI builds week-by-week plans around your goal, fitness level, and real progress." },
-              { Icon: LineChart,   color: "text-slate-400", title: "Load & Recovery Monitoring", desc: "Tracks cumulative fatigue vs. fitness to tell you when to push and when to rest." },
-              { Icon: Users,       color: "text-slate-400", title: "Coach Intelligence", desc: "Coaches get AI-powered roster summaries, per-athlete risk flags, and team-wide insights." },
-            ].map(({ Icon, color, title, desc }) => (
+              { Icon: ShieldCheck, color: "text-red-400",    bg: "bg-red-500/10 border-red-500/20",      title: "Injury Risk Detection",     desc: "Flags mileage spikes, HRV dips, and overtraining patterns before they cause an injury." },
+              { Icon: Dumbbell,    color: "text-amber-400",  bg: "bg-amber-500/10 border-amber-500/20",  title: "Adaptive Training Plans",   desc: "AI builds week-by-week plans around your goal, fitness level, and real progress." },
+              { Icon: LineChart,   color: "text-blue-400",   bg: "bg-blue-500/10 border-blue-500/20",    title: "Load & Recovery Monitoring",desc: "Tracks cumulative fatigue vs. fitness to tell you when to push and when to rest." },
+              { Icon: Users,       color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20",title: "Coach Intelligence",         desc: "Coaches get AI-powered roster summaries, per-athlete risk flags, and team-wide insights." },
+            ].map(({ Icon, color, bg, title, desc }) => (
               <div key={title} className="flex items-start gap-3">
-                <Icon className={`w-4 h-4 ${color} shrink-0 mt-0.5`} />
+                <div className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 mt-0.5 ${bg}`}>
+                  <Icon className={`w-3.5 h-3.5 ${color}`} />
+                </div>
                 <div>
                   <p className="text-xs font-semibold text-white">{title}</p>
                   <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5">{desc}</p>
@@ -237,7 +239,7 @@ function Landing({ onSelect }: { onSelect: (v: View) => void }) {
       <div className="grid grid-cols-2 gap-3 mb-8 text-left">
         {FEATURES.map(f => (
           <div key={f.title} className="rounded-xl bg-slate-800/30 border border-slate-700/40 p-4">
-            <div className="text-xl mb-2">{f.icon}</div>
+            <div className={`w-8 h-8 rounded-lg border flex items-center justify-center mb-2.5 ${f.iconBg}`}>{f.icon}</div>
             <p className="text-sm font-semibold text-white mb-1">{f.title}</p>
             <p className="text-[11px] text-slate-500 leading-relaxed">{f.desc}</p>
           </div>
@@ -249,26 +251,30 @@ function Landing({ onSelect }: { onSelect: (v: View) => void }) {
 
       <div className="space-y-3 mb-6">
         <button onClick={() => onSelect("athlete")}
-          className="w-full text-left rounded-xl border border-slate-700/60 bg-slate-800/30 hover:border-slate-500 hover:bg-slate-800/50 p-5 transition-all group">
+          className="w-full text-left rounded-xl border border-cyan-500/30 bg-cyan-500/5 hover:border-cyan-400/60 hover:bg-cyan-500/10 p-5 transition-all group">
           <div className="flex items-center gap-4">
-            <User className="w-6 h-6 text-slate-400 group-hover:text-cyan-400 transition-colors" />
+            <div className="w-9 h-9 rounded-lg bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center shrink-0">
+              <User className="w-5 h-5 text-cyan-400" />
+            </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-white group-hover:text-cyan-300 transition-colors">Student Athlete</p>
+              <p className="text-sm font-semibold text-white group-hover:text-cyan-200 transition-colors">Student Athlete</p>
               <p className="text-xs text-slate-500 mt-0.5">Track training · AI coach · Injury alerts · Training plans</p>
             </div>
-            <ChevronRight size={16} className="text-slate-600 group-hover:text-cyan-400 transition-colors" />
+            <ChevronRight size={16} className="text-cyan-500/50 group-hover:text-cyan-400 transition-colors" />
           </div>
         </button>
 
         <button onClick={() => onSelect("coach")}
-          className="w-full text-left rounded-xl border border-slate-700/60 bg-slate-800/30 hover:border-slate-500 hover:bg-slate-800/50 p-5 transition-all group">
+          className="w-full text-left rounded-xl border border-violet-500/30 bg-violet-500/5 hover:border-violet-400/60 hover:bg-violet-500/10 p-5 transition-all group">
           <div className="flex items-center gap-4">
-            <Users className="w-6 h-6 text-slate-400 group-hover:text-cyan-400 transition-colors" />
+            <div className="w-9 h-9 rounded-lg bg-violet-500/15 border border-violet-500/30 flex items-center justify-center shrink-0">
+              <Users className="w-5 h-5 text-violet-400" />
+            </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-white group-hover:text-cyan-300 transition-colors">Coach</p>
+              <p className="text-sm font-semibold text-white group-hover:text-violet-200 transition-colors">Coach</p>
               <p className="text-xs text-slate-500 mt-0.5">Team roster · Workload monitoring · Risk dashboard · Alerts</p>
             </div>
-            <ChevronRight size={16} className="text-slate-600 group-hover:text-cyan-400 transition-colors" />
+            <ChevronRight size={16} className="text-violet-500/50 group-hover:text-violet-400 transition-colors" />
           </div>
         </button>
       </div>

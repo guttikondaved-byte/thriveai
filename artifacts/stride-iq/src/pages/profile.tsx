@@ -142,10 +142,10 @@ function FieldLabel({ label, guideKey, onHelp }: { label: string; guideKey: Guid
 }
 
 function DeleteAccountModal({ onClose }: { onClose: () => void }) {
-  const [confirm, setConfirm] = useState("");
+  const [confirm, setConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
-  const ready = confirm === "DELETE";
+  const ready = confirm;
 
   async function handleDelete() {
     if (!ready) return;
@@ -175,18 +175,17 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div className="mb-5">
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
-            Type <span className="text-red-400 font-bold font-mono">DELETE</span> to confirm
-          </label>
+        <label className="flex items-start gap-3 cursor-pointer mb-5 group">
           <input
-            className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder-slate-600 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition"
-            placeholder="DELETE"
-            value={confirm}
-            onChange={e => setConfirm(e.target.value)}
-            autoFocus
+            type="checkbox"
+            checked={confirm}
+            onChange={e => setConfirm(e.target.checked)}
+            className="mt-0.5 w-4 h-4 rounded border-slate-600 bg-slate-800 accent-red-500 cursor-pointer shrink-0"
           />
-        </div>
+          <span className="text-sm text-slate-300 leading-snug group-hover:text-white transition-colors">
+            I understand this is permanent and cannot be undone
+          </span>
+        </label>
 
         {err && (
           <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2.5">
