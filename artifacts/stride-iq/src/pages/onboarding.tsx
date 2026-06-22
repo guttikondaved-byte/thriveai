@@ -41,7 +41,6 @@ const ATHLETE_GOALS = [
   "Improve race times",
   "Stay injury-free",
   "Build base mileage",
-  "Qualify for Boston",
 ];
 
 const COACHING_EXP: { value: CoachExp; label: string; desc: string }[] = [
