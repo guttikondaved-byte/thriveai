@@ -2,3 +2,4 @@
 - [Thrive distance units](thrive-distance-units.md) — distance_km/weeklyDistanceKm fields store MILES not km; never multiply by 0.621371.
 - [esbuild nullish-coalescing pitfall](esbuild-nullish.md) — esbuild rejects `x ?? y || z` without parens; always write `(x ?? y) || z`.
 - [DESIGN subagent refactor verification](design-subagent-refactor-verification.md) — after an emoji→icon UI refresh, check for missing module-scope icon imports + data-array key casing mismatches; tsc misses them (halts on TS6306).
+- [Thrive JIT migration race](thrive-jit-migration-race.md) — login fires many parallel requests; pre-Clerk→Clerk user migration must use advisory lock + recheck or it 401-loops on users_email_unique.

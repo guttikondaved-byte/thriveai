@@ -33,6 +33,18 @@ async function migrateUserToClerkId(
   profileImageUrl: string | null,
 ) {
   await db.transaction(async (tx) => {
+    // 0. Serialize concurrent migrations for the same email. On login the client
+    //    fires many requests at once; without this lock they all race to migrate
+    //    the same account and every transaction conflicts and rolls back.
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${email ?? oldId}))`);
+
+    // Re-check inside the lock: another request may have already completed the
+    // migration while we were waiting. If so, there is nothing left to do.
+    const alreadyMigrated = await tx.execute(
+      sql`SELECT 1 FROM users WHERE id = ${clerkUserId}`,
+    );
+    if (alreadyMigrated.rows.length > 0) return;
+
     const tempEmail = `migrated_${oldId}@placeholder.local`;
     // 1. Free the email on the old row so we can insert the new one
     await tx.execute(sql`UPDATE users SET email = ${tempEmail} WHERE id = ${oldId}`);
@@ -40,6 +52,7 @@ async function migrateUserToClerkId(
     await tx.execute(sql`
       INSERT INTO users (id, email, first_name, last_name, profile_image_url, created_at, updated_at)
       VALUES (${clerkUserId}, ${email}, ${firstName}, ${lastName}, ${profileImageUrl}, NOW(), NOW())
+      ON CONFLICT (id) DO NOTHING
     `);
     // 3. Reparent all child tables (FK now valid because clerkUserId exists in users)
     await tx.execute(sql`UPDATE athlete_profile SET user_id = ${clerkUserId} WHERE user_id = ${oldId}`);
