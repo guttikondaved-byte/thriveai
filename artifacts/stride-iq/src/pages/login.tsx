@@ -55,6 +55,18 @@ async function register(email: string, password: string, firstName: string, last
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password, name }),
   });
+  if (res.status === 409) {
+    // Email already exists — try logging in with the same credentials
+    const loginRes = await fetch("/api/auth/login", {
+      method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!loginRes.ok) {
+      throw new Error("This email is already registered. Check your password or use the Log in option.");
+    }
+    return; // logged in successfully
+  }
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? "Registration failed");
 }
@@ -233,7 +245,12 @@ function AthleteSignup({ onBack }: { onBack: () => void }) {
     setErr("");
     setLoading(true);
     try {
-      await register(email, password, firstName, lastName);
+      // If already authenticated (e.g. returning to sign-up after previous attempt), skip registration
+      const authCheck = await fetch("/api/auth/user", { credentials: "include" });
+      const alreadyLoggedIn = authCheck.ok && authCheck.status !== 401;
+      if (!alreadyLoggedIn) {
+        await register(email, password, firstName, lastName);
+      }
       await saveProfile({
         name: [firstName, lastName].filter(Boolean).join(" "),
         userRole: "athlete",
@@ -359,7 +376,12 @@ function AthleteSignup({ onBack }: { onBack: () => void }) {
         </div>
       )}
 
-      {err && <p className="text-red-400 text-xs mt-3">{err}</p>}
+      {err && (
+        <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3">
+          <span className="text-red-400 text-base leading-none mt-0.5">⚠️</span>
+          <p className="text-red-300 text-sm leading-snug">{err}</p>
+        </div>
+      )}
 
       <div className="flex items-center justify-between mt-6">
         {step > 0 ? (
@@ -427,7 +449,11 @@ function CoachSignup({ onBack }: { onBack: () => void }) {
     if (!validateStep1()) return;
     setLoading(true);
     try {
-      await register(email, password, firstName, lastName);
+      const authCheck = await fetch("/api/auth/user", { credentials: "include" });
+      const alreadyLoggedIn = authCheck.ok && authCheck.status !== 401;
+      if (!alreadyLoggedIn) {
+        await register(email, password, firstName, lastName);
+      }
       await saveProfile({
         name: [firstName, lastName].filter(Boolean).join(" "),
         userRole: "coach",
@@ -531,7 +557,12 @@ function CoachSignup({ onBack }: { onBack: () => void }) {
         </div>
       )}
 
-      {err && <p className="text-red-400 text-xs mt-3">{err}</p>}
+      {err && (
+        <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3">
+          <span className="text-red-400 text-base leading-none mt-0.5">⚠️</span>
+          <p className="text-red-300 text-sm leading-snug">{err}</p>
+        </div>
+      )}
 
       <div className="flex items-center justify-between mt-6">
         {step > 0 ? (
@@ -615,7 +646,12 @@ function LoginForm({ onBack }: { onBack: () => void }) {
           </div>
         </div>
 
-        {err && <p className="text-red-400 text-xs">{err}</p>}
+        {err && (
+          <div className="flex items-start gap-2.5 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3">
+            <span className="text-red-400 text-base leading-none mt-0.5">⚠️</span>
+            <p className="text-red-300 text-sm leading-snug">{err}</p>
+          </div>
+        )}
 
         <button type="submit" disabled={loading}
           className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold text-sm transition-colors disabled:opacity-60 mt-1">
