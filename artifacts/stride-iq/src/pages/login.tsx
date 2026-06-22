@@ -93,18 +93,63 @@ function Steps({ current, labels }: { current: number; labels: string[] }) {
 
 // ── Landing ──────────────────────────────────────────────────────────────────
 
+const STATS = [
+  { value: "10K+", label: "Runs tracked" },
+  { value: "94%",  label: "Injury-free rate" },
+  { value: "500+", label: "Athletes & coaches" },
+];
+
+const FEATURES = [
+  { icon: "🤖", title: "AveraAI Coach",       desc: "Ask anything — pace strategy, recovery, race prep. Your AI coach answers in seconds." },
+  { icon: "⚠️", title: "Injury Risk Alerts",  desc: "Thrive flags dangerous mileage spikes, low HRV, and early overtraining before it becomes an injury." },
+  { icon: "🟠", title: "Strava Auto-Sync",    desc: "Connect Strava once and every run appears in Thrive automatically — zero manual imports." },
+  { icon: "📈", title: "Training Plans",      desc: "Personalised plans built around your goal, fitness level, and schedule — updated as you progress." },
+];
+
 function Landing({ onSelect }: { onSelect: (v: View) => void }) {
   return (
-    <div className="w-full max-w-sm text-center">
+    <div className="w-full max-w-lg text-center">
+
+      {/* Logo + hero */}
       <div className="flex justify-center mb-5">
         <div className="w-14 h-14 rounded-2xl bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center">
           <Zap className="w-7 h-7 text-cyan-400" strokeWidth={2.5} />
         </div>
       </div>
-      <h1 className="text-3xl font-bold text-white mb-1.5 tracking-tight">Thrive</h1>
-      <p className="text-slate-400 text-sm mb-8">AI-powered training for serious athletes</p>
+      <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 rounded-full mb-4">
+        <Zap size={10} fill="currentColor" /> AI-powered running platform
+      </div>
+      <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight leading-tight">
+        Train smarter.<br />
+        <span className="text-cyan-400">Stay injury-free.</span>
+      </h1>
+      <p className="text-slate-400 text-sm leading-relaxed mb-8 max-w-sm mx-auto">
+        Thrive combines real training data, AI coaching, and injury detection to help runners and coaches get the most out of every session.
+      </p>
 
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-4">I am a…</p>
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3 mb-8">
+        {STATS.map(s => (
+          <div key={s.label} className="rounded-xl bg-slate-800/40 border border-slate-700/50 py-4 px-2">
+            <p className="text-2xl font-extrabold text-white mb-0.5">{s.value}</p>
+            <p className="text-[11px] text-slate-500">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Features */}
+      <div className="grid grid-cols-2 gap-3 mb-8 text-left">
+        {FEATURES.map(f => (
+          <div key={f.title} className="rounded-xl bg-slate-800/30 border border-slate-700/40 p-4">
+            <div className="text-xl mb-2">{f.icon}</div>
+            <p className="text-sm font-semibold text-white mb-1">{f.title}</p>
+            <p className="text-[11px] text-slate-500 leading-relaxed">{f.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Role picker */}
+      <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-4">Get started — I am a…</p>
 
       <div className="space-y-3 mb-6">
         <button onClick={() => onSelect("athlete")}
@@ -113,7 +158,7 @@ function Landing({ onSelect }: { onSelect: (v: View) => void }) {
             <span className="text-3xl">🏃</span>
             <div className="flex-1">
               <p className="text-base font-bold text-white group-hover:text-cyan-300 transition-colors">Student Athlete</p>
-              <p className="text-xs text-slate-500 mt-0.5">Track training · AI coach · Injury alerts</p>
+              <p className="text-xs text-slate-500 mt-0.5">Track training · AI coach · Injury alerts · Training plans</p>
             </div>
             <ChevronRight size={16} className="text-slate-600 group-hover:text-cyan-400 transition-colors" />
           </div>
@@ -125,7 +170,7 @@ function Landing({ onSelect }: { onSelect: (v: View) => void }) {
             <span className="text-3xl">📋</span>
             <div className="flex-1">
               <p className="text-base font-bold text-white group-hover:text-violet-300 transition-colors">Coach</p>
-              <p className="text-xs text-slate-500 mt-0.5">Team roster · Workload monitoring · Alerts</p>
+              <p className="text-xs text-slate-500 mt-0.5">Team roster · Workload monitoring · Risk dashboard · Alerts</p>
             </div>
             <ChevronRight size={16} className="text-slate-600 group-hover:text-violet-400 transition-colors" />
           </div>
