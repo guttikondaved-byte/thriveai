@@ -19,4 +19,9 @@ export interface AthleteProfileInput {
   hrv?: number;
   selectedCoach?: AthleteProfileInputSelectedCoach;
   userRole?: AthleteProfileInputUserRole;
+  pr5k?: string;
+  pr10k?: string;
+  prHalf?: string;
+  prMarathon?: string;
+  healthNotes?: string;
 }

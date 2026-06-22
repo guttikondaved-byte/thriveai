@@ -30,6 +30,11 @@ export const GetAthleteProfileResponse = zod.object({
   "hrv": zod.number().nullish(),
   "selectedCoach": zod.union([zod.literal('avera'),zod.literal('kai'),zod.literal('nova'),zod.literal('rex'),zod.literal(null)]).nullish(),
   "userRole": zod.union([zod.literal('athlete'),zod.literal('coach'),zod.literal(null)]).nullish(),
+  "pr5k": zod.string().nullish(),
+  "pr10k": zod.string().nullish(),
+  "prHalf": zod.string().nullish(),
+  "prMarathon": zod.string().nullish(),
+  "healthNotes": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -46,7 +51,12 @@ export const UpdateAthleteProfileBody = zod.object({
   "restingHeartRate": zod.number().optional(),
   "hrv": zod.number().optional(),
   "selectedCoach": zod.enum(['avera', 'kai', 'nova', 'rex']).optional(),
-  "userRole": zod.enum(['athlete', 'coach']).optional()
+  "userRole": zod.enum(['athlete', 'coach']).optional(),
+  "pr5k": zod.string().optional(),
+  "pr10k": zod.string().optional(),
+  "prHalf": zod.string().optional(),
+  "prMarathon": zod.string().optional(),
+  "healthNotes": zod.string().optional()
 })
 
 export const UpdateAthleteProfileResponse = zod.object({
@@ -60,6 +70,11 @@ export const UpdateAthleteProfileResponse = zod.object({
   "hrv": zod.number().nullish(),
   "selectedCoach": zod.union([zod.literal('avera'),zod.literal('kai'),zod.literal('nova'),zod.literal('rex'),zod.literal(null)]).nullish(),
   "userRole": zod.union([zod.literal('athlete'),zod.literal('coach'),zod.literal(null)]).nullish(),
+  "pr5k": zod.string().nullish(),
+  "pr10k": zod.string().nullish(),
+  "prHalf": zod.string().nullish(),
+  "prMarathon": zod.string().nullish(),
+  "healthNotes": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -320,6 +335,73 @@ export const SendOpenaiMessageParams = zod.object({
 
 export const SendOpenaiMessageBody = zod.object({
   "content": zod.string()
+})
+
+
+/**
+ * @summary List athlete injury history
+ */
+export const ListInjuriesResponseItem = zod.object({
+  "id": zod.number(),
+  "profileId": zod.number().nullish(),
+  "injuryType": zod.string(),
+  "bodyPart": zod.string(),
+  "dateOccurred": zod.coerce.date(),
+  "dateRecovered": zod.coerce.date().nullish(),
+  "status": zod.enum(['active', 'recovered']),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListInjuriesResponse = zod.array(ListInjuriesResponseItem)
+
+
+/**
+ * @summary Log a new injury
+ */
+export const CreateInjuryBody = zod.object({
+  "injuryType": zod.string(),
+  "bodyPart": zod.string(),
+  "dateOccurred": zod.coerce.date(),
+  "dateRecovered": zod.coerce.date().optional(),
+  "status": zod.enum(['active', 'recovered']),
+  "notes": zod.string().optional()
+})
+
+
+/**
+ * @summary Update injury status
+ */
+export const UpdateInjuryParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateInjuryBody = zod.object({
+  "injuryType": zod.string(),
+  "bodyPart": zod.string(),
+  "dateOccurred": zod.coerce.date(),
+  "dateRecovered": zod.coerce.date().optional(),
+  "status": zod.enum(['active', 'recovered']),
+  "notes": zod.string().optional()
+})
+
+export const UpdateInjuryResponse = zod.object({
+  "id": zod.number(),
+  "profileId": zod.number().nullish(),
+  "injuryType": zod.string(),
+  "bodyPart": zod.string(),
+  "dateOccurred": zod.coerce.date(),
+  "dateRecovered": zod.coerce.date().nullish(),
+  "status": zod.enum(['active', 'recovered']),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete an injury record
+ */
+export const DeleteInjuryParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 

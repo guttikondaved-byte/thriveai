@@ -6,6 +6,7 @@ import plansRouter from "./plans";
 import alertsRouter from "./alerts";
 import dashboardRouter from "./dashboard";
 import openaiRouter from "./openai";
+import injuriesRouter from "./injuries";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(plansRouter);
 router.use(alertsRouter);
 router.use(dashboardRouter);
 router.use(openaiRouter);
+router.use(injuriesRouter);
 
 export default router;

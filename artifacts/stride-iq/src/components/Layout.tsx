@@ -1,11 +1,12 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Activity, Calendar, AlertTriangle, Bot, User, Zap } from "lucide-react";
+import { LayoutDashboard, Activity, Calendar, AlertTriangle, Bot, User, Zap, HeartPulse } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/activities", label: "Activities", icon: Activity },
   { href: "/plans", label: "Training Plans", icon: Calendar },
   { href: "/alerts", label: "Injury Alerts", icon: AlertTriangle },
+  { href: "/history", label: "Health & History", icon: HeartPulse },
   { href: "/coach", label: "AveraAI", icon: Bot },
   { href: "/profile", label: "Profile", icon: User },
 ];

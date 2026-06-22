@@ -13,6 +13,11 @@ export const athleteProfileTable = pgTable("athlete_profile", {
   hrv: numeric("hrv", { precision: 6, scale: 2 }),
   selectedCoach: text("selected_coach"),
   userRole: text("user_role"),
+  pr5k: text("pr_5k"),
+  pr10k: text("pr_10k"),
+  prHalf: text("pr_half"),
+  prMarathon: text("pr_marathon"),
+  healthNotes: text("health_notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

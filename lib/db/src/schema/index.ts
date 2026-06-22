@@ -4,3 +4,4 @@ export * from "./trainingPlans";
 export * from "./alerts";
 export * from "./conversations";
 export * from "./messages";
+export * from "./injuries";

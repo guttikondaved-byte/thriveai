@@ -21,6 +21,8 @@ tags:
     description: Dashboard summaries
   - name: openai
     description: Avera AI coach chat
+  - name: injuries
+    description: Athlete injury history
 paths:
   /healthz:
     get:
@@ -357,6 +359,80 @@ paths:
           content:
             text/event-stream: {}
 
+  /injuries:
+    get:
+      operationId: listInjuries
+      tags: [injuries]
+      summary: List athlete injury history
+      responses:
+        "200":
+          description: List of injuries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Injury"
+    post:
+      operationId: createInjury
+      tags: [injuries]
+      summary: Log a new injury
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InjuryInput"
+      responses:
+        "201":
+          description: Created injury
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Injury"
+
+  /injuries/{id}:
+    patch:
+      operationId: updateInjury
+      tags: [injuries]
+      summary: Update injury status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InjuryInput"
+      responses:
+        "200":
+          description: Updated injury
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Injury"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteInjury
+      tags: [injuries]
+      summary: Delete an injury record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
 components:
   schemas:
     HealthStatus:
@@ -393,6 +469,16 @@ components:
         userRole:
           type: ["string", "null"]
           enum: [athlete, coach, null]
+        pr5k:
+          type: ["string", "null"]
+        pr10k:
+          type: ["string", "null"]
+        prHalf:
+          type: ["string", "null"]
+        prMarathon:
+          type: ["string", "null"]
+        healthNotes:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -427,6 +513,73 @@ components:
         userRole:
           type: string
           enum: [athlete, coach]
+        pr5k:
+          type: string
+        pr10k:
+          type: string
+        prHalf:
+          type: string
+        prMarathon:
+          type: string
+        healthNotes:
+          type: string
+
+    Injury:
+      type: object
+      properties:
+        id:
+          type: integer
+        profileId:
+          type: ["integer", "null"]
+        injuryType:
+          type: string
+        bodyPart:
+          type: string
+        dateOccurred:
+          type: string
+          format: date
+        dateRecovered:
+          type: ["string", "null"]
+          format: date
+        status:
+          type: string
+          enum: [active, recovered]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - injuryType
+        - bodyPart
+        - dateOccurred
+        - status
+        - createdAt
+
+    InjuryInput:
+      type: object
+      properties:
+        injuryType:
+          type: string
+        bodyPart:
+          type: string
+        dateOccurred:
+          type: string
+          format: date
+        dateRecovered:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [active, recovered]
+        notes:
+          type: string
+      required:
+        - injuryType
+        - bodyPart
+        - dateOccurred
+        - status
 
     Activity:
       type: object

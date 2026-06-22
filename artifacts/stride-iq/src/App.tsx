@@ -9,6 +9,7 @@ import Activities from "@/pages/activities";
 import Plans from "@/pages/plans";
 import PlanDetail from "@/pages/plan-detail";
 import Alerts from "@/pages/alerts";
+import History from "@/pages/history";
 import Coach from "@/pages/coach";
 import Profile from "@/pages/profile";
 import Onboarding from "@/pages/onboarding";
@@ -53,6 +54,7 @@ function AthleteRouter() {
         <Route path="/plans" component={Plans} />
         <Route path="/plans/:id" component={PlanDetail} />
         <Route path="/alerts" component={Alerts} />
+        <Route path="/history" component={History} />
         <Route path="/coach" component={Coach} />
         <Route path="/profile" component={Profile} />
         <Route component={NotFound} />

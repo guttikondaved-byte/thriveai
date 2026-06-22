@@ -26,5 +26,15 @@ export interface AthleteProfile {
   selectedCoach?: AthleteProfileSelectedCoach;
   /** @nullable */
   userRole?: AthleteProfileUserRole;
+  /** @nullable */
+  pr5k?: string | null;
+  /** @nullable */
+  pr10k?: string | null;
+  /** @nullable */
+  prHalf?: string | null;
+  /** @nullable */
+  prMarathon?: string | null;
+  /** @nullable */
+  healthNotes?: string | null;
   createdAt: Date;
 }

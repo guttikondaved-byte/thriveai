@@ -60,6 +60,16 @@ export interface AthleteProfile {
   selectedCoach?: AthleteProfileSelectedCoach;
   /** @nullable */
   userRole?: AthleteProfileUserRole;
+  /** @nullable */
+  pr5k?: string | null;
+  /** @nullable */
+  pr10k?: string | null;
+  /** @nullable */
+  prHalf?: string | null;
+  /** @nullable */
+  prMarathon?: string | null;
+  /** @nullable */
+  healthNotes?: string | null;
   createdAt: string;
 }
 
@@ -101,6 +111,51 @@ export interface AthleteProfileInput {
   hrv?: number;
   selectedCoach?: AthleteProfileInputSelectedCoach;
   userRole?: AthleteProfileInputUserRole;
+  pr5k?: string;
+  pr10k?: string;
+  prHalf?: string;
+  prMarathon?: string;
+  healthNotes?: string;
+}
+
+export type InjuryStatus = typeof InjuryStatus[keyof typeof InjuryStatus];
+
+
+export const InjuryStatus = {
+  active: 'active',
+  recovered: 'recovered',
+} as const;
+
+export interface Injury {
+  id: number;
+  /** @nullable */
+  profileId?: number | null;
+  injuryType: string;
+  bodyPart: string;
+  dateOccurred: string;
+  /** @nullable */
+  dateRecovered?: string | null;
+  status: InjuryStatus;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+}
+
+export type InjuryInputStatus = typeof InjuryInputStatus[keyof typeof InjuryInputStatus];
+
+
+export const InjuryInputStatus = {
+  active: 'active',
+  recovered: 'recovered',
+} as const;
+
+export interface InjuryInput {
+  injuryType: string;
+  bodyPart: string;
+  dateOccurred: string;
+  dateRecovered?: string;
+  status: InjuryInputStatus;
+  notes?: string;
 }
 
 export type ActivityType = typeof ActivityType[keyof typeof ActivityType];

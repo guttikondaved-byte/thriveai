@@ -26,7 +26,9 @@ import type {
   AthleteProfileInput,
   DashboardSummary,
   HealthStatus,
+  Injury,
   InjuryAlert,
+  InjuryInput,
   ListActivitiesParams,
   OpenaiConversation,
   OpenaiConversationInput,
@@ -1469,5 +1471,295 @@ export const useSendOpenaiMessage = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getSendOpenaiMessageMutationOptions(options));
+    }
+
+export const getListInjuriesUrl = () => {
+
+
+
+
+  return `/api/injuries`
+}
+
+/**
+ * @summary List athlete injury history
+ */
+export const listInjuries = async ( options?: RequestInit): Promise<Injury[]> => {
+
+  return customFetch<Injury[]>(getListInjuriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListInjuriesQueryKey = () => {
+    return [
+    `/api/injuries`
+    ] as const;
+    }
+
+
+export const getListInjuriesQueryOptions = <TData = Awaited<ReturnType<typeof listInjuries>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInjuries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInjuriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInjuries>>> = ({ signal }) => listInjuries({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listInjuries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListInjuriesQueryResult = NonNullable<Awaited<ReturnType<typeof listInjuries>>>
+export type ListInjuriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List athlete injury history
+ */
+
+export function useListInjuries<TData = Awaited<ReturnType<typeof listInjuries>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInjuries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListInjuriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateInjuryUrl = () => {
+
+
+
+
+  return `/api/injuries`
+}
+
+/**
+ * @summary Log a new injury
+ */
+export const createInjury = async (injuryInput: InjuryInput, options?: RequestInit): Promise<Injury> => {
+
+  return customFetch<Injury>(getCreateInjuryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      injuryInput,)
+  }
+);}
+
+
+
+
+export const getCreateInjuryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInjury>>, TError,{data: BodyType<InjuryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createInjury>>, TError,{data: BodyType<InjuryInput>}, TContext> => {
+
+const mutationKey = ['createInjury'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createInjury>>, {data: BodyType<InjuryInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createInjury(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateInjuryMutationResult = NonNullable<Awaited<ReturnType<typeof createInjury>>>
+    export type CreateInjuryMutationBody = BodyType<InjuryInput>
+    export type CreateInjuryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Log a new injury
+ */
+export const useCreateInjury = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInjury>>, TError,{data: BodyType<InjuryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createInjury>>,
+        TError,
+        {data: BodyType<InjuryInput>},
+        TContext
+      > => {
+      return useMutation(getCreateInjuryMutationOptions(options));
+    }
+
+export const getUpdateInjuryUrl = (id: number,) => {
+
+
+
+
+  return `/api/injuries/${id}`
+}
+
+/**
+ * @summary Update injury status
+ */
+export const updateInjury = async (id: number,
+    injuryInput: InjuryInput, options?: RequestInit): Promise<Injury> => {
+
+  return customFetch<Injury>(getUpdateInjuryUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      injuryInput,)
+  }
+);}
+
+
+
+
+export const getUpdateInjuryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateInjury>>, TError,{id: number;data: BodyType<InjuryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateInjury>>, TError,{id: number;data: BodyType<InjuryInput>}, TContext> => {
+
+const mutationKey = ['updateInjury'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateInjury>>, {id: number;data: BodyType<InjuryInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateInjury(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateInjuryMutationResult = NonNullable<Awaited<ReturnType<typeof updateInjury>>>
+    export type UpdateInjuryMutationBody = BodyType<InjuryInput>
+    export type UpdateInjuryMutationError = ErrorType<void>
+
+    /**
+ * @summary Update injury status
+ */
+export const useUpdateInjury = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateInjury>>, TError,{id: number;data: BodyType<InjuryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateInjury>>,
+        TError,
+        {id: number;data: BodyType<InjuryInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateInjuryMutationOptions(options));
+    }
+
+export const getDeleteInjuryUrl = (id: number,) => {
+
+
+
+
+  return `/api/injuries/${id}`
+}
+
+/**
+ * @summary Delete an injury record
+ */
+export const deleteInjury = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteInjuryUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteInjuryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteInjury>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteInjury>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteInjury'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteInjury>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteInjury(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteInjuryMutationResult = NonNullable<Awaited<ReturnType<typeof deleteInjury>>>
+
+    export type DeleteInjuryMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete an injury record
+ */
+export const useDeleteInjury = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteInjury>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteInjury>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteInjuryMutationOptions(options));
     }
 
