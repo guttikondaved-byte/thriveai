@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { HelpCircle, X, TriangleAlert, Trash2, User, Users, Zap, Clipboard } from "lucide-react";
+import { HelpCircle, X, TriangleAlert, Trash2 } from "lucide-react";
 
 const schema = z.object({
   name: z.string().min(1, "Required"),
@@ -225,22 +225,11 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-interface TeamInfo {
-  id: number;
-  name: string;
-  inviteCode: string;
-  memberCount: number;
-  createdAt: string;
-}
-
 function CoachProfile() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { data: profile, isLoading } = useGetAthleteProfile();
   const updateProfile = useUpdateAthleteProfile();
-  const [team, setTeam] = useState<TeamInfo | null>(null);
-  const [teamLoading, setTeamLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const form = useForm<CoachFormValues>({
@@ -257,16 +246,6 @@ function CoachProfile() {
     });
   }, [profile]);
 
-  useEffect(() => {
-    fetch("/api/teams/my", { credentials: "include" })
-      .then(r => r.ok ? r.json() : { team: null })
-      .then(data => {
-        setTeam(data.team);
-        setTeamLoading(false);
-      })
-      .catch(() => setTeamLoading(false));
-  }, []);
-
   function onSubmit(values: CoachFormValues) {
     updateProfile.mutate({
       data: {
@@ -280,13 +259,6 @@ function CoachProfile() {
         toast({ title: "Profile updated" });
       },
     });
-  }
-
-  function copyCode() {
-    if (!team) return;
-    navigator.clipboard.writeText(team.inviteCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   }
 
   if (isLoading) {
@@ -307,7 +279,7 @@ function CoachProfile() {
         {/* Header */}
         <div className="mb-2">
           <h1 className="text-2xl font-bold text-white">Coach Profile</h1>
-          <p className="text-sm text-slate-500 mt-1">Your coaching profile and team overview</p>
+          <p className="text-sm text-slate-500 mt-1">Your coaching profile</p>
         </div>
 
         {/* Profile Card */}
@@ -370,65 +342,6 @@ function CoachProfile() {
               </div>
             </form>
           </Form>
-        </div>
-
-        {/* Team Overview Card */}
-        <div className="bg-[#0d1529] border border-slate-800 rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-5">
-            <Users className="w-4 h-4 text-cyan-400" />
-            <h2 className="text-sm font-semibold text-white">Team Overview</h2>
-          </div>
-
-          {teamLoading ? (
-            <div className="h-20 bg-slate-800/30 rounded-lg animate-pulse" />
-          ) : team ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-cyan-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{team.name}</p>
-                    <p className="text-xs text-slate-500">{team.memberCount} athlete{team.memberCount !== 1 ? "s" : ""} on team</p>
-                  </div>
-                </div>
-                <span className="text-xs text-slate-500">{new Date(team.createdAt).toLocaleDateString()}</span>
-              </div>
-
-              <div className="bg-[#0a0f1e] border border-slate-800 rounded-lg p-4">
-                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-2">Invite Code</p>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 bg-[#0d1529] border border-slate-800 rounded-lg px-4 py-3 font-mono text-xl font-bold text-cyan-400 tracking-widest text-center">
-                    {team.inviteCode}
-                  </div>
-                  <button
-                    onClick={copyCode}
-                    className="px-4 py-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-sm font-medium hover:bg-cyan-500/20 transition-colors flex items-center gap-2"
-                  >
-                    <Clipboard className="w-4 h-4" />
-                    {copied ? "Copied" : "Copy"}
-                  </button>
-                </div>
-                <p className="text-xs text-slate-600 mt-2">Share this with athletes to join your team</p>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-[#0a0f1e] p-4">
-                <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center">
-                  <User className="w-4 h-4 text-slate-400" />
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Team ID</p>
-                  <p className="text-sm text-white font-mono">{team.id}</p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-6">
-              <p className="text-sm text-slate-500">No team yet</p>
-              <p className="text-xs text-slate-600 mt-1">Create your team from the Team page to start managing athletes</p>
-            </div>
-          )}
         </div>
 
         {/* Danger Zone */}
