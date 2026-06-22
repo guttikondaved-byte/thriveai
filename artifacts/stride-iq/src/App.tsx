@@ -11,6 +11,7 @@ import Layout from "@/components/Layout";
 import CoachLayout from "@/components/CoachLayout";
 import Dashboard from "@/pages/dashboard";
 import Activities from "@/pages/activities";
+import ActivityDetail from "@/pages/activity-detail";
 import Plans from "@/pages/plans";
 import PlanDetail from "@/pages/plan-detail";
 import Alerts from "@/pages/alerts";
@@ -251,6 +252,7 @@ function AthleteRouter() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/activities" component={Activities} />
+        <Route path="/activities/:id" component={ActivityDetail} />
         <Route path="/plans" component={Plans} />
         <Route path="/plans/:id" component={PlanDetail} />
         <Route path="/alerts" component={Alerts} />

@@ -7,8 +7,10 @@
  */
 
 export * from './activity';
+export * from './activityBestEffort';
 export * from './activityInput';
 export * from './activityInputType';
+export * from './activitySplit';
 export * from './activityType';
 export * from './athleteProfile';
 export * from './athleteProfileContactMethod';

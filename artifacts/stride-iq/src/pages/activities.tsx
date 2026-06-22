@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { useListActivities, useCreateActivity, getListActivitiesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, X, Upload, Zap, CheckCircle2, RefreshCw, Unlink } from "lucide-react";
@@ -334,13 +335,21 @@ export default function Activities() {
       ) : (
         <div className="bg-card border border-border rounded-lg divide-y divide-border">
           {activities.map(a => (
-            <div key={a.id} className="flex items-center px-5 py-4 hover:bg-secondary/40 transition-colors" data-testid={`activity-item-${a.id}`}>
+            <Link
+              key={a.id}
+              href={`/activities/${a.id}`}
+              className="flex items-center px-5 py-4 hover:bg-secondary/40 transition-colors cursor-pointer"
+              data-testid={`activity-item-${a.id}`}
+            >
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-1.5">
                   <span className={`text-[10px] px-2 py-0.5 rounded border font-semibold tracking-wide uppercase ${ACTIVITY_COLORS[a.type] ?? "text-muted-foreground bg-secondary border-border"}`}>
                     {ACTIVITY_LABELS[a.type] ?? a.type}
                   </span>
                   <span className="text-xs text-muted-foreground font-medium">{format(new Date(a.activityDate), "MMM d, yyyy")}</span>
+                  {a.stravaActivityId != null && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded border border-[#FC4C02]/30 bg-[#FC4C02]/10 text-[#FC4C02] font-semibold uppercase tracking-wide">Strava</span>
+                  )}
                 </div>
                 {a.notes && <p className="text-sm text-foreground/80 leading-relaxed">{a.notes}</p>}
               </div>
@@ -352,7 +361,7 @@ export default function Activities() {
                   <span className="text-xs">RPE {a.perceivedEffort}</span>
                 )}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

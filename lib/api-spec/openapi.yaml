@@ -916,11 +916,53 @@ components:
         - dateOccurred
         - status
 
+    ActivitySplit:
+      type: object
+      properties:
+        split:
+          type: integer
+        distance:
+          type: number
+        elapsedTime:
+          type: integer
+        movingTime:
+          type: integer
+        elevationDifference:
+          type: ["number", "null"]
+        averageSpeed:
+          type: number
+        averageHeartrate:
+          type: ["number", "null"]
+        paceZone:
+          type: ["integer", "null"]
+      required:
+        - split
+        - distance
+        - elapsedTime
+        - movingTime
+        - averageSpeed
+
+    ActivityBestEffort:
+      type: object
+      properties:
+        name:
+          type: string
+        elapsedTime:
+          type: integer
+        distance:
+          type: number
+      required:
+        - name
+        - elapsedTime
+        - distance
+
     Activity:
       type: object
       properties:
         id:
           type: integer
+        stravaActivityId:
+          type: ["integer", "null"]
         type:
           type: string
           enum: [easy_run, tempo_run, interval, long_run, race, cross_training, rest]
@@ -940,6 +982,62 @@ components:
         createdAt:
           type: string
           format: date-time
+        movingTimeSeconds:
+          type: ["integer", "null"]
+        elapsedTimeSeconds:
+          type: ["integer", "null"]
+        elevationGainM:
+          type: ["number", "null"]
+        elevHighM:
+          type: ["number", "null"]
+        elevLowM:
+          type: ["number", "null"]
+        maxHeartRate:
+          type: ["integer", "null"]
+        avgCadence:
+          type: ["number", "null"]
+        avgSpeed:
+          type: ["number", "null"]
+        maxSpeed:
+          type: ["number", "null"]
+        calories:
+          type: ["number", "null"]
+        sufferScore:
+          type: ["integer", "null"]
+        avgWatts:
+          type: ["number", "null"]
+        avgTemp:
+          type: ["integer", "null"]
+        achievementCount:
+          type: ["integer", "null"]
+        prCount:
+          type: ["integer", "null"]
+        kudosCount:
+          type: ["integer", "null"]
+        commentCount:
+          type: ["integer", "null"]
+        athleteCount:
+          type: ["integer", "null"]
+        gearName:
+          type: ["string", "null"]
+        startDateLocal:
+          type: ["string", "null"]
+        timezone:
+          type: ["string", "null"]
+        mapPolyline:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        workoutType:
+          type: ["integer", "null"]
+        splits:
+          type: ["array", "null"]
+          items:
+            $ref: "#/components/schemas/ActivitySplit"
+        bestEfforts:
+          type: ["array", "null"]
+          items:
+            $ref: "#/components/schemas/ActivityBestEffort"
       required:
         - id
         - type

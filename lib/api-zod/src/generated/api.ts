@@ -102,6 +102,7 @@ export const ListActivitiesQueryParams = zod.object({
 
 export const ListActivitiesResponseItem = zod.object({
   "id": zod.number(),
+  "stravaActivityId": zod.number().nullish(),
   "type": zod.enum(['easy_run', 'tempo_run', 'interval', 'long_run', 'race', 'cross_training', 'rest']),
   "distanceKm": zod.number().nullish(),
   "durationMinutes": zod.number().nullish(),
@@ -109,7 +110,46 @@ export const ListActivitiesResponseItem = zod.object({
   "perceivedEffort": zod.number().nullish(),
   "notes": zod.string().nullish(),
   "activityDate": zod.coerce.date(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "movingTimeSeconds": zod.number().nullish(),
+  "elapsedTimeSeconds": zod.number().nullish(),
+  "elevationGainM": zod.number().nullish(),
+  "elevHighM": zod.number().nullish(),
+  "elevLowM": zod.number().nullish(),
+  "maxHeartRate": zod.number().nullish(),
+  "avgCadence": zod.number().nullish(),
+  "avgSpeed": zod.number().nullish(),
+  "maxSpeed": zod.number().nullish(),
+  "calories": zod.number().nullish(),
+  "sufferScore": zod.number().nullish(),
+  "avgWatts": zod.number().nullish(),
+  "avgTemp": zod.number().nullish(),
+  "achievementCount": zod.number().nullish(),
+  "prCount": zod.number().nullish(),
+  "kudosCount": zod.number().nullish(),
+  "commentCount": zod.number().nullish(),
+  "athleteCount": zod.number().nullish(),
+  "gearName": zod.string().nullish(),
+  "startDateLocal": zod.string().nullish(),
+  "timezone": zod.string().nullish(),
+  "mapPolyline": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "workoutType": zod.number().nullish(),
+  "splits": zod.array(zod.object({
+  "split": zod.number(),
+  "distance": zod.number(),
+  "elapsedTime": zod.number(),
+  "movingTime": zod.number(),
+  "elevationDifference": zod.number().nullish(),
+  "averageSpeed": zod.number(),
+  "averageHeartrate": zod.number().nullish(),
+  "paceZone": zod.number().nullish()
+})).nullish(),
+  "bestEfforts": zod.array(zod.object({
+  "name": zod.string(),
+  "elapsedTime": zod.number(),
+  "distance": zod.number()
+})).nullish()
 })
 export const ListActivitiesResponse = zod.array(ListActivitiesResponseItem)
 
@@ -137,6 +177,7 @@ export const GetActivityParams = zod.object({
 
 export const GetActivityResponse = zod.object({
   "id": zod.number(),
+  "stravaActivityId": zod.number().nullish(),
   "type": zod.enum(['easy_run', 'tempo_run', 'interval', 'long_run', 'race', 'cross_training', 'rest']),
   "distanceKm": zod.number().nullish(),
   "durationMinutes": zod.number().nullish(),
@@ -144,7 +185,46 @@ export const GetActivityResponse = zod.object({
   "perceivedEffort": zod.number().nullish(),
   "notes": zod.string().nullish(),
   "activityDate": zod.coerce.date(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "movingTimeSeconds": zod.number().nullish(),
+  "elapsedTimeSeconds": zod.number().nullish(),
+  "elevationGainM": zod.number().nullish(),
+  "elevHighM": zod.number().nullish(),
+  "elevLowM": zod.number().nullish(),
+  "maxHeartRate": zod.number().nullish(),
+  "avgCadence": zod.number().nullish(),
+  "avgSpeed": zod.number().nullish(),
+  "maxSpeed": zod.number().nullish(),
+  "calories": zod.number().nullish(),
+  "sufferScore": zod.number().nullish(),
+  "avgWatts": zod.number().nullish(),
+  "avgTemp": zod.number().nullish(),
+  "achievementCount": zod.number().nullish(),
+  "prCount": zod.number().nullish(),
+  "kudosCount": zod.number().nullish(),
+  "commentCount": zod.number().nullish(),
+  "athleteCount": zod.number().nullish(),
+  "gearName": zod.string().nullish(),
+  "startDateLocal": zod.string().nullish(),
+  "timezone": zod.string().nullish(),
+  "mapPolyline": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "workoutType": zod.number().nullish(),
+  "splits": zod.array(zod.object({
+  "split": zod.number(),
+  "distance": zod.number(),
+  "elapsedTime": zod.number(),
+  "movingTime": zod.number(),
+  "elevationDifference": zod.number().nullish(),
+  "averageSpeed": zod.number(),
+  "averageHeartrate": zod.number().nullish(),
+  "paceZone": zod.number().nullish()
+})).nullish(),
+  "bestEfforts": zod.array(zod.object({
+  "name": zod.string(),
+  "elapsedTime": zod.number(),
+  "distance": zod.number()
+})).nullish()
 })
 
 
@@ -259,6 +339,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "currentPlanProgress": zod.number().nullish(),
   "recentActivities": zod.array(zod.object({
   "id": zod.number(),
+  "stravaActivityId": zod.number().nullish(),
   "type": zod.enum(['easy_run', 'tempo_run', 'interval', 'long_run', 'race', 'cross_training', 'rest']),
   "distanceKm": zod.number().nullish(),
   "durationMinutes": zod.number().nullish(),
@@ -266,7 +347,46 @@ export const GetDashboardSummaryResponse = zod.object({
   "perceivedEffort": zod.number().nullish(),
   "notes": zod.string().nullish(),
   "activityDate": zod.coerce.date(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "movingTimeSeconds": zod.number().nullish(),
+  "elapsedTimeSeconds": zod.number().nullish(),
+  "elevationGainM": zod.number().nullish(),
+  "elevHighM": zod.number().nullish(),
+  "elevLowM": zod.number().nullish(),
+  "maxHeartRate": zod.number().nullish(),
+  "avgCadence": zod.number().nullish(),
+  "avgSpeed": zod.number().nullish(),
+  "maxSpeed": zod.number().nullish(),
+  "calories": zod.number().nullish(),
+  "sufferScore": zod.number().nullish(),
+  "avgWatts": zod.number().nullish(),
+  "avgTemp": zod.number().nullish(),
+  "achievementCount": zod.number().nullish(),
+  "prCount": zod.number().nullish(),
+  "kudosCount": zod.number().nullish(),
+  "commentCount": zod.number().nullish(),
+  "athleteCount": zod.number().nullish(),
+  "gearName": zod.string().nullish(),
+  "startDateLocal": zod.string().nullish(),
+  "timezone": zod.string().nullish(),
+  "mapPolyline": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "workoutType": zod.number().nullish(),
+  "splits": zod.array(zod.object({
+  "split": zod.number(),
+  "distance": zod.number(),
+  "elapsedTime": zod.number(),
+  "movingTime": zod.number(),
+  "elevationDifference": zod.number().nullish(),
+  "averageSpeed": zod.number(),
+  "averageHeartrate": zod.number().nullish(),
+  "paceZone": zod.number().nullish()
+})).nullish(),
+  "bestEfforts": zod.array(zod.object({
+  "name": zod.string(),
+  "elapsedTime": zod.number(),
+  "distance": zod.number()
+})).nullish()
 })),
   "hrvTrend": zod.number().nullish(),
   "trainingLoad": zod.enum(['low', 'moderate', 'high', 'very_high'])

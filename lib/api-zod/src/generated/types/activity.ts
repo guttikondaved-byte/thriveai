@@ -5,10 +5,14 @@
  * Thrive API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ActivityBestEffort } from './activityBestEffort';
+import type { ActivitySplit } from './activitySplit';
 import type { ActivityType } from './activityType';
 
 export interface Activity {
   id: number;
+  /** @nullable */
+  stravaActivityId?: number | null;
   type: ActivityType;
   /** @nullable */
   distanceKm?: number | null;
@@ -22,4 +26,56 @@ export interface Activity {
   notes?: string | null;
   activityDate: Date;
   createdAt: Date;
+  /** @nullable */
+  movingTimeSeconds?: number | null;
+  /** @nullable */
+  elapsedTimeSeconds?: number | null;
+  /** @nullable */
+  elevationGainM?: number | null;
+  /** @nullable */
+  elevHighM?: number | null;
+  /** @nullable */
+  elevLowM?: number | null;
+  /** @nullable */
+  maxHeartRate?: number | null;
+  /** @nullable */
+  avgCadence?: number | null;
+  /** @nullable */
+  avgSpeed?: number | null;
+  /** @nullable */
+  maxSpeed?: number | null;
+  /** @nullable */
+  calories?: number | null;
+  /** @nullable */
+  sufferScore?: number | null;
+  /** @nullable */
+  avgWatts?: number | null;
+  /** @nullable */
+  avgTemp?: number | null;
+  /** @nullable */
+  achievementCount?: number | null;
+  /** @nullable */
+  prCount?: number | null;
+  /** @nullable */
+  kudosCount?: number | null;
+  /** @nullable */
+  commentCount?: number | null;
+  /** @nullable */
+  athleteCount?: number | null;
+  /** @nullable */
+  gearName?: string | null;
+  /** @nullable */
+  startDateLocal?: string | null;
+  /** @nullable */
+  timezone?: string | null;
+  /** @nullable */
+  mapPolyline?: string | null;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  workoutType?: number | null;
+  /** @nullable */
+  splits?: ActivitySplit[] | null;
+  /** @nullable */
+  bestEfforts?: ActivityBestEffort[] | null;
 }

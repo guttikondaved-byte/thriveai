@@ -91,13 +91,53 @@ export async function syncStravaActivity(
     return;
   }
 
+  type StravaSplit = {
+    split: number;
+    distance: number;
+    elapsed_time: number;
+    moving_time: number;
+    elevation_difference: number | null;
+    average_speed: number;
+    average_heartrate?: number | null;
+    pace_zone?: number | null;
+  };
+  type StravaBestEffort = {
+    name: string;
+    elapsed_time: number;
+    distance: number;
+  };
   const act = (await resp.json()) as {
     type: string;
+    sport_type?: string;
     distance: number;
     moving_time: number;
+    elapsed_time?: number;
     average_heartrate?: number;
+    max_heartrate?: number;
+    average_cadence?: number;
+    average_speed?: number;
+    max_speed?: number;
+    average_watts?: number;
+    calories?: number;
+    suffer_score?: number;
+    average_temp?: number;
+    total_elevation_gain?: number;
+    elev_high?: number;
+    elev_low?: number;
+    achievement_count?: number;
+    pr_count?: number;
+    kudos_count?: number;
+    comment_count?: number;
+    athlete_count?: number;
+    workout_type?: number | null;
     name?: string;
+    description?: string;
     start_date_local?: string;
+    timezone?: string;
+    gear?: { name?: string } | null;
+    map?: { summary_polyline?: string; polyline?: string } | null;
+    splits_standard?: StravaSplit[];
+    best_efforts?: StravaBestEffort[];
   };
 
   // Only import running activities — skip rides, swims, weights, yoga, etc.
@@ -112,6 +152,34 @@ export async function syncStravaActivity(
     ? act.start_date_local.substring(0, 10)
     : new Date().toISOString().substring(0, 10);
 
+  const num = (v: number | undefined | null): string | undefined =>
+    v === undefined || v === null ? undefined : String(v);
+  const intVal = (v: number | undefined | null): number | undefined =>
+    v === undefined || v === null ? undefined : Math.round(v);
+
+  const splits = act.splits_standard?.length
+    ? act.splits_standard.map((s) => ({
+        split: s.split,
+        distance: s.distance,
+        elapsedTime: s.elapsed_time,
+        movingTime: s.moving_time,
+        elevationDifference: s.elevation_difference ?? null,
+        averageSpeed: s.average_speed,
+        averageHeartrate: s.average_heartrate ?? null,
+        paceZone: s.pace_zone ?? null,
+      }))
+    : undefined;
+
+  const bestEfforts = act.best_efforts?.length
+    ? act.best_efforts.map((b) => ({
+        name: b.name,
+        elapsedTime: b.elapsed_time,
+        distance: b.distance,
+      }))
+    : undefined;
+
+  const polyline = (act.map?.summary_polyline ?? act.map?.polyline) || undefined;
+
   await db.insert(activitiesTable).values({
     userId,
     stravaActivityId: BigInt(stravaActivityId),
@@ -121,6 +189,32 @@ export async function syncStravaActivity(
     ...(act.average_heartrate ? { avgHeartRate: Math.round(act.average_heartrate) } : {}),
     ...(act.name ? { notes: act.name } : {}),
     activityDate,
+    ...(act.moving_time ? { movingTimeSeconds: act.moving_time } : {}),
+    ...(act.elapsed_time ? { elapsedTimeSeconds: act.elapsed_time } : {}),
+    ...(num(act.total_elevation_gain) ? { elevationGainM: num(act.total_elevation_gain) } : {}),
+    ...(num(act.elev_high) ? { elevHighM: num(act.elev_high) } : {}),
+    ...(num(act.elev_low) ? { elevLowM: num(act.elev_low) } : {}),
+    ...(intVal(act.max_heartrate) ? { maxHeartRate: intVal(act.max_heartrate) } : {}),
+    ...(num(act.average_cadence) ? { avgCadence: num(act.average_cadence) } : {}),
+    ...(num(act.average_speed) ? { avgSpeed: num(act.average_speed) } : {}),
+    ...(num(act.max_speed) ? { maxSpeed: num(act.max_speed) } : {}),
+    ...(num(act.calories) ? { calories: num(act.calories) } : {}),
+    ...(intVal(act.suffer_score) ? { sufferScore: intVal(act.suffer_score) } : {}),
+    ...(num(act.average_watts) ? { avgWatts: num(act.average_watts) } : {}),
+    ...(intVal(act.average_temp) !== undefined ? { avgTemp: intVal(act.average_temp) } : {}),
+    ...(intVal(act.achievement_count) !== undefined ? { achievementCount: intVal(act.achievement_count) } : {}),
+    ...(intVal(act.pr_count) !== undefined ? { prCount: intVal(act.pr_count) } : {}),
+    ...(intVal(act.kudos_count) !== undefined ? { kudosCount: intVal(act.kudos_count) } : {}),
+    ...(intVal(act.comment_count) !== undefined ? { commentCount: intVal(act.comment_count) } : {}),
+    ...(intVal(act.athlete_count) !== undefined ? { athleteCount: intVal(act.athlete_count) } : {}),
+    ...(act.gear?.name ? { gearName: act.gear.name } : {}),
+    ...(act.start_date_local ? { startDateLocal: act.start_date_local } : {}),
+    ...(act.timezone ? { timezone: act.timezone } : {}),
+    ...(polyline ? { mapPolyline: polyline } : {}),
+    ...(act.description ? { description: act.description } : {}),
+    ...(act.workout_type !== undefined && act.workout_type !== null ? { workoutType: act.workout_type } : {}),
+    ...(splits ? { splits } : {}),
+    ...(bestEfforts ? { bestEfforts } : {}),
   });
 
   logger.info({ userId, stravaActivityId }, "Synced Strava activity");

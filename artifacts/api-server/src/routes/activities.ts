@@ -11,10 +11,22 @@ import {
 
 const router: IRouter = Router();
 
+function numOrNull(v: string | null): number | null {
+  return v === null || v === undefined ? null : Number(v);
+}
+
 function serializeActivity(a: typeof activitiesTable.$inferSelect) {
   return {
     ...a,
-    distanceKm: a.distanceKm ? Number(a.distanceKm) : null,
+    distanceKm: numOrNull(a.distanceKm),
+    elevationGainM: numOrNull(a.elevationGainM),
+    elevHighM: numOrNull(a.elevHighM),
+    elevLowM: numOrNull(a.elevLowM),
+    avgCadence: numOrNull(a.avgCadence),
+    avgSpeed: numOrNull(a.avgSpeed),
+    maxSpeed: numOrNull(a.maxSpeed),
+    calories: numOrNull(a.calories),
+    avgWatts: numOrNull(a.avgWatts),
     createdAt: a.createdAt.toISOString(),
   };
 }
