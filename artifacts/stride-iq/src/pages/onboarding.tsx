@@ -237,7 +237,8 @@ export default function Onboarding() {
     await qc.invalidateQueries({ queryKey: getGetAthleteProfileQueryKey() });
     // If athlete chose Strava, kick off OAuth before landing on dashboard
     if (form.dataSource === "strava") {
-      window.location.href = "/api/strava/connect";
+      window.open("/api/strava/connect", "_blank", "noopener,noreferrer");
+      navigate("/");
     } else {
       navigate("/");
     }
