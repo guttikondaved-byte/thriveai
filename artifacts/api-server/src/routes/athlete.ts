@@ -1,19 +1,33 @@
 import { Router, type IRouter } from "express";
+import { eq } from "drizzle-orm";
 import { db, athleteProfileTable } from "@workspace/db";
 import { GetAthleteProfileResponse, UpdateAthleteProfileBody, UpdateAthleteProfileResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-router.get("/athlete/profile", async (req, res): Promise<void> => {
-  let [profile] = await db.select().from(athleteProfileTable).limit(1);
+async function getOrCreateProfile(userId: string) {
+  let [profile] = await db
+    .select()
+    .from(athleteProfileTable)
+    .where(eq(athleteProfileTable.userId, userId))
+    .limit(1);
+
   if (!profile) {
-    const [created] = await db.insert(athleteProfileTable).values({
-      name: "Athlete",
-      fitnessLevel: "intermediate",
-      primaryGoal: "Stay fit",
-    }).returning();
+    const [created] = await db
+      .insert(athleteProfileTable)
+      .values({ userId, name: "Athlete", fitnessLevel: "intermediate", primaryGoal: "Stay fit" })
+      .returning();
     profile = created;
   }
+  return profile;
+}
+
+router.get("/athlete/profile", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const profile = await getOrCreateProfile(req.user.id);
   res.json(GetAthleteProfileResponse.parse({
     ...profile,
     weeklyMileageGoal: profile.weeklyMileageGoal ? Number(profile.weeklyMileageGoal) : null,
@@ -23,21 +37,18 @@ router.get("/athlete/profile", async (req, res): Promise<void> => {
 });
 
 router.patch("/athlete/profile", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
   const parsed = UpdateAthleteProfileBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
-  let [existing] = await db.select().from(athleteProfileTable).limit(1);
-  if (!existing) {
-    const [created] = await db.insert(athleteProfileTable).values({
-      name: "Athlete",
-      fitnessLevel: "intermediate",
-      primaryGoal: "Stay fit",
-    }).returning();
-    existing = created;
-  }
+  const existing = await getOrCreateProfile(req.user.id);
 
   const updateData: Record<string, unknown> = {};
   if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
@@ -50,8 +61,11 @@ router.patch("/athlete/profile", async (req, res): Promise<void> => {
   if (parsed.data.selectedCoach !== undefined) updateData.selectedCoach = parsed.data.selectedCoach;
   if (parsed.data.userRole !== undefined) updateData.userRole = parsed.data.userRole;
 
-  const { eq } = await import("drizzle-orm");
-  const [updated] = await db.update(athleteProfileTable).set(updateData).where(eq(athleteProfileTable.id, existing.id)).returning();
+  const [updated] = await db
+    .update(athleteProfileTable)
+    .set(updateData)
+    .where(eq(athleteProfileTable.id, existing.id))
+    .returning();
 
   res.json(UpdateAthleteProfileResponse.parse({
     ...updated,
