@@ -22,7 +22,7 @@ interface FormData {
   coachingExp: CoachExp | null;
   athleteCount: string;
   coachFocus: string;
-  dataSource: "gpx" | "manual" | null;
+  dataSource: "strava" | "gpx" | "manual" | null;
 }
 
 // Step indices for each role
@@ -62,12 +62,21 @@ const COACH_FOCUSES = [
 
 const DATA_SOURCES = [
   {
+    id: "strava" as const,
+    icon: "🟠",
+    title: "Connect Strava",
+    subtitle: "Real-time automatic sync",
+    desc: "Every run you record on Strava appears in Thrive automatically — no manual imports ever.",
+    badge: "⚡ Recommended",
+    badgeColor: "bg-[#FC4C02]/15 text-[#FC4C02] border-[#FC4C02]/30",
+  },
+  {
     id: "gpx" as const,
     icon: "📁",
     title: "Import GPX Files",
     subtitle: "Works with every GPS watch",
     desc: "Export a .gpx file from Garmin Connect, Apple Health, Coros, Polar, or any GPS watch.",
-    badge: "Free · Recommended",
+    badge: "Free",
     badgeColor: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
   },
   {
@@ -226,7 +235,12 @@ export default function Onboarding() {
       },
     });
     await qc.invalidateQueries({ queryKey: getGetAthleteProfileQueryKey() });
-    navigate("/");
+    // If athlete chose Strava, kick off OAuth before landing on dashboard
+    if (form.dataSource === "strava") {
+      window.location.href = "/api/strava/connect";
+    } else {
+      navigate("/");
+    }
   }
 
   const isLastStep = step === steps.length - 1;
@@ -583,18 +597,8 @@ export default function Onboarding() {
               })}
             </div>
 
-            <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 px-5 py-4 flex gap-3">
-              <Upload size={16} className="text-slate-500 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm text-slate-300 font-medium mb-0.5">Strava export works too</p>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  Export any run from Strava as a .gpx file (Activity → ⋯ → Export GPX) and import it here. Free on all Strava plans.
-                </p>
-              </div>
-            </div>
-
             <p className="text-xs text-slate-600 mt-4 text-center">
-              You can skip this — import files or log manually from the Activities page any time.
+              You can skip this — connect Strava or import files from the Activities page any time.
             </p>
           </div>
         )}
@@ -646,9 +650,17 @@ export default function Onboarding() {
             <button
               onClick={finish}
               disabled={updateProfile.isPending}
-              className="flex items-center gap-2 px-8 py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold rounded-xl transition-all disabled:opacity-60"
+              className={`flex items-center gap-2 px-8 py-3 font-bold rounded-xl transition-all disabled:opacity-60 ${
+                form.dataSource === "strava"
+                  ? "bg-[#FC4C02] hover:bg-[#e34400] text-white"
+                  : "bg-cyan-500 hover:bg-cyan-400 text-slate-900"
+              }`}
             >
-              {updateProfile.isPending ? "Saving…" : "Let's go"}
+              {updateProfile.isPending
+                ? "Saving…"
+                : form.dataSource === "strava"
+                ? "Connect Strava & finish"
+                : "Let's go"}
               {!updateProfile.isPending && <Check size={16} />}
             </button>
           ) : (

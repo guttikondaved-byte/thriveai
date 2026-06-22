@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, Copy, Check, Link as LinkIcon, UserPlus } from "lucide-react";
+import { Users, Copy, Check, Link as LinkIcon, UserPlus, Zap } from "lucide-react";
 import { useAuth } from "@workspace/replit-auth-web";
 
 interface TeamInfo {
@@ -17,10 +17,17 @@ interface TeamMember {
   joinedAt: string;
 }
 
+interface StravaStatus {
+  userId: string;
+  connected: boolean;
+  lastSync: string | null;
+}
+
 export default function Team() {
   const { isAuthenticated } = useAuth();
   const [team, setTeam] = useState<TeamInfo | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [stravaStatus, setStravaStatus] = useState<Map<string, StravaStatus>>(new Map());
   const [loading, setLoading] = useState(true);
   const [teamName, setTeamName] = useState("");
   const [creating, setCreating] = useState(false);
@@ -36,7 +43,10 @@ export default function Team() {
       .then(data => {
         setTeam(data.team);
         setLoading(false);
-        if (data.team) fetchMembers(data.team.id);
+        if (data.team) {
+          fetchMembers(data.team.id);
+          fetchStravaStatus(data.team.id);
+        }
       })
       .catch(() => setLoading(false));
   }, [isAuthenticated]);
@@ -45,6 +55,15 @@ export default function Team() {
     fetch(`/api/teams/${teamId}/members`, { credentials: "include" })
       .then(r => r.ok ? r.json() : [])
       .then(setMembers)
+      .catch(() => {});
+  }
+
+  function fetchStravaStatus(teamId: number) {
+    fetch(`/api/teams/${teamId}/strava-status`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : [])
+      .then((rows: StravaStatus[]) => {
+        setStravaStatus(new Map(rows.map(r => [r.userId, r])));
+      })
       .catch(() => {});
   }
 
@@ -62,6 +81,7 @@ export default function Team() {
         setTeam(data);
         setCreating(false);
         fetchMembers(data.id);
+        fetchStravaStatus(data.id);
       })
       .catch(() => setCreating(false));
   }
@@ -162,6 +182,9 @@ export default function Team() {
     );
   }
 
+  const connectedCount = Array.from(stravaStatus.values()).filter(s => s.connected).length;
+  const totalMembers = members.length;
+
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
@@ -169,6 +192,7 @@ export default function Team() {
         <span className="text-xs text-muted-foreground">{team.memberCount} member{team.memberCount !== 1 ? "s" : ""}</span>
       </div>
 
+      {/* Invite code card */}
       <div className="bg-card border border-border rounded-xl p-5 space-y-3">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Invite Code</p>
         <div className="flex items-center gap-3">
@@ -189,31 +213,82 @@ export default function Team() {
         </p>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
-          <Users className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm font-semibold text-foreground">Athletes</span>
+      {/* Strava summary banner */}
+      {totalMembers > 0 && (
+        <div className={`flex items-center gap-3 rounded-xl px-5 py-3.5 border ${
+          connectedCount === totalMembers
+            ? "bg-[#FC4C02]/10 border-[#FC4C02]/30"
+            : "bg-slate-800/50 border-slate-700/60"
+        }`}>
+          <Zap size={16} className="text-[#FC4C02] shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-white">
+              {connectedCount} / {totalMembers} athlete{totalMembers !== 1 ? "s" : ""} connected to Strava
+            </p>
+            <p className="text-xs text-slate-400">
+              {connectedCount < totalMembers
+                ? "Athletes without Strava need to connect from their Activities page."
+                : "All athletes are syncing runs automatically."}
+            </p>
+          </div>
         </div>
+      )}
+
+      {/* Athlete roster */}
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Athletes</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Zap size={11} className="text-[#FC4C02]" />
+            Strava
+          </div>
+        </div>
+
         {members.length === 0 ? (
           <div className="px-5 py-8 text-center text-sm text-muted-foreground">
             No athletes yet. Share the invite code to get started.
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {members.map(m => (
-              <div key={m.userId} className="flex items-center gap-3 px-5 py-4">
-                <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                  {m.name.charAt(0).toUpperCase()}
+            {members.map(m => {
+              const strava = stravaStatus.get(m.userId);
+              return (
+                <div key={m.userId} className="flex items-center gap-3 px-5 py-4">
+                  <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+                    {m.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{m.name}</p>
+                    {m.email && <p className="text-xs text-muted-foreground truncate">{m.email}</p>}
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {strava?.connected ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="flex items-center gap-1 text-xs font-medium text-[#FC4C02] bg-[#FC4C02]/10 border border-[#FC4C02]/25 px-2 py-0.5 rounded-full">
+                          <Zap size={9} fill="currentColor" />
+                          Strava linked
+                        </span>
+                        {strava.lastSync && (
+                          <span className="text-[10px] text-muted-foreground hidden sm:block">
+                            {new Date(strava.lastSync).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground bg-secondary border border-border px-2 py-0.5 rounded-full">
+                        No Strava
+                      </span>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Joined {new Date(m.joinedAt).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{m.name}</p>
-                  {m.email && <p className="text-xs text-muted-foreground truncate">{m.email}</p>}
-                </div>
-                <p className="text-xs text-muted-foreground shrink-0">
-                  Joined {new Date(m.joinedAt).toLocaleDateString()}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

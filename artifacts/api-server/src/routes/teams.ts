@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, teamsTable, teamMembershipsTable, usersTable, athleteProfileTable, notificationsTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { db, teamsTable, teamMembershipsTable, usersTable, athleteProfileTable, notificationsTable, stravaTokensTable } from "@workspace/db";
+import { eq, and, inArray } from "drizzle-orm";
 import crypto from "crypto";
 
 const router: IRouter = Router();
@@ -161,6 +161,50 @@ router.get("/teams/:teamId/members", async (req, res): Promise<void> => {
     name: (m.profileName ?? `${m.firstName ?? ""} ${m.lastName ?? ""}`.trim()) || "Athlete",
     email: m.email,
     joinedAt: m.joinedAt.toISOString(),
+  })));
+});
+
+// GET /teams/:teamId/strava-status — coach sees which athletes have Strava connected
+router.get("/teams/:teamId/strava-status", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const teamId = Number(req.params.teamId);
+  if (isNaN(teamId)) {
+    res.status(400).json({ error: "Invalid team id" });
+    return;
+  }
+
+  const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId)).limit(1);
+  if (!team || team.coachUserId !== req.user.id) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const memberships = await db
+    .select({ userId: teamMembershipsTable.athleteUserId })
+    .from(teamMembershipsTable)
+    .where(eq(teamMembershipsTable.teamId, teamId));
+
+  const memberIds = memberships.map(m => m.userId);
+
+  if (memberIds.length === 0) {
+    res.json([]);
+    return;
+  }
+
+  const stravaRows = await db
+    .select({ userId: stravaTokensTable.userId, stravaAthleteId: stravaTokensTable.stravaAthleteId, updatedAt: stravaTokensTable.updatedAt })
+    .from(stravaTokensTable)
+    .where(inArray(stravaTokensTable.userId, memberIds));
+
+  const stravaMap = new Map(stravaRows.map(r => [r.userId, r]));
+
+  res.json(memberIds.map(uid => ({
+    userId: uid,
+    connected: stravaMap.has(uid),
+    lastSync: stravaMap.get(uid)?.updatedAt?.toISOString() ?? null,
   })));
 });
 
