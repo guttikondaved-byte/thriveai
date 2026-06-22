@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Users, Copy, Check, Link as LinkIcon, UserPlus, Zap, ChevronRight } from "lucide-react";
 import { useAuth } from "@workspace/replit-auth-web";
+import { useGetAthleteProfile } from "@workspace/api-client-react";
 import AthleteProfileModal from "../components/AthleteProfileModal";
 
 interface TeamInfo {
@@ -26,6 +27,8 @@ interface StravaStatus {
 
 export default function Team() {
   const { isAuthenticated } = useAuth();
+  const { data: profile } = useGetAthleteProfile();
+  const isCoach = profile?.userRole === "coach";
   const [team, setTeam] = useState<TeamInfo | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [stravaStatus, setStravaStatus] = useState<Map<string, StravaStatus>>(new Map());
@@ -45,13 +48,13 @@ export default function Team() {
       .then(data => {
         setTeam(data.team);
         setLoading(false);
-        if (data.team) {
+        if (data.team && isCoach) {
           fetchMembers(data.team.id);
           fetchStravaStatus(data.team.id);
         }
       })
       .catch(() => setLoading(false));
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isCoach]);
 
   function fetchMembers(teamId: number) {
     fetch(`/api/teams/${teamId}/members`, { credentials: "include" })
@@ -135,50 +138,77 @@ export default function Team() {
       <div className="p-6 max-w-xl mx-auto space-y-8">
         <h1 className="text-2xl font-bold text-foreground">Team</h1>
 
-        <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Users className="w-4 h-4 text-primary" />
-            Create a team
-          </h2>
-          <p className="text-xs text-muted-foreground">Coaches can create a team and share an invite code with athletes.</p>
-          <input
-            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            placeholder="Team / club name"
-            value={teamName}
-            onChange={e => setTeamName(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && createTeam()}
-          />
-          <button
-            onClick={createTeam}
-            disabled={creating || !teamName.trim()}
-            className="w-full py-2 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-          >
-            {creating ? "Creating…" : "Create team"}
-          </button>
-        </div>
+        {isCoach && (
+          <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Users className="w-4 h-4 text-primary" />
+              Create a team
+            </h2>
+            <p className="text-xs text-muted-foreground">Create a team and share the invite code with your athletes.</p>
+            <input
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Team / club name"
+              value={teamName}
+              onChange={e => setTeamName(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && createTeam()}
+            />
+            <button
+              onClick={createTeam}
+              disabled={creating || !teamName.trim()}
+              className="w-full py-2 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              {creating ? "Creating…" : "Create team"}
+            </button>
+          </div>
+        )}
 
-        <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <UserPlus className="w-4 h-4 text-primary" />
-            Join a team
-          </h2>
-          <p className="text-xs text-muted-foreground">Have an invite code from your coach? Enter it below.</p>
-          <input
-            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono uppercase tracking-widest"
-            placeholder="INVITE CODE"
-            value={inviteInput}
-            onChange={e => setInviteInput(e.target.value.toUpperCase())}
-            onKeyDown={e => e.key === "Enter" && joinTeam()}
-            maxLength={8}
-          />
-          {joinError && <p className="text-xs text-destructive">{joinError}</p>}
-          <button
-            onClick={joinTeam}
-            disabled={joining || !inviteInput.trim()}
-            className="w-full py-2 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
-          >
-            {joining ? "Joining…" : "Join team"}
-          </button>
+        {!isCoach && (
+          <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <UserPlus className="w-4 h-4 text-primary" />
+              Join a team
+            </h2>
+            <p className="text-xs text-muted-foreground">Have an invite code from your coach? Enter it below to join their team.</p>
+            <input
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary font-mono uppercase tracking-widest"
+              placeholder="INVITE CODE"
+              value={inviteInput}
+              onChange={e => setInviteInput(e.target.value.toUpperCase())}
+              onKeyDown={e => e.key === "Enter" && joinTeam()}
+              maxLength={8}
+            />
+            {joinError && <p className="text-xs text-destructive">{joinError}</p>}
+            <button
+              onClick={joinTeam}
+              disabled={joining || !inviteInput.trim()}
+              className="w-full py-2 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              {joining ? "Joining…" : "Join team"}
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (!isCoach) {
+    return (
+      <div className="p-6 max-w-xl mx-auto space-y-6">
+        <h1 className="text-2xl font-bold text-foreground">Team</h1>
+        <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center">
+              <Users className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">You're on the team</p>
+              <h2 className="text-lg font-semibold text-foreground">{team.name}</h2>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Check className="w-3.5 h-3.5 text-green-500" />
+            Your coach can now see your training and send you guidance.
+          </p>
         </div>
       </div>
     );

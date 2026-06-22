@@ -20,6 +20,15 @@ router.post("/teams", async (req, res): Promise<void> => {
     return;
   }
 
+  const [profile] = await db.select({ userRole: athleteProfileTable.userRole })
+    .from(athleteProfileTable)
+    .where(eq(athleteProfileTable.userId, req.user.id))
+    .limit(1);
+  if (profile?.userRole !== "coach") {
+    res.status(403).json({ error: "Only coaches can create a team" });
+    return;
+  }
+
   let inviteCode = generateInviteCode();
   let attempts = 0;
   while (attempts < 5) {
