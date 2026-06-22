@@ -59,7 +59,7 @@ router.get("/teams/my", async (req, res): Promise<void> => {
     return;
   }
 
-  const coachTeam = await db.select().from(teamsTable).where(eq(teamsTable.coachUserId, req.user.id)).limit(1);
+  const coachTeam = await db.select().from(teamsTable).where(eq(teamsTable.coachUserId, req.user.id)).orderBy(desc(teamsTable.createdAt)).limit(1);
   if (coachTeam.length > 0) {
     const t = coachTeam[0];
     const members = await db.select().from(teamMembershipsTable).where(eq(teamMembershipsTable.teamId, t.id));

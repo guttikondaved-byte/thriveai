@@ -1,5 +1,5 @@
 import { Router, type Request, type IRouter } from "express";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, desc } from "drizzle-orm";
 import {
   db,
   trainingPlansTable,
@@ -23,6 +23,7 @@ async function getCoachMemberIds(req: Request): Promise<string[] | "unauthorized
     .select()
     .from(teamsTable)
     .where(eq(teamsTable.coachUserId, req.user.id))
+    .orderBy(desc(teamsTable.createdAt))
     .limit(1);
   if (!team) return [];
   const memberships = await db

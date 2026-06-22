@@ -7,7 +7,9 @@ import {
   athleteProfileTable,
   activitiesTable,
   trainingPlansTable,
+  planSessionsTable,
   injuryAlertsTable,
+  notificationsTable,
   teamsTable,
   teamMembershipsTable,
   usersTable,
@@ -107,7 +109,7 @@ function serializeMessage(m: typeof messages.$inferSelect) {
 }
 
 async function buildCoachContext(userId: string): Promise<string> {
-  const coachTeam = await db.select().from(teamsTable).where(eq(teamsTable.coachUserId, userId)).limit(1);
+  const coachTeam = await db.select().from(teamsTable).where(eq(teamsTable.coachUserId, userId)).orderBy(desc(teamsTable.createdAt)).limit(1);
   const team = coachTeam[0];
   if (!team) return "=== COACHING CONTEXT ===\nYou have no team yet.\n========================\n";
 
