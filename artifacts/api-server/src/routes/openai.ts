@@ -1,5 +1,5 @@
 import { Router, type Request, type IRouter } from "express";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import {
   db,
   conversations,
@@ -8,6 +8,9 @@ import {
   activitiesTable,
   trainingPlansTable,
   injuryAlertsTable,
+  teamsTable,
+  teamMembershipsTable,
+  usersTable,
 } from "@workspace/db";
 import {
   CreateOpenaiConversationBody,
@@ -103,29 +106,93 @@ function serializeMessage(m: typeof messages.$inferSelect) {
   return { ...m, createdAt: m.createdAt.toISOString() };
 }
 
-async function buildUserContext(userId: string): Promise<string> {
-  const [profileRows, recentActivities, activePlan, openAlerts] = await Promise.all([
-    db
-      .select()
-      .from(athleteProfileTable)
-      .where(eq(athleteProfileTable.userId, userId))
-      .limit(1),
-    db
-      .select()
-      .from(activitiesTable)
-      .where(eq(activitiesTable.userId, userId))
+async function buildCoachContext(userId: string): Promise<string> {
+  const coachTeam = await db.select().from(teamsTable).where(eq(teamsTable.coachUserId, userId)).limit(1);
+  const team = coachTeam[0];
+  if (!team) return "=== COACHING CONTEXT ===\nYou have no team yet.\n========================\n";
+
+  const memberships = await db
+    .select({ athleteUserId: teamMembershipsTable.athleteUserId })
+    .from(teamMembershipsTable)
+    .where(eq(teamMembershipsTable.teamId, team.id));
+
+  const memberIds = memberships.map(m => m.athleteUserId);
+  const lines: string[] = [];
+  lines.push("=== COACHING CONTEXT ===");
+  lines.push(`Team: "${team.name}" | ${memberIds.length} athlete${memberIds.length !== 1 ? "s" : ""}`);
+
+  if (memberIds.length === 0) {
+    lines.push("No athletes on team yet.");
+    lines.push("========================\n");
+    return lines.join("\n");
+  }
+
+  const [athleteProfiles, userRows, recentActivities, teamAlerts] = await Promise.all([
+    db.select().from(athleteProfileTable).where(inArray(athleteProfileTable.userId, memberIds)),
+    db.select().from(usersTable).where(inArray(usersTable.id, memberIds)),
+    db.select().from(activitiesTable)
+      .where(inArray(activitiesTable.userId, memberIds))
       .orderBy(desc(activitiesTable.activityDate))
-      .limit(10),
-    db
-      .select()
-      .from(trainingPlansTable)
-      .where(and(eq(trainingPlansTable.userId, userId), eq(trainingPlansTable.status, "active")))
-      .limit(1),
-    db
-      .select()
-      .from(injuryAlertsTable)
-      .where(and(eq(injuryAlertsTable.userId, userId), eq(injuryAlertsTable.acknowledged, false)))
-      .limit(5),
+      .limit(memberIds.length * 5),
+    db.select().from(injuryAlertsTable)
+      .where(and(inArray(injuryAlertsTable.userId, memberIds), eq(injuryAlertsTable.acknowledged, false)))
+      .orderBy(desc(injuryAlertsTable.createdAt))
+      .limit(20),
+  ]);
+
+  const profileByUser = new Map(athleteProfiles.map(p => [p.userId, p]));
+  const userByUser = new Map(userRows.map(u => [u.id, u]));
+  const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const weeklyByUser = new Map<string, number>();
+  for (const a of recentActivities) {
+    if (!a.userId || !a.activityDate || new Date(a.activityDate) < sevenDaysAgo) continue;
+    weeklyByUser.set(a.userId, (weeklyByUser.get(a.userId) ?? 0) + Number(a.distanceKm ?? 0));
+  }
+  const alertsByUser = new Map<string, typeof teamAlerts>();
+  for (const al of teamAlerts) {
+    if (!al.userId) continue;
+    const existing = alertsByUser.get(al.userId) ?? [];
+    existing.push(al);
+    alertsByUser.set(al.userId, existing);
+  }
+
+  lines.push("\n--- Athlete Roster ---");
+  for (const mid of memberIds) {
+    const p = profileByUser.get(mid);
+    const u = userByUser.get(mid);
+    const name = (p?.name ?? `${u?.firstName ?? ""} ${u?.lastName ?? ""}`.trim()) || "Athlete";
+    const weeklyMi = ((weeklyByUser.get(mid) ?? 0) * 0.621371).toFixed(1);
+    const parts = [
+      `Name: ${name}`,
+      p?.fitnessLevel ? `Level: ${p.fitnessLevel}` : null,
+      p?.primaryGoal ? `Goal: ${p.primaryGoal}` : null,
+      `Weekly: ${weeklyMi}mi`,
+      p?.restingHeartRate ? `RHR: ${p.restingHeartRate}bpm` : null,
+      p?.hrv ? `HRV: ${Number(p.hrv).toFixed(0)}ms` : null,
+    ].filter(Boolean).join(" | ");
+    lines.push(`• ${parts}`);
+    const alerts = alertsByUser.get(mid) ?? [];
+    for (const al of alerts) {
+      lines.push(`  ⚠ ${al.riskLevel.toUpperCase()} RISK — ${al.bodyPart}: ${al.message}`);
+    }
+  }
+
+  const totalAlertsCount = teamAlerts.length;
+  if (totalAlertsCount > 0) {
+    lines.push(`\nActive injury alerts across team: ${totalAlertsCount}`);
+  }
+
+  lines.push("========================");
+  lines.push("Use the athlete data above to give specific, personalised coaching advice. Reference actual numbers when relevant.\n");
+  return lines.join("\n");
+}
+
+async function buildAthleteContext(userId: string): Promise<string> {
+  const [profileRows, recentActivities, activePlan, openAlerts] = await Promise.all([
+    db.select().from(athleteProfileTable).where(eq(athleteProfileTable.userId, userId)).limit(1),
+    db.select().from(activitiesTable).where(eq(activitiesTable.userId, userId)).orderBy(desc(activitiesTable.activityDate)).limit(10),
+    db.select().from(trainingPlansTable).where(and(eq(trainingPlansTable.userId, userId), eq(trainingPlansTable.status, "active"))).limit(1),
+    db.select().from(injuryAlertsTable).where(and(eq(injuryAlertsTable.userId, userId), eq(injuryAlertsTable.acknowledged, false))).limit(5),
   ]);
 
   const profile = profileRows[0];
@@ -142,9 +209,7 @@ async function buildUserContext(userId: string): Promise<string> {
       profile.weeklyMileageGoal ? `Weekly target: ${Number(profile.weeklyMileageGoal)}mi` : null,
       profile.hrv ? `HRV: ${Number(profile.hrv)}ms` : null,
       profile.restingHeartRate ? `Resting HR: ${profile.restingHeartRate}bpm` : null,
-    ]
-      .filter(Boolean)
-      .join(" | "),
+    ].filter(Boolean).join(" | "),
   );
 
   if (recentActivities.length > 0) {
@@ -158,9 +223,7 @@ async function buildUserContext(userId: string): Promise<string> {
         a.avgHeartRate ? `HR ${a.avgHeartRate}` : null,
         a.perceivedEffort ? `RPE ${a.perceivedEffort}/10` : null,
         a.notes ? `"${a.notes}"` : null,
-      ]
-        .filter(Boolean)
-        .join(" | ");
+      ].filter(Boolean).join(" | ");
       lines.push(`- ${parts}`);
     }
   }
@@ -181,8 +244,12 @@ async function buildUserContext(userId: string): Promise<string> {
 
   lines.push("======================");
   lines.push("Use the above data to give specific, personalised advice. Reference actual numbers when relevant.\n");
-
   return lines.join("\n");
+}
+
+async function buildUserContext(userId: string, userRole?: string | null): Promise<string> {
+  if (userRole === "coach") return buildCoachContext(userId);
+  return buildAthleteContext(userId);
 }
 
 // ── List conversations ──────────────────────────────────────────────────────
@@ -356,17 +423,17 @@ router.post("/openai/conversations/:id/messages", async (req: Request, res): Pro
     return;
   }
 
-  const [historyRows, profileRows, userContext] = await Promise.all([
+  const [historyRows, profileRows] = await Promise.all([
     db.select().from(messages).where(eq(messages.conversationId, conv.id)).orderBy(messages.createdAt),
     db.select({ selectedCoach: athleteProfileTable.selectedCoach, userRole: athleteProfileTable.userRole })
       .from(athleteProfileTable)
       .where(eq(athleteProfileTable.userId, userId))
       .limit(1),
-    buildUserContext(userId),
   ]);
 
-  const chatMessages = historyRows.map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
   const profile = profileRows[0];
+  const userContext = await buildUserContext(userId, profile?.userRole);
+  const chatMessages = historyRows.map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
   const basePrompt = profile?.userRole === "coach"
     ? COACH_ADVISOR_PROMPT
     : getSystemPrompt(profile?.selectedCoach);

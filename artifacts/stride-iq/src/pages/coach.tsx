@@ -15,7 +15,7 @@ import { format } from "date-fns";
 
 type StreamMessage = { role: "user" | "assistant"; content: string; streaming?: boolean };
 
-export default function Coach() {
+export default function CoachAI() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [input, setInput] = useState("");
   const [streamMessages, setStreamMessages] = useState<StreamMessage[]>([]);
@@ -30,7 +30,6 @@ export default function Coach() {
     query: { enabled: !!selectedId, queryKey: getGetOpenaiConversationQueryKey(selectedId!) },
   });
 
-  // Sync DB messages into streamMessages when conversation loads/changes
   useEffect(() => {
     if (conversation?.messages) {
       setStreamMessages(conversation.messages.map(m => ({ role: m.role as "user" | "assistant", content: m.content })));
@@ -65,6 +64,7 @@ export default function Coach() {
       const response = await fetch(`/api/openai/conversations/${selectedId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ content: userContent }),
       });
 
@@ -88,7 +88,7 @@ export default function Coach() {
             try {
               const data = JSON.parse(line.slice(6));
               if (data.done) {
-                // Streaming done
+                // done
               } else if (data.content) {
                 fullContent += data.content;
                 setStreamMessages(prev => {
@@ -103,7 +103,6 @@ export default function Coach() {
         }
       }
 
-      // Finalize
       setStreamMessages(prev => {
         const updated = [...prev];
         const lastIdx = updated.length - 1;
@@ -127,20 +126,20 @@ export default function Coach() {
   }
 
   return (
-    <div className="flex h-screen" data-testid="coach-page">
+    <div className="flex h-screen bg-[#0a0f1e]" data-testid="coach-page">
       {/* Conversation sidebar */}
-      <div className="w-56 border-r border-border flex flex-col shrink-0">
-        <div className="p-4 border-b border-border">
+      <div className="w-56 border-r border-white/10 flex flex-col shrink-0 bg-[#0d1426]">
+        <div className="p-4 border-b border-white/10">
           <div className="flex items-center gap-2 mb-3">
-            <Zap className="w-4 h-4 text-primary" />
-            <span className="text-sm font-semibold text-foreground">Avera</span>
-            <span className="text-xs text-muted-foreground">AI Coach</span>
+            <Zap className="w-4 h-4 text-cyan-400" />
+            <span className="text-sm font-semibold text-white">AveraAI</span>
+            <span className="text-xs text-slate-400">Coach Advisor</span>
           </div>
           <Button
             onClick={startNewConversation}
             disabled={createConv.isPending}
             size="sm"
-            className="w-full gap-1.5"
+            className="w-full gap-1.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 hover:text-cyan-200"
             data-testid="button-new-conversation"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -150,10 +149,10 @@ export default function Coach() {
         <div className="flex-1 overflow-auto py-2">
           {convsLoading ? (
             <div className="px-3 space-y-1.5">
-              {[...Array(4)].map((_, i) => <div key={i} className="h-9 bg-secondary rounded animate-pulse" />)}
+              {[...Array(4)].map((_, i) => <div key={i} className="h-9 bg-white/5 rounded animate-pulse" />)}
             </div>
           ) : !conversations?.length ? (
-            <p className="text-xs text-muted-foreground px-4 py-3">No conversations yet</p>
+            <p className="text-xs text-slate-500 px-4 py-3">No conversations yet</p>
           ) : (
             conversations.map(conv => (
               <button
@@ -162,12 +161,12 @@ export default function Coach() {
                 data-testid={`conversation-${conv.id}`}
                 className={`w-full text-left px-3 py-2 text-xs rounded mx-1 transition-colors ${
                   selectedId === conv.id
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    ? "bg-cyan-500/15 text-cyan-300"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
                 }`}
               >
                 <div className="font-medium truncate">{conv.title}</div>
-                <div className="text-muted-foreground mt-0.5">{format(new Date(conv.createdAt), "MMM d")}</div>
+                <div className="text-slate-500 mt-0.5">{format(new Date(conv.createdAt), "MMM d")}</div>
               </button>
             ))
           )}
@@ -178,14 +177,18 @@ export default function Coach() {
       <div className="flex-1 flex flex-col">
         {!selectedId ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Bot className="w-6 h-6 text-primary" />
+            <div className="w-14 h-14 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-5">
+              <Bot className="w-7 h-7 text-cyan-400" />
             </div>
-            <h2 className="text-lg font-semibold text-foreground mb-2">Avera, your AI coach</h2>
-            <p className="text-sm text-muted-foreground text-center max-w-sm mb-6">
-              Ask about injury prevention, pacing strategy, recovery, or get help analyzing your training load.
+            <h2 className="text-xl font-semibold text-white mb-2">AveraAI — Coaching Advisor</h2>
+            <p className="text-sm text-slate-400 text-center max-w-sm mb-6">
+              Ask about athlete load management, team injury risk, training periodization, or how to approach an athlete concern.
             </p>
-            <Button onClick={startNewConversation} data-testid="button-start-chat" className="gap-2">
+            <Button
+              onClick={startNewConversation}
+              data-testid="button-start-chat"
+              className="gap-2 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20"
+            >
               <Plus className="w-4 h-4" />
               Start a conversation
             </Button>
@@ -196,26 +199,26 @@ export default function Coach() {
             <div className="flex-1 overflow-auto p-6 space-y-4" data-testid="messages-container">
               {streamMessages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full">
-                  <p className="text-sm text-muted-foreground">Ask Avera anything about your training.</p>
+                  <p className="text-sm text-slate-500">Ask AveraAI anything about your team or athletes.</p>
                 </div>
               )}
               {streamMessages.map((msg, i) => (
                 <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`} data-testid={`message-${i}`}>
                   {msg.role === "assistant" && (
-                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                      <Bot className="w-3.5 h-3.5 text-primary" />
+                    <div className="w-7 h-7 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <Bot className="w-3.5 h-3.5 text-cyan-400" />
                     </div>
                   )}
                   <div className={`max-w-[75%] rounded-lg px-4 py-3 text-sm leading-relaxed ${
                     msg.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card border border-border text-foreground"
+                      ? "bg-cyan-600 text-white"
+                      : "bg-white/5 border border-white/10 text-slate-200"
                   }`}>
-                    {msg.content || (msg.streaming && <span className="inline-block w-2 h-4 bg-current opacity-70 animate-pulse" />)}
+                    {msg.content || (msg.streaming && <span className="inline-block w-2 h-4 bg-cyan-400 opacity-70 animate-pulse rounded-sm" />)}
                   </div>
                   {msg.role === "user" && (
-                    <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center shrink-0 mt-0.5">
-                      <User className="w-3.5 h-3.5 text-muted-foreground" />
+                    <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <User className="w-3.5 h-3.5 text-slate-400" />
                     </div>
                   )}
                 </div>
@@ -224,22 +227,23 @@ export default function Coach() {
             </div>
 
             {/* Input */}
-            <div className="border-t border-border p-4">
+            <div className="border-t border-white/10 p-4 bg-[#0d1426]">
               <div className="flex gap-2">
                 <Input
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask Avera about your training..."
+                  placeholder="Ask AveraAI about your team or athletes..."
                   disabled={isStreaming}
                   data-testid="input-message"
-                  className="flex-1"
+                  className="flex-1 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus-visible:ring-cyan-500/50"
                 />
                 <Button
                   onClick={sendMessage}
                   disabled={!input.trim() || isStreaming}
                   data-testid="button-send-message"
                   size="icon"
+                  className="bg-cyan-600 hover:bg-cyan-500 text-white"
                 >
                   <Send className="w-4 h-4" />
                 </Button>
