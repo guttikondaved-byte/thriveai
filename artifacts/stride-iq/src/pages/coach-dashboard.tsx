@@ -1,8 +1,16 @@
 import { useState, useEffect } from "react";
 import { TrendingUp, Users, Activity, ChevronRight } from "lucide-react";
+import { useUser } from "@clerk/react";
 import { useGetAthleteProfile } from "@workspace/api-client-react";
 import AthleteProfileModal from "../components/AthleteProfileModal";
 import { getFocusConfig } from "@/lib/coachingFocus";
+
+function greetingFor(date: Date): string {
+  const h = date.getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
 
 type RiskLevel = "high" | "medium" | "low";
 
@@ -55,8 +63,11 @@ export default function CoachDashboard() {
   const [members, setMembers] = useState<RosterMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const { user } = useUser();
   const { data: profile } = useGetAthleteProfile();
   const focus = getFocusConfig(profile?.primaryGoal);
+  const coachName = user?.lastName || user?.firstName || "Coach";
+  const greeting = greetingFor(new Date());
 
   useEffect(() => {
     fetch("/api/teams/my", { credentials: "include" })
@@ -94,7 +105,8 @@ export default function CoachDashboard() {
   if (!team) {
     return (
       <div className="p-6 max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold text-white mb-2">{focus.headline}</h1>
+        <p className={`text-xs font-semibold uppercase tracking-[0.15em] ${focus.accentText}`}>{greeting}, Coach {coachName}</p>
+        <h1 className="text-2xl font-bold text-white mb-2 mt-1">{focus.headline}</h1>
         <div className="bg-[#0d1529] border border-slate-800 rounded-xl p-8 text-center mt-6">
           <div className={`w-12 h-12 rounded-xl ${focus.accentBg} border ${focus.accentBorder} flex items-center justify-center mx-auto mb-3 ${focus.accentText}`}>
             <focus.icon className="w-6 h-6" />
@@ -109,8 +121,9 @@ export default function CoachDashboard() {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">{focus.headline}</h1>
-        <p className="text-slate-500 text-sm mt-0.5">{team.name}</p>
+        <p className={`text-xs font-semibold uppercase tracking-[0.15em] ${focus.accentText}`}>{greeting}, Coach {coachName}</p>
+        <h1 className="text-2xl font-bold text-white mt-1">{focus.headline}</h1>
+        <p className="text-slate-500 text-sm mt-0.5">{team.name} · {members.length} {focus.athleteNoun}</p>
       </div>
 
       {/* Discipline-tuned focus banner */}
