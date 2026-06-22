@@ -6,6 +6,7 @@ import { athleteProfileTable } from "./athlete";
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
   profileId: integer("profile_id").references(() => athleteProfileTable.id, { onDelete: "cascade" }),
+  userId: text("user_id"),
   title: text("title").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

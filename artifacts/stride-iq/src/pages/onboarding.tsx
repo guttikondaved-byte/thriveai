@@ -234,7 +234,9 @@ export default function Onboarding() {
             }),
       },
     });
-    await qc.invalidateQueries({ queryKey: getGetAthleteProfileQueryKey() });
+    // Wait for the profile to actually refetch (not just mark stale) before
+    // navigating — otherwise AppContent sees the old role and redirects back.
+    await qc.refetchQueries({ queryKey: getGetAthleteProfileQueryKey() });
     // If athlete chose Strava, kick off OAuth before landing on dashboard
     if (form.dataSource === "strava") {
       window.open("/api/strava/connect", "_blank", "noopener,noreferrer");

@@ -1,6 +1,14 @@
-import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
-import { db, conversations, messages, athleteProfileTable } from "@workspace/db";
+import { Router, type Request, type IRouter } from "express";
+import { eq, and, desc } from "drizzle-orm";
+import {
+  db,
+  conversations,
+  messages,
+  athleteProfileTable,
+  activitiesTable,
+  trainingPlansTable,
+  injuryAlertsTable,
+} from "@workspace/db";
 import {
   CreateOpenaiConversationBody,
   GetOpenaiConversationParams,
@@ -84,7 +92,7 @@ Lead with grit. The long game is the only game.`,
 
 function getSystemPrompt(coach: string | null | undefined): string {
   if (coach && COACH_PROMPTS[coach]) return COACH_PROMPTS[coach];
-  return COACH_PROMPTS.avera;
+  return COACH_PROMPTS.avera!;
 }
 
 function serializeConversation(c: typeof conversations.$inferSelect) {
@@ -95,74 +103,176 @@ function serializeMessage(m: typeof messages.$inferSelect) {
   return { ...m, createdAt: m.createdAt.toISOString() };
 }
 
-function getOpenaiClient() {
-  return openaiClient;
+async function buildUserContext(userId: string): Promise<string> {
+  const [profileRows, recentActivities, activePlan, openAlerts] = await Promise.all([
+    db
+      .select()
+      .from(athleteProfileTable)
+      .where(eq(athleteProfileTable.userId, userId))
+      .limit(1),
+    db
+      .select()
+      .from(activitiesTable)
+      .where(eq(activitiesTable.userId, userId))
+      .orderBy(desc(activitiesTable.activityDate))
+      .limit(10),
+    db
+      .select()
+      .from(trainingPlansTable)
+      .where(and(eq(trainingPlansTable.userId, userId), eq(trainingPlansTable.status, "active")))
+      .limit(1),
+    db
+      .select()
+      .from(injuryAlertsTable)
+      .where(and(eq(injuryAlertsTable.userId, userId), eq(injuryAlertsTable.acknowledged, false)))
+      .limit(5),
+  ]);
+
+  const profile = profileRows[0];
+  if (!profile) return "";
+
+  const lines: string[] = [];
+  lines.push("=== ATHLETE PROFILE ===");
+  lines.push(
+    [
+      profile.name ? `Name: ${profile.name}` : null,
+      profile.age ? `Age: ${profile.age}` : null,
+      `Fitness: ${profile.fitnessLevel}`,
+      profile.primaryGoal ? `Goal: ${profile.primaryGoal}` : null,
+      profile.weeklyMileageGoal ? `Weekly target: ${Number(profile.weeklyMileageGoal)}mi` : null,
+      profile.hrv ? `HRV: ${Number(profile.hrv)}ms` : null,
+      profile.restingHeartRate ? `Resting HR: ${profile.restingHeartRate}bpm` : null,
+    ]
+      .filter(Boolean)
+      .join(" | "),
+  );
+
+  if (recentActivities.length > 0) {
+    lines.push("\nRecent Activities (newest first):");
+    for (const a of recentActivities) {
+      const parts = [
+        a.activityDate,
+        a.type.replace(/_/g, " "),
+        a.distanceKm ? `${Number(a.distanceKm).toFixed(1)}mi` : null,
+        a.durationMinutes ? `${a.durationMinutes}min` : null,
+        a.avgHeartRate ? `HR ${a.avgHeartRate}` : null,
+        a.perceivedEffort ? `RPE ${a.perceivedEffort}/10` : null,
+        a.notes ? `"${a.notes}"` : null,
+      ]
+        .filter(Boolean)
+        .join(" | ");
+      lines.push(`- ${parts}`);
+    }
+  }
+
+  const plan = activePlan[0];
+  if (plan) {
+    lines.push(
+      `\nActive Training Plan: "${plan.name}" | Goal: ${plan.goal} | ${plan.startDate} – ${plan.endDate}${plan.weeklyMileage ? ` | ${Number(plan.weeklyMileage)}mi/wk` : ""}`,
+    );
+  }
+
+  if (openAlerts.length > 0) {
+    lines.push(`\nOpen Injury Alerts (${openAlerts.length}):`);
+    for (const alert of openAlerts) {
+      lines.push(`- ${alert.riskLevel.toUpperCase()}: ${alert.bodyPart} — ${alert.message}`);
+    }
+  }
+
+  lines.push("======================");
+  lines.push("Use the above data to give specific, personalised advice. Reference actual numbers when relevant.\n");
+
+  return lines.join("\n");
 }
 
-async function getCurrentProfileId(): Promise<number | null> {
-  const [profile] = await db.select({ id: athleteProfileTable.id }).from(athleteProfileTable).limit(1);
-  return profile?.id ?? null;
-}
+// ── List conversations ──────────────────────────────────────────────────────
 
-router.get("/openai/conversations", async (_req, res): Promise<void> => {
-  const profileId = await getCurrentProfileId();
-  if (!profileId) {
-    res.json([]);
+router.get("/openai/conversations", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
     return;
   }
+  const userId = req.user.id;
   const convs = await db
     .select()
     .from(conversations)
-    .where(eq(conversations.profileId, profileId))
+    .where(eq(conversations.userId, userId))
     .orderBy(conversations.createdAt);
   res.json(ListOpenaiConversationsResponse.parse(convs.map(serializeConversation)));
 });
 
-router.post("/openai/conversations", async (req, res): Promise<void> => {
+// ── Create conversation ─────────────────────────────────────────────────────
+
+router.post("/openai/conversations", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
   const parsed = CreateOpenaiConversationBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const profileId = await getCurrentProfileId();
+  const userId = req.user.id;
   const [conv] = await db
     .insert(conversations)
-    .values({ title: parsed.data.title, profileId: profileId ?? undefined })
+    .values({ title: parsed.data.title, userId })
     .returning();
   res.status(201).json(serializeConversation(conv));
 });
 
-router.get("/openai/conversations/:id", async (req, res): Promise<void> => {
+// ── Get conversation + messages ─────────────────────────────────────────────
+
+router.get("/openai/conversations/:id", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = GetOpenaiConversationParams.safeParse({ id: parseInt(raw, 10) });
   if (!params.success) {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  const profileId = await getCurrentProfileId();
+  const userId = req.user.id;
   const [conv] = await db
     .select()
     .from(conversations)
-    .where(and(eq(conversations.id, params.data.id), eq(conversations.profileId, profileId ?? -1)));
+    .where(and(eq(conversations.id, params.data.id), eq(conversations.userId, userId)));
   if (!conv) {
     res.status(404).json({ error: "Conversation not found" });
     return;
   }
-  const msgs = await db.select().from(messages).where(eq(messages.conversationId, conv.id)).orderBy(messages.createdAt);
-  res.json(GetOpenaiConversationResponse.parse({ ...serializeConversation(conv), messages: msgs.map(serializeMessage) }));
+  const msgs = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.conversationId, conv.id))
+    .orderBy(messages.createdAt);
+  res.json(
+    GetOpenaiConversationResponse.parse({
+      ...serializeConversation(conv),
+      messages: msgs.map(serializeMessage),
+    }),
+  );
 });
 
-router.delete("/openai/conversations/:id", async (req, res): Promise<void> => {
+// ── Delete conversation ─────────────────────────────────────────────────────
+
+router.delete("/openai/conversations/:id", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = DeleteOpenaiConversationParams.safeParse({ id: parseInt(raw, 10) });
   if (!params.success) {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  const profileId = await getCurrentProfileId();
+  const userId = req.user.id;
   const [conv] = await db
     .delete(conversations)
-    .where(and(eq(conversations.id, params.data.id), eq(conversations.profileId, profileId ?? -1)))
+    .where(and(eq(conversations.id, params.data.id), eq(conversations.userId, userId)))
     .returning();
   if (!conv) {
     res.status(404).json({ error: "Conversation not found" });
@@ -171,18 +281,43 @@ router.delete("/openai/conversations/:id", async (req, res): Promise<void> => {
   res.sendStatus(204);
 });
 
-router.get("/openai/conversations/:id/messages", async (req, res): Promise<void> => {
+// ── List messages in a conversation ────────────────────────────────────────
+
+router.get("/openai/conversations/:id/messages", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = ListOpenaiMessagesParams.safeParse({ id: parseInt(raw, 10) });
   if (!params.success) {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  const msgs = await db.select().from(messages).where(eq(messages.conversationId, params.data.id)).orderBy(messages.createdAt);
+  const userId = req.user.id;
+  const [conv] = await db
+    .select({ id: conversations.id })
+    .from(conversations)
+    .where(and(eq(conversations.id, params.data.id), eq(conversations.userId, userId)));
+  if (!conv) {
+    res.status(404).json({ error: "Conversation not found" });
+    return;
+  }
+  const msgs = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.conversationId, conv.id))
+    .orderBy(messages.createdAt);
   res.json(ListOpenaiMessagesResponse.parse(msgs.map(serializeMessage)));
 });
 
-router.post("/openai/conversations/:id/messages", async (req, res): Promise<void> => {
+// ── Send a message + stream AI reply ───────────────────────────────────────
+
+router.post("/openai/conversations/:id/messages", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = SendOpenaiMessageParams.safeParse({ id: parseInt(raw, 10) });
   if (!params.success) {
@@ -195,18 +330,22 @@ router.post("/openai/conversations/:id/messages", async (req, res): Promise<void
     return;
   }
 
-  const [conv] = await db.select().from(conversations).where(eq(conversations.id, params.data.id));
+  const userId = req.user.id;
+
+  const [conv] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.id, params.data.id), eq(conversations.userId, userId)));
   if (!conv) {
     res.status(404).json({ error: "Conversation not found" });
     return;
   }
 
-  // Save user message
   await db.insert(messages).values({ conversationId: conv.id, role: "user", content: parsed.data.content });
 
-  const client = getOpenaiClient();
+  const client = openaiClient;
   if (!client) {
-    const fallbackContent = "Avera AI is not yet configured. Please add your OPENAI_API_KEY to Replit Secrets.";
+    const fallbackContent = "AveraAI is not yet configured. Please add your GLM_API_KEY to Replit Secrets.";
     await db.insert(messages).values({ conversationId: conv.id, role: "assistant", content: fallbackContent });
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
@@ -217,35 +356,47 @@ router.post("/openai/conversations/:id/messages", async (req, res): Promise<void
     return;
   }
 
-  // Fetch athlete coach preference and history in parallel
-  const [historyRows, profileRows] = await Promise.all([
+  const [historyRows, profileRows, userContext] = await Promise.all([
     db.select().from(messages).where(eq(messages.conversationId, conv.id)).orderBy(messages.createdAt),
-    db.select({ selectedCoach: athleteProfileTable.selectedCoach, userRole: athleteProfileTable.userRole }).from(athleteProfileTable).limit(1),
+    db.select({ selectedCoach: athleteProfileTable.selectedCoach, userRole: athleteProfileTable.userRole })
+      .from(athleteProfileTable)
+      .where(eq(athleteProfileTable.userId, userId))
+      .limit(1),
+    buildUserContext(userId),
   ]);
+
   const chatMessages = historyRows.map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
   const profile = profileRows[0];
-  const systemPrompt = profile?.userRole === "coach"
+  const basePrompt = profile?.userRole === "coach"
     ? COACH_ADVISOR_PROMPT
     : getSystemPrompt(profile?.selectedCoach);
+  const systemPrompt = userContext ? `${userContext}\n${basePrompt}` : basePrompt;
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
   let fullResponse = "";
-  const stream = await client.chat.completions.create({
-    model: "glm-4-flash",
-    max_tokens: 2048,
-    messages: [{ role: "system", content: systemPrompt }, ...chatMessages],
-    stream: true,
-  });
+  try {
+    const stream = await client.chat.completions.create({
+      model: "glm-4-flash",
+      max_tokens: 2048,
+      messages: [{ role: "system", content: systemPrompt }, ...chatMessages],
+      stream: true,
+    });
 
-  for await (const chunk of stream) {
-    const content = chunk.choices[0]?.delta?.content;
-    if (content) {
-      fullResponse += content;
-      res.write(`data: ${JSON.stringify({ content })}\n\n`);
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) {
+        fullResponse += content;
+        res.write(`data: ${JSON.stringify({ content })}\n\n`);
+      }
     }
+  } catch (err) {
+    logger.error({ err }, "AveraAI stream error");
+    const errMsg = "Sorry, I encountered an error. Please try again.";
+    fullResponse = errMsg;
+    res.write(`data: ${JSON.stringify({ content: errMsg })}\n\n`);
   }
 
   await db.insert(messages).values({ conversationId: conv.id, role: "assistant", content: fullResponse });
