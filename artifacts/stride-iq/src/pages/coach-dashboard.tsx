@@ -139,15 +139,26 @@ export default function CoachDashboard() {
               <span className="text-[11px] text-slate-500">Portal tuned for your {focus.athleteNoun}</span>
             </div>
             <p className="text-sm text-slate-300 mt-1 leading-relaxed">{focus.tagline}</p>
-            <div className="flex flex-wrap gap-2 mt-3">
-              {focus.focusAreas.map(area => (
-                <span
-                  key={area}
-                  className={`text-[11px] font-medium px-2.5 py-1 rounded-full border ${focus.accentBorder} ${focus.accentText} bg-slate-900/30`}
-                >
-                  {area}
-                </span>
-              ))}
+            <p className={`text-[11px] italic mt-1 ${focus.accentText} opacity-80`}>"{focus.philosophy}"</p>
+            <div className="mt-3 space-y-2">
+              <div className="flex flex-wrap gap-2">
+                {focus.focusAreas.map(area => (
+                  <span
+                    key={area}
+                    className={`text-[11px] font-medium px-2.5 py-1 rounded-full border ${focus.accentBorder} ${focus.accentText} bg-slate-900/30`}
+                  >
+                    {area}
+                  </span>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider">Key sessions</span>
+                {focus.keySessionTypes.map(s => (
+                  <span key={s} className="text-[10px] text-slate-400 bg-slate-800/60 px-2 py-0.5 rounded">
+                    {s}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -155,7 +166,7 @@ export default function CoachDashboard() {
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <StatCard label={`Total ${focus.athleteNoun}`} value={members.length} sub="On your team" icon={Users} accent={`${focus.accentBg} ${focus.accentText}`} />
-        <StatCard label="Team Avg" value={avgMiles.toFixed(1)} sub="mi this week" icon={Activity} accent={`${focus.accentBg} ${focus.accentText}`} />
+        <StatCard label={focus.distanceLabel} value={avgMiles.toFixed(1)} sub="avg mi this week" icon={Activity} accent={`${focus.accentBg} ${focus.accentText}`} />
         <StatCard label="Avg HRV" value={avgHrv != null ? avgHrv.toFixed(1) : "—"} sub={avgHrv != null ? "across team" : "no data yet"} icon={TrendingUp} accent="bg-violet-500/10 text-violet-400" />
       </div>
 
