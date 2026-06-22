@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { HelpCircle, X, TriangleAlert, Trash2 } from "lucide-react";
+import { HelpCircle, X, TriangleAlert, Trash2, User, Users, Zap, Clipboard } from "lucide-react";
 
 const schema = z.object({
   name: z.string().min(1, "Required"),
@@ -21,6 +21,13 @@ const schema = z.object({
   hrv: z.string().min(1, "Required"),
 });
 type FormValues = z.infer<typeof schema>;
+
+const coachSchema = z.object({
+  name: z.string().min(1, "Required"),
+  age: z.string().min(1, "Required"),
+  bio: z.string().max(500, "Bio must be under 500 characters"),
+});
+type CoachFormValues = z.infer<typeof coachSchema>;
 
 type GuideKey = "rhr" | "hrv" | null;
 
@@ -218,11 +225,237 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-export default function Profile() {
+interface TeamInfo {
+  id: number;
+  name: string;
+  inviteCode: string;
+  memberCount: number;
+  createdAt: string;
+}
+
+function CoachProfile() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { data: profile, isLoading } = useGetAthleteProfile();
-  const isCoach = profile?.userRole === "coach";
+  const updateProfile = useUpdateAthleteProfile();
+  const [team, setTeam] = useState<TeamInfo | null>(null);
+  const [teamLoading, setTeamLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const form = useForm<CoachFormValues>({
+    resolver: zodResolver(coachSchema),
+    defaultValues: { name: "", age: "", bio: "" },
+  });
+
+  useEffect(() => {
+    if (!profile) return;
+    form.reset({
+      name: profile.name ?? "",
+      age: profile.age != null ? String(profile.age) : "",
+      bio: profile.primaryGoal ?? "",
+    });
+  }, [profile]);
+
+  useEffect(() => {
+    fetch("/api/teams/my", { credentials: "include" })
+      .then(r => r.ok ? r.json() : { team: null })
+      .then(data => {
+        setTeam(data.team);
+        setTeamLoading(false);
+      })
+      .catch(() => setTeamLoading(false));
+  }, []);
+
+  function onSubmit(values: CoachFormValues) {
+    updateProfile.mutate({
+      data: {
+        name: values.name,
+        age: parseInt(values.age),
+        primaryGoal: values.bio,
+      }
+    }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getGetAthleteProfileQueryKey() });
+        toast({ title: "Profile updated" });
+      },
+    });
+  }
+
+  function copyCode() {
+    if (!team) return;
+    navigator.clipboard.writeText(team.inviteCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-8">
+        <div className="h-8 w-32 bg-card border border-border rounded animate-pulse mb-8" />
+        <div className="max-w-xl space-y-4">
+          {[...Array(6)].map((_, i) => <div key={i} className="h-16 bg-card border border-border rounded-lg animate-pulse" />)}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {showDeleteModal && <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />}
+      <div className="p-6 max-w-2xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="mb-2">
+          <h1 className="text-2xl font-bold text-white">Coach Profile</h1>
+          <p className="text-sm text-slate-500 mt-1">Your coaching profile and team overview</p>
+        </div>
+
+        {/* Profile Card */}
+        <div className="bg-[#0d1529] border border-slate-800 rounded-xl p-6">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-xl font-bold text-white">
+              {profile?.name?.charAt(0)?.toUpperCase() ?? "C"}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">{profile?.name ?? "Coach"}</p>
+              <p className="text-xs text-cyan-400 font-medium uppercase tracking-wider">Thrive Coach</p>
+              <p className="text-xs text-slate-500 mt-0.5">{profile?.email ?? ""}</p>
+            </div>
+          </div>
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="name" render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel className="text-xs text-slate-400 font-medium uppercase tracking-wider">Name</FormLabel>
+                    <FormControl>
+                      <Input className="bg-[#0a0f1e] border-slate-800 text-white placeholder-slate-600" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="age" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs text-slate-400 font-medium uppercase tracking-wider">Age</FormLabel>
+                    <FormControl>
+                      <Input type="number" className="bg-[#0a0f1e] border-slate-800 text-white placeholder-slate-600" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+              <FormField control={form.control} name="bio" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs text-slate-400 font-medium uppercase tracking-wider">Coaching Bio</FormLabel>
+                  <FormControl>
+                    <textarea
+                      className="w-full bg-[#0a0f1e] border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 min-h-[80px] resize-y"
+                      placeholder="Describe your coaching philosophy, specialties, and experience..."
+                      maxLength={500}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <div className="flex justify-end pt-2">
+                <Button
+                  type="submit"
+                  disabled={updateProfile.isPending}
+                  className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold"
+                >
+                  {updateProfile.isPending ? "Saving..." : "Save Profile"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
+
+        {/* Team Overview Card */}
+        <div className="bg-[#0d1529] border border-slate-800 rounded-xl p-6">
+          <div className="flex items-center gap-2 mb-5">
+            <Users className="w-4 h-4 text-cyan-400" />
+            <h2 className="text-sm font-semibold text-white">Team Overview</h2>
+          </div>
+
+          {teamLoading ? (
+            <div className="h-20 bg-slate-800/30 rounded-lg animate-pulse" />
+          ) : team ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center">
+                    <Zap className="w-5 h-5 text-cyan-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">{team.name}</p>
+                    <p className="text-xs text-slate-500">{team.memberCount} athlete{team.memberCount !== 1 ? "s" : ""} on team</p>
+                  </div>
+                </div>
+                <span className="text-xs text-slate-500">{new Date(team.createdAt).toLocaleDateString()}</span>
+              </div>
+
+              <div className="bg-[#0a0f1e] border border-slate-800 rounded-lg p-4">
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-2">Invite Code</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 bg-[#0d1529] border border-slate-800 rounded-lg px-4 py-3 font-mono text-xl font-bold text-cyan-400 tracking-widest text-center">
+                    {team.inviteCode}
+                  </div>
+                  <button
+                    onClick={copyCode}
+                    className="px-4 py-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-sm font-medium hover:bg-cyan-500/20 transition-colors flex items-center gap-2"
+                  >
+                    <Clipboard className="w-4 h-4" />
+                    {copied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                <p className="text-xs text-slate-600 mt-2">Share this with athletes to join your team</p>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-[#0a0f1e] p-4">
+                <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center">
+                  <User className="w-4 h-4 text-slate-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Team ID</p>
+                  <p className="text-sm text-white font-mono">{team.id}</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <p className="text-sm text-slate-500">No team yet</p>
+              <p className="text-xs text-slate-600 mt-1">Create your team from the Team page to start managing athletes</p>
+            </div>
+          )}
+        </div>
+
+        {/* Danger Zone */}
+        <div className="rounded-xl border border-red-500/25 bg-red-500/5 p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <TriangleAlert className="w-4 h-4 text-red-400" />
+            <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wider">Danger Zone</h2>
+          </div>
+          <p className="text-xs text-slate-500 mb-4">Once you delete your account, all your runs, training plans, alerts, and data are permanently gone. There is no undo.</p>
+          <button
+            type="button"
+            onClick={() => setShowDeleteModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-red-500/40 text-red-400 hover:bg-red-500/10 hover:border-red-500/60 text-sm font-semibold transition-all"
+          >
+            <Trash2 size={14} />
+            Delete account
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function AthleteProfile() {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const { data: profile, isLoading } = useGetAthleteProfile();
   const updateProfile = useUpdateAthleteProfile();
   const [activeGuide, setActiveGuide] = useState<GuideKey>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -287,12 +520,8 @@ export default function Profile() {
 
       <div className="p-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-foreground" data-testid="profile-title">
-            {isCoach ? "Coach Profile" : "Athlete Profile"}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {isCoach ? "Your coaching profile and account settings" : "Your training profile and physiological metrics"}
-          </p>
+          <h1 className="text-2xl font-semibold text-foreground" data-testid="profile-title">Athlete Profile</h1>
+          <p className="text-sm text-muted-foreground mt-1">Your training profile and physiological metrics</p>
         </div>
 
         <div className="max-w-xl space-y-6">
@@ -397,4 +626,19 @@ export default function Profile() {
       </div>
     </>
   );
+}
+
+export default function Profile() {
+  const { data: profile, isLoading } = useGetAthleteProfile();
+  if (isLoading) {
+    return (
+      <div className="p-8">
+        <div className="h-8 w-32 bg-card border border-border rounded animate-pulse mb-8" />
+        <div className="max-w-xl space-y-4">
+          {[...Array(6)].map((_, i) => <div key={i} className="h-16 bg-card border border-border rounded-lg animate-pulse" />)}
+        </div>
+      </div>
+    );
+  }
+  return profile?.userRole === "coach" ? <CoachProfile /> : <AthleteProfile />;
 }
