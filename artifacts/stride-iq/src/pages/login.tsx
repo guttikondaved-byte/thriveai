@@ -48,7 +48,7 @@ function Error({ msg }: { msg?: string }) {
   return msg ? <p className="text-red-400 text-xs mt-1">{msg}</p> : null;
 }
 
-async function register(email: string, password: string, firstName: string, lastName: string) {
+async function register(email: string, password: string, firstName: string, lastName: string): Promise<string | undefined> {
   const name = [firstName, lastName].filter(Boolean).join(" ");
   const res = await fetch("/api/auth/register", {
     method: "POST", credentials: "include",
@@ -65,16 +65,19 @@ async function register(email: string, password: string, firstName: string, last
     if (!loginRes.ok) {
       throw new Error("This email is already registered. Check your password or use the Log in option.");
     }
-    return; // logged in successfully
+    return undefined; // logged in via cookie, no sid to return
   }
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? "Registration failed");
+  return data.sid as string | undefined;
 }
 
-async function saveProfile(profile: Record<string, unknown>) {
+async function saveProfile(profile: Record<string, unknown>, sid?: string) {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (sid) headers["Authorization"] = `Bearer ${sid}`;
   await fetch("/api/athlete/profile", {
     method: "PATCH", credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(profile),
   });
 }
@@ -252,8 +255,9 @@ function AthleteSignup({ onBack }: { onBack: () => void }) {
       const authCheck = await fetch("/api/auth/user", { credentials: "include" });
       const authData = authCheck.ok ? await authCheck.json() : { user: null };
       const alreadyLoggedIn = authData.user != null;
+      let sid: string | undefined;
       if (!alreadyLoggedIn) {
-        await register(email, password, firstName, lastName);
+        sid = await register(email, password, firstName, lastName);
       }
       await saveProfile({
         name: [firstName, lastName].filter(Boolean).join(" "),
@@ -262,7 +266,7 @@ function AthleteSignup({ onBack }: { onBack: () => void }) {
         fitnessLevel,
         primaryGoal: goal,
         ...(weeklyKm ? { weeklyMileageGoal: parseFloat(weeklyKm) } : {}),
-      });
+      }, sid);
       if (dataSource === "strava") {
         // Open in a new top-level tab — Strava blocks being loaded inside an iframe
         window.open("/api/strava/connect", "_blank", "noopener,noreferrer");
@@ -463,15 +467,16 @@ function CoachSignup({ onBack }: { onBack: () => void }) {
       const authCheck = await fetch("/api/auth/user", { credentials: "include" });
       const authData = authCheck.ok ? await authCheck.json() : { user: null };
       const alreadyLoggedIn = authData.user != null;
+      let sid: string | undefined;
       if (!alreadyLoggedIn) {
-        await register(email, password, firstName, lastName);
+        sid = await register(email, password, firstName, lastName);
       }
       await saveProfile({
         name: [firstName, lastName].filter(Boolean).join(" "),
         userRole: "coach",
         primaryGoal: focus || "Coaching",
         fitnessLevel: "intermediate",
-      });
+      }, sid);
       window.location.href = "/";
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Something went wrong");

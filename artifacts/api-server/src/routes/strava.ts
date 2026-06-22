@@ -17,12 +17,13 @@ const router: IRouter = Router();
 // ── OAuth: redirect user to Strava ─────────────────────────────────────────
 
 function getCallbackUrl(): string {
-  // Use the known public Replit domain so the redirect_uri is always consistent
-  // and matches what is registered in the Strava app settings.
-  const domain =
-    process.env.REPLIT_DOMAINS?.split(",")[0]?.trim() ||
-    process.env.REPLIT_DEV_DOMAIN ||
-    "localhost";
+  // In development prefer the dev domain so it matches the redirect URI
+  // registered in the Strava app (which points to the janeway.replit.dev URL).
+  // In production prefer the published domain from REPLIT_DOMAINS.
+  const isDev = process.env.NODE_ENV !== "production";
+  const domain = isDev
+    ? (process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(",")[0]?.trim() || "localhost")
+    : (process.env.REPLIT_DOMAINS?.split(",")[0]?.trim() || process.env.REPLIT_DEV_DOMAIN || "localhost");
   const proto = domain === "localhost" ? "http" : "https";
   return `${proto}://${domain}/api/strava/callback`;
 }

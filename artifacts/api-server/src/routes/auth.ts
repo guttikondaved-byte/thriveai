@@ -147,7 +147,7 @@ router.post("/auth/register", async (req: Request, res: Response) => {
 
   const sid = await createSession(sessionData);
   setSessionCookie(res, sid);
-  res.json({ ok: true });
+  res.json({ ok: true, sid });
 });
 
 // ── Email / password login ─────────────────────────────────────────────────
