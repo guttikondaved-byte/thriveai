@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { TrendingUp, Users, Activity, ChevronRight } from "lucide-react";
-import { useUser } from "@clerk/react";
-import { useGetAthleteProfile } from "@workspace/api-client-react";
+import { useGetAthleteProfile, useGetCurrentAuthUser } from "@workspace/api-client-react";
 import AthleteProfileModal from "../components/AthleteProfileModal";
 import { getFocusConfig } from "@/lib/coachingFocus";
 
@@ -63,10 +62,10 @@ export default function CoachDashboard() {
   const [members, setMembers] = useState<RosterMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const { user } = useUser();
+  const { data: authData } = useGetCurrentAuthUser();
   const { data: profile } = useGetAthleteProfile();
   const focus = getFocusConfig(profile?.primaryGoal);
-  const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || profile?.firstName || "";
+  const displayName = [authData?.user?.firstName, authData?.user?.lastName].filter(Boolean).join(" ") || "";
   const greeting = greetingFor(new Date());
 
   useEffect(() => {
