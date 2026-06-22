@@ -3,12 +3,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { HelpCircle, X } from "lucide-react";
 
 const schema = z.object({
   name: z.string().min(1, "Required"),
@@ -21,11 +22,136 @@ const schema = z.object({
 });
 type FormValues = z.infer<typeof schema>;
 
+type GuideKey = "rhr" | "hrv" | null;
+
+const GUIDES: Record<NonNullable<GuideKey>, { title: string; subtitle: string; steps: { app: string; icon: string; how: string }[]; tip: string }> = {
+  rhr: {
+    title: "Finding Your Resting Heart Rate",
+    subtitle: "Resting HR (RHR) is your heart rate when fully at rest — ideally measured first thing in the morning before getting out of bed.",
+    steps: [
+      {
+        app: "Garmin Connect",
+        icon: "⌚",
+        how: "Open Garmin Connect app → tap your profile photo → scroll to \"Heart Rate\" → look for \"Resting Heart Rate\" (7-day average shown at the top).",
+      },
+      {
+        app: "Apple Health",
+        icon: "🍎",
+        how: "Open Health app → tap \"Browse\" → search \"Resting Heart Rate\" → view your latest reading or daily average.",
+      },
+      {
+        app: "Polar Flow",
+        icon: "🔵",
+        how: "Open Polar Flow → tap a recent activity → scroll to the Heart Rate section. Or open your watch and check the daily summary.",
+      },
+      {
+        app: "Coros",
+        icon: "🟠",
+        how: "Open the Coros app → tap your profile → Health Data → Heart Rate → Resting HR.",
+      },
+      {
+        app: "Whoop / Oura",
+        icon: "💍",
+        how: "Both apps display resting HR prominently on the home/recovery screen. Use the value shown for last night.",
+      },
+    ],
+    tip: "If you don't have a tracker, you can measure manually: lie still for 5 minutes after waking, then count your pulse for 60 seconds.",
+  },
+  hrv: {
+    title: "Finding Your HRV Score",
+    subtitle: "Heart Rate Variability (HRV) measures the variation in time between heartbeats — a higher HRV generally means better recovery. Scores vary by device and method.",
+    steps: [
+      {
+        app: "Garmin Connect",
+        icon: "⌚",
+        how: "Open Garmin Connect → tap your profile → scroll to \"HRV Status\". Your daily HRV is shown in the HRV Status card. Use the most recent overnight reading.",
+      },
+      {
+        app: "Apple Health + HRV4Training",
+        icon: "🍎",
+        how: "Open Health → Browse → \"Heart Rate Variability\". Apple measures HRV during sleep. Alternatively use the free HRV4Training app for a 1-minute morning reading.",
+      },
+      {
+        app: "Polar Flow",
+        icon: "🔵",
+        how: "Polar measures HRV as part of Nightly Recharge. Open Polar Flow → tap last night's sleep → scroll to Nightly Recharge for your ANS charge score (this correlates to HRV).",
+      },
+      {
+        app: "Whoop",
+        icon: "💜",
+        how: "Open Whoop → tap the Recovery screen. Your HRV is displayed prominently (ms). Use the overnight reading.",
+      },
+      {
+        app: "Oura Ring",
+        icon: "💍",
+        how: "Open the Oura app → tap the Readiness or Sleep tab → scroll to HRV. The value is in milliseconds.",
+      },
+    ],
+    tip: "HRV is measured in milliseconds (ms). A typical range is 20–100ms for adults — what matters most is your personal baseline, not comparison to others.",
+  },
+};
+
+function HelpModal({ guideKey, onClose }: { guideKey: NonNullable<GuideKey>; onClose: () => void }) {
+  const guide = GUIDES[guideKey];
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full sm:max-w-lg max-h-[85vh] overflow-y-auto bg-[#0f172a] border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl">
+        <div className="sticky top-0 bg-[#0f172a] border-b border-border px-5 py-4 flex items-start justify-between gap-3 rounded-t-2xl">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">{guide.title}</h2>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{guide.subtitle}</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground shrink-0 mt-0.5">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-3">
+          {guide.steps.map(step => (
+            <div key={step.app} className="flex gap-3 bg-secondary/30 border border-border rounded-xl p-3.5">
+              <span className="text-xl shrink-0 mt-0.5">{step.icon}</span>
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-1">{step.app}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{step.how}</p>
+              </div>
+            </div>
+          ))}
+
+          <div className="flex gap-2.5 bg-primary/10 border border-primary/20 rounded-xl p-3.5 mt-1">
+            <span className="text-base shrink-0">💡</span>
+            <p className="text-xs text-primary/90 leading-relaxed">{guide.tip}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FieldLabel({ label, guideKey, onHelp }: { label: string; guideKey: GuideKey; onHelp: (k: NonNullable<GuideKey>) => void }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span>{label}</span>
+      {guideKey && (
+        <button
+          type="button"
+          onClick={() => onHelp(guideKey)}
+          className="text-muted-foreground hover:text-primary transition-colors"
+          title="How to find this"
+        >
+          <HelpCircle className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function Profile() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { data: profile, isLoading } = useGetAthleteProfile();
   const updateProfile = useUpdateAthleteProfile();
+  const [activeGuide, setActiveGuide] = useState<GuideKey>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -81,88 +207,98 @@ export default function Profile() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-foreground" data-testid="profile-title">Athlete Profile</h1>
-        <p className="text-sm text-muted-foreground mt-1">Your training profile and physiological metrics</p>
-      </div>
+    <>
+      {activeGuide && <HelpModal guideKey={activeGuide} onClose={() => setActiveGuide(null)} />}
 
-      <div className="max-w-xl">
-        <div className="bg-card border border-border rounded-lg p-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="name" render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel>Name</FormLabel>
-                    <FormControl><Input data-testid="input-name" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="age" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Age</FormLabel>
-                    <FormControl><Input type="number" data-testid="input-age" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="fitnessLevel" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fitness Level</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-fitness-level">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="beginner">Beginner</SelectItem>
-                        <SelectItem value="intermediate">Intermediate</SelectItem>
-                        <SelectItem value="advanced">Advanced</SelectItem>
-                        <SelectItem value="elite">Elite</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="primaryGoal" render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel>Primary Goal</FormLabel>
-                    <FormControl><Input placeholder="Sub-4:00 marathon finish" data-testid="input-goal" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="weeklyMileageGoal" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Weekly Distance Goal (km)</FormLabel>
-                    <FormControl><Input type="number" step="0.1" data-testid="input-weekly-goal" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="restingHeartRate" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Resting HR (bpm)</FormLabel>
-                    <FormControl><Input type="number" data-testid="input-rhr" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="hrv" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>HRV Score</FormLabel>
-                    <FormControl><Input type="number" step="0.1" data-testid="input-hrv" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
-              <div className="flex justify-end pt-2">
-                <Button type="submit" disabled={updateProfile.isPending} data-testid="button-save-profile">
-                  {updateProfile.isPending ? "Saving..." : "Save Profile"}
-                </Button>
-              </div>
-            </form>
-          </Form>
+      <div className="p-8">
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-foreground" data-testid="profile-title">Athlete Profile</h1>
+          <p className="text-sm text-muted-foreground mt-1">Your training profile and physiological metrics</p>
+        </div>
+
+        <div className="max-w-xl">
+          <div className="bg-card border border-border rounded-lg p-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="name" render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Name</FormLabel>
+                      <FormControl><Input data-testid="input-name" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="age" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Age</FormLabel>
+                      <FormControl><Input type="number" data-testid="input-age" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="fitnessLevel" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fitness Level</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-fitness-level">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="beginner">Beginner</SelectItem>
+                          <SelectItem value="intermediate">Intermediate</SelectItem>
+                          <SelectItem value="advanced">Advanced</SelectItem>
+                          <SelectItem value="elite">Elite</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="primaryGoal" render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Primary Goal</FormLabel>
+                      <FormControl><Input placeholder="Sub-4:00 marathon finish" data-testid="input-goal" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="weeklyMileageGoal" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Weekly Distance Goal (km)</FormLabel>
+                      <FormControl><Input type="number" step="0.1" data-testid="input-weekly-goal" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <FormField control={form.control} name="restingHeartRate" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        <FieldLabel label="Resting HR (bpm)" guideKey="rhr" onHelp={setActiveGuide} />
+                      </FormLabel>
+                      <FormControl><Input type="number" data-testid="input-rhr" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <FormField control={form.control} name="hrv" render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>
+                        <FieldLabel label="HRV Score (ms)" guideKey="hrv" onHelp={setActiveGuide} />
+                      </FormLabel>
+                      <FormControl><Input type="number" step="0.1" data-testid="input-hrv" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+                <div className="flex justify-end pt-2">
+                  <Button type="submit" disabled={updateProfile.isPending} data-testid="button-save-profile">
+                    {updateProfile.isPending ? "Saving..." : "Save Profile"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
