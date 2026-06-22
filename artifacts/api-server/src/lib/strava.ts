@@ -5,19 +5,12 @@ import { logger } from "./logger";
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
 
-const TYPE_MAP: Record<string, string> = {
+// Thrive is a running app — only running activities are imported from Strava.
+// Rides, swims, weight training, yoga, etc. are intentionally skipped.
+const RUN_TYPE_MAP: Record<string, string> = {
   Run: "easy_run",
   TrailRun: "easy_run",
   VirtualRun: "easy_run",
-  Walk: "easy_run",
-  Hike: "easy_run",
-  Ride: "cross_training",
-  VirtualRide: "cross_training",
-  Swim: "cross_training",
-  Workout: "cross_training",
-  WeightTraining: "cross_training",
-  Yoga: "cross_training",
-  Crossfit: "cross_training",
 };
 
 export async function getValidStravaToken(userId: string): Promise<string | null> {
@@ -107,7 +100,12 @@ export async function syncStravaActivity(
     start_date_local?: string;
   };
 
-  const activityType = TYPE_MAP[act.type] ?? "easy_run";
+  // Only import running activities — skip rides, swims, weights, yoga, etc.
+  const activityType = RUN_TYPE_MAP[act.type];
+  if (!activityType) {
+    logger.info({ userId, stravaActivityId, type: act.type }, "Skipping non-running Strava activity");
+    return;
+  }
   const distanceKm = act.distance ? String((act.distance / 1609.344).toFixed(2)) : undefined;
   const durationMinutes = act.moving_time ? Math.round(act.moving_time / 60) : undefined;
   const activityDate = act.start_date_local
