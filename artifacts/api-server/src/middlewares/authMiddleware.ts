@@ -2,7 +2,7 @@ import { getAuth, clerkClient } from "@clerk/express";
 import { type Request, type Response, type NextFunction } from "express";
 import type { AuthUser } from "@workspace/api-zod";
 import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 declare global {
   namespace Express {
@@ -17,6 +17,40 @@ declare global {
       user: User;
     }
   }
+}
+
+/**
+ * Migrate an old account (UUID id) to a Clerk user ID.
+ * Updates all FK tables that reference users.id before changing the PK itself.
+ */
+async function migrateUserToClerkId(
+  oldId: string,
+  clerkUserId: string,
+  firstName: string | null,
+  lastName: string | null,
+  profileImageUrl: string | null,
+) {
+  await db.transaction(async (tx) => {
+    // Update all child tables first (FK constraints are IMMEDIATE, so order matters)
+    await tx.execute(sql`UPDATE athlete_profile SET user_id = ${clerkUserId} WHERE user_id = ${oldId}`);
+    await tx.execute(sql`UPDATE teams SET coach_user_id = ${clerkUserId} WHERE coach_user_id = ${oldId}`);
+    await tx.execute(sql`UPDATE team_memberships SET athlete_user_id = ${clerkUserId} WHERE athlete_user_id = ${oldId}`);
+    await tx.execute(sql`UPDATE notifications SET user_id = ${clerkUserId} WHERE user_id = ${oldId}`);
+    await tx.execute(sql`UPDATE strava_tokens SET user_id = ${clerkUserId} WHERE user_id = ${oldId}`);
+    await tx.execute(sql`UPDATE activities SET user_id = ${clerkUserId} WHERE user_id = ${oldId}`);
+    await tx.execute(sql`UPDATE injury_alerts SET user_id = ${clerkUserId} WHERE user_id = ${oldId}`);
+    await tx.execute(sql`UPDATE training_plans SET user_id = ${clerkUserId} WHERE user_id = ${oldId}`);
+    // Now safe to update the PK — no child rows reference the old id anymore
+    await tx.execute(sql`
+      UPDATE users
+      SET id = ${clerkUserId},
+          first_name = ${firstName},
+          last_name = ${lastName},
+          profile_image_url = ${profileImageUrl},
+          updated_at = NOW()
+      WHERE id = ${oldId}
+    `);
+  });
 }
 
 export async function authMiddleware(
@@ -36,6 +70,7 @@ export async function authMiddleware(
     return;
   }
 
+  // Fast path: user already provisioned under this Clerk ID
   const [existingUser] = await db
     .select()
     .from(usersTable)
@@ -54,6 +89,7 @@ export async function authMiddleware(
     return;
   }
 
+  // Slow path: fetch from Clerk and JIT-provision
   try {
     const clerkUser = await clerkClient.users.getUser(clerkUserId);
     const email = clerkUser.emailAddresses[0]?.emailAddress ?? null;
@@ -61,22 +97,52 @@ export async function authMiddleware(
     const lastName = clerkUser.lastName ?? null;
     const profileImageUrl = clerkUser.imageUrl ?? null;
 
-    const [newUser] = await db
-      .insert(usersTable)
-      .values({ id: clerkUserId, email, firstName, lastName, profileImageUrl })
-      .onConflictDoUpdate({
-        target: usersTable.id,
-        set: { email, firstName, lastName, profileImageUrl, updatedAt: new Date() },
-      })
-      .returning();
+    let newUser: typeof usersTable.$inferSelect | undefined;
 
-    req.user = {
-      id: newUser.id,
-      email: newUser.email,
-      firstName: newUser.firstName,
-      lastName: newUser.lastName,
-      profileImageUrl: newUser.profileImageUrl,
-    };
+    try {
+      [newUser] = await db
+        .insert(usersTable)
+        .values({ id: clerkUserId, email, firstName, lastName, profileImageUrl })
+        .onConflictDoUpdate({
+          target: usersTable.id,
+          set: { email, firstName, lastName, profileImageUrl, updatedAt: new Date() },
+        })
+        .returning();
+    } catch (insertErr: unknown) {
+      const msg = insertErr instanceof Error ? insertErr.message : String(insertErr);
+
+      if (msg.includes("users_email_unique") && email) {
+        // A pre-Clerk account with this email exists under a different ID.
+        // Find the old account and migrate it to the Clerk user ID.
+        const [oldUser] = await db
+          .select()
+          .from(usersTable)
+          .where(eq(usersTable.email, email))
+          .limit(1);
+
+        if (oldUser && oldUser.id !== clerkUserId) {
+          req.log?.info({ oldId: oldUser.id, clerkUserId }, "Migrating pre-Clerk account to Clerk ID");
+          await migrateUserToClerkId(oldUser.id, clerkUserId, firstName, lastName, profileImageUrl);
+          [newUser] = await db
+            .select()
+            .from(usersTable)
+            .where(eq(usersTable.id, clerkUserId))
+            .limit(1);
+        }
+      } else {
+        throw insertErr;
+      }
+    }
+
+    if (newUser) {
+      req.user = {
+        id: newUser.id,
+        email: newUser.email,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        profileImageUrl: newUser.profileImageUrl,
+      };
+    }
   } catch (err) {
     req.log?.error({ err }, "Failed to JIT-provision Clerk user");
   }
