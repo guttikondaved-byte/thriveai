@@ -527,4 +527,282 @@ router.get("/openai/coach-tip", async (req: Request, res): Promise<void> => {
   }
 });
 
+// ── Avera: suggest a training plan for an athlete (coach only) ───────────────
+const VALID_SESSION_TYPES = ["easy_run", "tempo_run", "interval", "long_run", "cross_training", "rest", "race"];
+
+function nextMondayISO(): string {
+  const d = new Date();
+  const day = d.getUTCDay(); // 0 Sun .. 6 Sat
+  const daysUntilMonday = ((8 - (day === 0 ? 7 : day)) % 7) || 7;
+  d.setUTCDate(d.getUTCDate() + daysUntilMonday);
+  return d.toISOString().slice(0, 10);
+}
+
+function addDaysISO(iso: string, days: number): string {
+  const d = new Date(iso + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+async function getCoachTeamRoster(userId: string) {
+  const coachTeam = await db.select().from(teamsTable).where(eq(teamsTable.coachUserId, userId)).orderBy(desc(teamsTable.createdAt)).limit(1);
+  const team = coachTeam[0];
+  if (!team) return null;
+  const memberships = await db
+    .select({ athleteUserId: teamMembershipsTable.athleteUserId })
+    .from(teamMembershipsTable)
+    .where(eq(teamMembershipsTable.teamId, team.id));
+  const memberIds = memberships.map(m => m.athleteUserId);
+  if (memberIds.length === 0) return { team, roster: [] as RosterEntry[] };
+
+  const [profiles, users, activities, alerts, plans] = await Promise.all([
+    db.select().from(athleteProfileTable).where(inArray(athleteProfileTable.userId, memberIds)),
+    db.select().from(usersTable).where(inArray(usersTable.id, memberIds)),
+    db.select().from(activitiesTable).where(inArray(activitiesTable.userId, memberIds)).orderBy(desc(activitiesTable.activityDate)).limit(memberIds.length * 8),
+    db.select().from(injuryAlertsTable).where(and(inArray(injuryAlertsTable.userId, memberIds), eq(injuryAlertsTable.acknowledged, false))),
+    db.select().from(trainingPlansTable).where(and(inArray(trainingPlansTable.userId, memberIds), eq(trainingPlansTable.status, "active"))),
+  ]);
+
+  const profileByUser = new Map(profiles.map(p => [p.userId, p]));
+  const userByUser = new Map(users.map(u => [u.id, u]));
+  const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const weeklyByUser = new Map<string, number>();
+  for (const a of activities) {
+    if (!a.userId || !a.activityDate || new Date(a.activityDate) < sevenDaysAgo) continue;
+    weeklyByUser.set(a.userId, (weeklyByUser.get(a.userId) ?? 0) + Number(a.distanceKm ?? 0));
+  }
+  const alertByUser = new Map<string, typeof alerts>();
+  for (const al of alerts) {
+    if (!al.userId) continue;
+    const arr = alertByUser.get(al.userId) ?? [];
+    arr.push(al);
+    alertByUser.set(al.userId, arr);
+  }
+  const hasPlan = new Set(plans.map(p => p.userId));
+
+  const roster: RosterEntry[] = memberIds.map(mid => {
+    const p = profileByUser.get(mid);
+    const u = userByUser.get(mid);
+    const name = (p?.name ?? `${u?.firstName ?? ""} ${u?.lastName ?? ""}`.trim()) || "Athlete";
+    return {
+      userId: mid,
+      name,
+      fitnessLevel: p?.fitnessLevel ?? null,
+      primaryGoal: p?.primaryGoal ?? null,
+      weeklyMiles: Number((weeklyByUser.get(mid) ?? 0).toFixed(1)),
+      hasActivePlan: hasPlan.has(mid),
+      alerts: (alertByUser.get(mid) ?? []).map(a => `${a.riskLevel} risk ${a.bodyPart}`),
+    };
+  });
+  return { team, roster };
+}
+
+type RosterEntry = {
+  userId: string;
+  name: string;
+  fitnessLevel: string | null;
+  primaryGoal: string | null;
+  weeklyMiles: number;
+  hasActivePlan: boolean;
+  alerts: string[];
+};
+
+router.get("/openai/suggest-plan", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const userId = req.user.id;
+  const profileRows = await db.select({ userRole: athleteProfileTable.userRole }).from(athleteProfileTable).where(eq(athleteProfileTable.userId, userId)).limit(1);
+  if (profileRows[0]?.userRole !== "coach") {
+    res.status(403).json({ error: "Coach only" });
+    return;
+  }
+  if (!openaiClient) {
+    res.status(503).json({ error: "AI is not configured" });
+    return;
+  }
+
+  const data = await getCoachTeamRoster(userId);
+  if (!data) {
+    res.status(404).json({ error: "No team found" });
+    return;
+  }
+  if (data.roster.length === 0) {
+    res.status(400).json({ error: "No athletes on your team yet" });
+    return;
+  }
+
+  // Prefer athletes without an active plan; fall back to whole roster.
+  const candidates = data.roster.filter(r => !r.hasActivePlan);
+  const pool = candidates.length > 0 ? candidates : data.roster;
+
+  const rosterLines = pool.map((r, i) =>
+    `${i + 1}. ${r.name} | level: ${r.fitnessLevel ?? "unknown"} | goal: ${r.primaryGoal ?? "general fitness"} | recent weekly: ${r.weeklyMiles}mi${r.alerts.length ? ` | ALERTS: ${r.alerts.join(", ")}` : ""}${r.hasActivePlan ? " | (already has an active plan)" : ""}`
+  ).join("\n");
+
+  const startDate = nextMondayISO();
+  const endDate = addDaysISO(startDate, 13); // 2-week plan
+
+  const systemPrompt = `You are AveraAI, an expert running coach. Design a focused 2-week training plan for ONE athlete from the roster below. All distances are in MILES.
+
+Pick the athlete who would benefit most from a new plan. If an athlete has an injury alert, keep volume conservative and bias toward easy_run, cross_training, and rest.
+
+Respond with ONLY a valid JSON object (no markdown, no prose) of this exact shape:
+{
+  "athleteNumber": <integer matching the roster number>,
+  "name": "<short plan name>",
+  "goal": "<one-line goal>",
+  "weeklyMileage": <number, target miles per week>,
+  "rationale": "<1-2 sentence why this athlete and this plan>",
+  "sessions": [
+    { "weekNumber": 1, "dayOfWeek": 1, "sessionType": "<one of: ${VALID_SESSION_TYPES.join(", ")}>", "description": "<short>", "distanceMiles": <number, 0 for rest>, "durationMinutes": <integer> }
+  ]
+}
+Provide exactly 14 sessions: weeks 1 and 2, dayOfWeek 1 (Mon) through 7 (Sun) for each. Use realistic mileage based on the athlete's recent weekly volume. dayOfWeek: 1=Mon ... 7=Sun.`;
+
+  try {
+    const completion = await openaiClient.chat.completions.create({
+      model: "glm-4-flash",
+      max_tokens: 1800,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Roster:\n${rosterLines}\n\nPlan dates: ${startDate} to ${endDate}. Design the plan now.` },
+      ],
+    });
+    const raw = completion.choices[0]?.message?.content ?? "";
+    const jsonStr = raw.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch {
+      logger.error({ raw }, "suggest-plan: failed to parse model JSON");
+      res.status(502).json({ error: "Could not generate a plan, please try again" });
+      return;
+    }
+
+    const idx = Number(parsed.athleteNumber);
+    const chosen = pool[idx - 1];
+    if (!chosen) {
+      res.status(502).json({ error: "Could not match a valid athlete, please try again" });
+      return;
+    }
+
+    const rawSessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
+    const sessions = rawSessions.map((s) => {
+      const o = s as Record<string, unknown>;
+      const type = String(o.sessionType ?? "easy_run");
+      return {
+        weekNumber: Math.min(2, Math.max(1, Number(o.weekNumber) || 1)),
+        dayOfWeek: Math.min(7, Math.max(1, Number(o.dayOfWeek) || 1)),
+        sessionType: VALID_SESSION_TYPES.includes(type) ? type : "easy_run",
+        description: String(o.description ?? "").slice(0, 280) || "Run",
+        distanceMiles: Math.max(0, Number(o.distanceMiles) || 0),
+        durationMinutes: Math.max(0, Math.round(Number(o.durationMinutes) || 0)),
+      };
+    }).filter(s => s.sessionType === "rest" || s.distanceMiles > 0 || s.durationMinutes > 0);
+
+    if (sessions.length === 0) {
+      res.status(502).json({ error: "Generated plan was empty, please try again" });
+      return;
+    }
+
+    res.json({
+      proposal: {
+        athleteUserId: chosen.userId,
+        athleteName: chosen.name,
+        name: String(parsed.name ?? "Training Plan").slice(0, 120),
+        goal: String(parsed.goal ?? "General fitness").slice(0, 200),
+        startDate,
+        endDate,
+        weeklyMileage: Math.max(0, Number(parsed.weeklyMileage) || 0),
+        rationale: String(parsed.rationale ?? "").slice(0, 400),
+        sessions,
+      },
+    });
+  } catch (err) {
+    logger.error({ err }, "suggest-plan error");
+    res.status(500).json({ error: "Failed to generate a plan" });
+  }
+});
+
+// ── Avera: apply a suggested plan to an athlete (coach only) ─────────────────
+router.post("/openai/apply-plan", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const userId = req.user.id;
+  const profileRows = await db.select({ userRole: athleteProfileTable.userRole, name: athleteProfileTable.name }).from(athleteProfileTable).where(eq(athleteProfileTable.userId, userId)).limit(1);
+  if (profileRows[0]?.userRole !== "coach") {
+    res.status(403).json({ error: "Coach only" });
+    return;
+  }
+  const coachName = profileRows[0]?.name || "Your coach";
+
+  const body = req.body as Record<string, unknown>;
+  const athleteUserId = typeof body.athleteUserId === "string" ? body.athleteUserId : "";
+  const name = typeof body.name === "string" ? body.name.trim() : "";
+  const goal = typeof body.goal === "string" ? body.goal.trim() : "";
+  const startDate = typeof body.startDate === "string" ? body.startDate : "";
+  const endDate = typeof body.endDate === "string" ? body.endDate : "";
+  const weeklyMileage = body.weeklyMileage != null ? Number(body.weeklyMileage) : null;
+  const sessionsIn = Array.isArray(body.sessions) ? body.sessions : [];
+
+  if (!athleteUserId || !name || !goal || !startDate || !endDate || sessionsIn.length === 0) {
+    res.status(400).json({ error: "Missing required plan fields" });
+    return;
+  }
+
+  // Validate the athlete is on this coach's team.
+  const data = await getCoachTeamRoster(userId);
+  if (!data || !data.roster.some(r => r.userId === athleteUserId)) {
+    res.status(403).json({ error: "Athlete is not on your team" });
+    return;
+  }
+
+  try {
+    const [plan] = await db.insert(trainingPlansTable).values({
+      userId: athleteUserId,
+      name,
+      goal,
+      startDate,
+      endDate,
+      status: "active",
+      weeklyMileage: weeklyMileage != null && !Number.isNaN(weeklyMileage) ? String(weeklyMileage) : null,
+    }).returning();
+
+    const sessionValues = sessionsIn.map((s) => {
+      const o = s as Record<string, unknown>;
+      const type = String(o.sessionType ?? "easy_run");
+      const miles = Math.max(0, Number(o.distanceMiles) || 0);
+      return {
+        planId: plan.id,
+        weekNumber: Math.max(1, Number(o.weekNumber) || 1),
+        dayOfWeek: Math.min(7, Math.max(1, Number(o.dayOfWeek) || 1)),
+        sessionType: VALID_SESSION_TYPES.includes(type) ? type : "easy_run",
+        description: String(o.description ?? "Run").slice(0, 280),
+        distanceKm: miles > 0 ? String(miles) : null,
+        durationMinutes: o.durationMinutes != null ? Math.max(0, Math.round(Number(o.durationMinutes) || 0)) : null,
+        completed: false,
+      };
+    });
+    if (sessionValues.length > 0) {
+      await db.insert(planSessionsTable).values(sessionValues);
+    }
+
+    await db.insert(notificationsTable).values({
+      userId: athleteUserId,
+      type: "training_plan",
+      title: "New training plan added",
+      message: `${coachName} added a new training plan: "${name}".`,
+    });
+
+    res.status(201).json({ planId: plan.id });
+  } catch (err) {
+    logger.error({ err }, "apply-plan error");
+    res.status(500).json({ error: "Failed to save the plan" });
+  }
+});
+
 export default router;

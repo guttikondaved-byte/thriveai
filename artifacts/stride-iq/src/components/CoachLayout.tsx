@@ -13,11 +13,45 @@ const NAV = [
   { href: "/profile", label: "Settings", icon: Settings },
 ];
 
+type PlanSession = {
+  weekNumber: number;
+  dayOfWeek: number;
+  sessionType: string;
+  description: string;
+  distanceMiles: number;
+  durationMinutes: number;
+};
+
+type PlanProposal = {
+  athleteUserId: string;
+  athleteName: string;
+  name: string;
+  goal: string;
+  startDate: string;
+  endDate: string;
+  weeklyMileage: number;
+  rationale: string;
+  sessions: PlanSession[];
+};
+
+type PlanFlow = "idle" | "loading" | "proposal" | "applying" | "done" | "error";
+
 function AveraTipPopup() {
   const [tip, setTip] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [flow, setFlow] = useState<PlanFlow>("idle");
+  const [proposal, setProposal] = useState<PlanProposal | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string>("");
+
+  const cancelAutoHide = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
 
   useEffect(() => {
     const alreadyShown = sessionStorage.getItem("avera_tip_shown");
@@ -46,6 +80,50 @@ function AveraTipPopup() {
     };
   }, []);
 
+  const buildPlan = async () => {
+    cancelAutoHide();
+    setFlow("loading");
+    setErrorMsg("");
+    try {
+      const res = await fetch("/api/openai/suggest-plan", { credentials: "include" });
+      const data = await res.json() as { proposal?: PlanProposal; error?: string };
+      if (!res.ok || !data.proposal) {
+        setErrorMsg(data.error || "Couldn't generate a plan. Try again.");
+        setFlow("error");
+        return;
+      }
+      setProposal(data.proposal);
+      setFlow("proposal");
+    } catch {
+      setErrorMsg("Network error. Try again.");
+      setFlow("error");
+    }
+  };
+
+  const applyPlan = async () => {
+    if (!proposal) return;
+    setFlow("applying");
+    setErrorMsg("");
+    try {
+      const res = await fetch("/api/openai/apply-plan", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(proposal),
+      });
+      const data = await res.json() as { planId?: number; error?: string };
+      if (!res.ok || !data.planId) {
+        setErrorMsg(data.error || "Couldn't add the plan. Try again.");
+        setFlow("error");
+        return;
+      }
+      setFlow("done");
+    } catch {
+      setErrorMsg("Network error. Try again.");
+      setFlow("error");
+    }
+  };
+
   if (!visible || dismissed || !tip) return null;
 
   return (
@@ -63,17 +141,107 @@ function AveraTipPopup() {
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
+
         <div className="px-4 py-3">
           <p className="text-sm text-slate-300 leading-relaxed">{tip}</p>
         </div>
+
+        {flow === "proposal" && proposal && (
+          <div className="mx-4 mb-3 rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-cyan-400">
+              <Calendar className="w-3 h-3" /> Proposed plan
+            </div>
+            <p className="mt-1.5 text-sm font-semibold text-white">{proposal.name}</p>
+            <p className="text-xs text-slate-400">for {proposal.athleteName}</p>
+            <div className="mt-2 space-y-1 text-xs text-slate-400">
+              <p><span className="text-slate-500">Goal:</span> {proposal.goal}</p>
+              <p>
+                <span className="text-slate-500">Volume:</span> {proposal.weeklyMileage} mi/wk · {proposal.sessions.length} sessions
+              </p>
+              <p><span className="text-slate-500">Dates:</span> {proposal.startDate} → {proposal.endDate}</p>
+            </div>
+            {proposal.rationale && (
+              <p className="mt-2 text-xs italic text-slate-500 leading-relaxed">"{proposal.rationale}"</p>
+            )}
+          </div>
+        )}
+
+        {flow === "done" && proposal && (
+          <div className="mx-4 mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
+            <p className="text-sm font-medium text-emerald-300">✓ Plan added for {proposal.athleteName}</p>
+          </div>
+        )}
+
+        {flow === "error" && errorMsg && (
+          <div className="mx-4 mb-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+            <p className="text-xs text-red-300">{errorMsg}</p>
+          </div>
+        )}
+
         <div className="px-4 pb-3 flex items-center gap-2">
-          <Link
-            href="/ai-assistant"
-            onClick={() => setVisible(false)}
-            className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
-          >
-            Open AveraAI →
-          </Link>
+          {flow === "idle" && (
+            <button
+              onClick={buildPlan}
+              className="text-xs font-medium text-slate-900 bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-md px-2.5 py-1.5"
+            >
+              Build a training plan
+            </button>
+          )}
+
+          {flow === "loading" && (
+            <span className="text-xs text-cyan-400 font-medium">Avera is designing a plan…</span>
+          )}
+
+          {flow === "proposal" && (
+            <>
+              <button
+                onClick={applyPlan}
+                className="text-xs font-medium text-slate-900 bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-md px-2.5 py-1.5"
+              >
+                Add to training plan
+              </button>
+              <button
+                onClick={() => { setFlow("idle"); setProposal(null); }}
+                className="text-xs text-slate-500 hover:text-slate-400 transition-colors"
+              >
+                Cancel
+              </button>
+            </>
+          )}
+
+          {flow === "applying" && (
+            <span className="text-xs text-cyan-400 font-medium">Adding plan…</span>
+          )}
+
+          {flow === "done" && (
+            <Link
+              href="/plans"
+              onClick={() => setVisible(false)}
+              className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+            >
+              View plans →
+            </Link>
+          )}
+
+          {flow === "error" && (
+            <button
+              onClick={buildPlan}
+              className="text-xs font-medium text-cyan-400 hover:text-cyan-300 transition-colors"
+            >
+              Try again
+            </button>
+          )}
+
+          {flow !== "done" && (
+            <Link
+              href="/ai-assistant"
+              onClick={() => setVisible(false)}
+              className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+            >
+              Open AveraAI →
+            </Link>
+          )}
+
           <button
             onClick={() => { setDismissed(true); setVisible(false); }}
             className="ml-auto text-xs text-slate-500 hover:text-slate-400 transition-colors"
