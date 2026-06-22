@@ -34,6 +34,7 @@ router.get("/strava/connect", (req, res): void => {
   }
 
   const callbackUrl = getCallbackUrl();
+  req.log.info({ callbackUrl }, "Strava connect redirect_uri");
 
   const params = new URLSearchParams({
     client_id: process.env.STRAVA_CLIENT_ID ?? "",
