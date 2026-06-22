@@ -74,13 +74,13 @@ const clerkAppearance = {
     rootBox: "w-full flex justify-center",
     cardBox: "rounded-2xl border border-slate-700/50 w-[440px] max-w-full overflow-hidden shadow-xl",
     card: "!shadow-none !border-0 !bg-transparent !rounded-none",
-    footer: "!shadow-none !border-0 !bg-transparent !rounded-none",
+    footer: "!shadow-none !border-0 !bg-transparent !rounded-none !hidden",
+    footerAction: "!hidden",
+    footerActionLink: "!hidden",
     headerTitle: "text-white font-bold",
     headerSubtitle: "text-slate-400",
     socialButtonsBlockButtonText: "text-slate-200 font-medium",
     formFieldLabel: "text-slate-300 font-medium",
-    footerActionLink: "text-cyan-400 hover:text-cyan-300",
-    footerActionText: "text-slate-500",
     dividerText: "text-slate-600",
     identityPreviewEditButton: "text-cyan-400",
     formFieldSuccessText: "text-emerald-400",
@@ -211,12 +211,6 @@ function SignUpPage() {
             </button>
           </div>
 
-          <p className="text-center text-sm text-slate-500">
-            Already have an account?{" "}
-            <button onClick={() => navigate("/sign-in")} className="text-cyan-400 hover:text-cyan-300 transition-colors">
-              Log in
-            </button>
-          </p>
         </div>
       </div>
     );
