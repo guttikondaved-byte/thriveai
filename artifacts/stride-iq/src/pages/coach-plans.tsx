@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
-import { Plus, X, Trash2, Calendar, ChevronDown, ChevronUp, Bot } from "lucide-react";
+import { Plus, X, Trash2, Calendar, ChevronDown, ChevronUp, Zap, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Link } from "wouter";
 
 interface Athlete {
   userId: string;
@@ -26,6 +25,27 @@ interface TeamPlan {
   createdAt: string;
 }
 
+type AveraFlow = "idle" | "loading" | "proposal" | "applying" | "done" | "error";
+
+interface AveraProposal {
+  athleteUserId: string;
+  athleteName: string;
+  name: string;
+  goal: string;
+  startDate: string;
+  endDate: string;
+  weeklyMileage: number;
+  rationale: string;
+  sessions: Array<{
+    weekNumber: number;
+    dayOfWeek: number;
+    sessionType: string;
+    description: string;
+    distanceMiles: number;
+    durationMinutes: number;
+  }>;
+}
+
 const STATUS_COLORS: Record<string, string> = {
   active: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
   completed: "text-slate-400 bg-slate-400/10 border-slate-400/20",
@@ -41,6 +61,10 @@ export default function CoachPlans() {
   const [showFormFor, setShowFormFor] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const [averaFlow, setAveraFlow] = useState<AveraFlow>("idle");
+  const [averaProposal, setAveraProposal] = useState<AveraProposal | null>(null);
+  const [averaError, setAveraError] = useState("");
 
   const [form, setForm] = useState({
     name: "", goal: "", startDate: format(new Date(), "yyyy-MM-dd"), endDate: "", weeklyMileage: "",
@@ -105,6 +129,66 @@ export default function CoachPlans() {
     }
   }
 
+  async function buildWithAvera() {
+    setAveraFlow("loading");
+    setAveraError("");
+    setAveraProposal(null);
+    try {
+      const res = await fetch("/api/openai/suggest-plan", { credentials: "include" });
+      const data = await res.json() as { proposal?: AveraProposal; error?: string };
+      if (!res.ok || !data.proposal) {
+        setAveraError(data.error || "Couldn't generate a plan. Try again.");
+        setAveraFlow("error");
+        return;
+      }
+      setAveraProposal(data.proposal);
+      setAveraFlow("proposal");
+    } catch {
+      setAveraError("Network error. Please try again.");
+      setAveraFlow("error");
+    }
+  }
+
+  async function applyAveraPlan() {
+    if (!averaProposal) return;
+    setAveraFlow("applying");
+    setAveraError("");
+    try {
+      const res = await fetch("/api/openai/apply-plan", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(averaProposal),
+      });
+      const data = await res.json() as { planId?: number; error?: string };
+      if (!res.ok || !data.planId) {
+        setAveraError(data.error || "Couldn't add the plan. Try again.");
+        setAveraFlow("error");
+        return;
+      }
+      setAveraFlow("done");
+      const athlete = athletes.find(a => a.userId === averaProposal.athleteUserId);
+      const newPlan: TeamPlan = {
+        id: data.planId,
+        userId: averaProposal.athleteUserId,
+        athleteName: averaProposal.athleteName,
+        name: averaProposal.name,
+        goal: averaProposal.goal,
+        startDate: averaProposal.startDate,
+        endDate: averaProposal.endDate,
+        weeklyMileage: averaProposal.weeklyMileage,
+        status: "active",
+        createdAt: new Date().toISOString(),
+      };
+      setPlans(prev => [...prev, newPlan]);
+      setExpandedAthleteId(averaProposal.athleteUserId);
+      toast({ title: `Plan added for ${athlete?.name ?? averaProposal.athleteName}` });
+    } catch {
+      setAveraError("Network error. Please try again.");
+      setAveraFlow("error");
+    }
+  }
+
   if (loading) {
     return (
       <div className="p-8 space-y-4">
@@ -113,6 +197,8 @@ export default function CoachPlans() {
     );
   }
 
+  const showAveraPanel = averaFlow !== "idle";
+
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -120,13 +206,123 @@ export default function CoachPlans() {
           <h1 className="text-2xl font-bold text-white">Training Plans</h1>
           <p className="text-sm text-slate-400 mt-0.5">Manage training plans for each athlete</p>
         </div>
-        <Link href="/ai-assistant">
-          <Button className="gap-2 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20">
-            <Bot className="w-4 h-4" />
-            Ask AveraAI
-          </Button>
-        </Link>
+        <Button
+          onClick={averaFlow === "idle" || averaFlow === "error" ? buildWithAvera : undefined}
+          disabled={averaFlow === "loading" || averaFlow === "applying"}
+          className="gap-2 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 disabled:opacity-60"
+        >
+          {(averaFlow === "loading" || averaFlow === "applying")
+            ? <Loader2 className="w-4 h-4 animate-spin" />
+            : <Zap className="w-4 h-4" />}
+          {averaFlow === "loading" ? "Avera is thinking…"
+            : averaFlow === "applying" ? "Adding plan…"
+            : "Build plan with Avera"}
+        </Button>
       </div>
+
+      {showAveraPanel && (
+        <div className="mb-6 rounded-xl border border-cyan-500/30 bg-cyan-500/5 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-cyan-500/15">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-cyan-400" />
+              <span className="text-sm font-semibold text-cyan-400">AveraAI Plan Builder</span>
+            </div>
+            <button
+              onClick={() => { setAveraFlow("idle"); setAveraProposal(null); setAveraError(""); }}
+              className="text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {averaFlow === "loading" && (
+            <div className="px-5 py-8 flex items-center justify-center gap-3 text-slate-400 text-sm">
+              <Loader2 className="w-5 h-5 animate-spin text-cyan-400" />
+              Avera is reviewing your team and designing a personalised plan…
+            </div>
+          )}
+
+          {(averaFlow === "proposal" || averaFlow === "applying" || averaFlow === "done") && averaProposal && (
+            <div className="px-5 py-4 space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-base font-semibold text-white">{averaProposal.name}</p>
+                  <p className="text-sm text-cyan-300 mt-0.5">for {averaProposal.athleteName}</p>
+                  <p className="text-sm text-slate-400 mt-1">{averaProposal.goal}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-semibold text-white">{averaProposal.weeklyMileage} mi/wk</p>
+                  <p className="text-xs text-slate-500">{averaProposal.sessions.length} sessions</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 text-xs text-slate-500">
+                <span>{averaProposal.startDate} → {averaProposal.endDate}</span>
+              </div>
+
+              {averaProposal.rationale && (
+                <p className="text-xs text-slate-400 italic border-l-2 border-cyan-500/30 pl-3 leading-relaxed">
+                  "{averaProposal.rationale}"
+                </p>
+              )}
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {(["easy_run","tempo_run","interval","long_run","cross_training","rest","race"] as const).map(type => {
+                  const count = averaProposal.sessions.filter(s => s.sessionType === type).length;
+                  if (count === 0) return null;
+                  const labels: Record<string, string> = {
+                    easy_run: "Easy", tempo_run: "Tempo", interval: "Intervals",
+                    long_run: "Long", cross_training: "Cross", rest: "Rest", race: "Race",
+                  };
+                  return (
+                    <div key={type} className="bg-[#0a0f1e] rounded-lg px-3 py-2 text-center">
+                      <p className="text-sm font-semibold text-white">{count}</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{labels[type]}</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {averaFlow === "done" ? (
+                <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
+                  <span>✓</span> Plan added to {averaProposal.athleteName}'s profile
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 pt-1">
+                  <Button
+                    onClick={applyAveraPlan}
+                    disabled={averaFlow === "applying"}
+                    size="sm"
+                    className="bg-cyan-600 hover:bg-cyan-500 text-white gap-2"
+                  >
+                    {averaFlow === "applying" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                    Add to Training Plan
+                  </Button>
+                  <button
+                    onClick={buildWithAvera}
+                    disabled={averaFlow === "applying"}
+                    className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    Generate different plan
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {averaFlow === "error" && (
+            <div className="px-5 py-4 flex items-center justify-between">
+              <p className="text-sm text-red-400">{averaError}</p>
+              <button
+                onClick={buildWithAvera}
+                className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {athletes.length === 0 ? (
         <div className="bg-white/5 border border-slate-800 rounded-xl p-12 text-center">
