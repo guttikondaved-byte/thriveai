@@ -357,4 +357,85 @@ router.get("/teams/:teamId/members/:userId/profile", async (req, res): Promise<v
   });
 });
 
+// PATCH /teams/code — coach regenerates their team's invite code
+router.patch("/teams/code", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const [team] = await db.select().from(teamsTable)
+    .where(eq(teamsTable.coachUserId, req.user.id))
+    .orderBy(desc(teamsTable.createdAt))
+    .limit(1);
+
+  if (!team) {
+    res.status(404).json({ error: "No team found for this coach" });
+    return;
+  }
+
+  let newCode = generateInviteCode();
+  let attempts = 0;
+  while (attempts < 5) {
+    const existing = await db.select().from(teamsTable)
+      .where(eq(teamsTable.inviteCode, newCode))
+      .limit(1);
+    if (existing.length === 0) break;
+    newCode = generateInviteCode();
+    attempts++;
+  }
+
+  const [updated] = await db.update(teamsTable)
+    .set({ inviteCode: newCode })
+    .where(eq(teamsTable.id, team.id))
+    .returning();
+
+  res.json({ inviteCode: updated.inviteCode });
+});
+
+// DELETE /teams — coach deletes their team (removes all memberships first)
+router.delete("/teams", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const [team] = await db.select().from(teamsTable)
+    .where(eq(teamsTable.coachUserId, req.user.id))
+    .orderBy(desc(teamsTable.createdAt))
+    .limit(1);
+
+  if (!team) {
+    res.status(404).json({ error: "No team found for this coach" });
+    return;
+  }
+
+  await db.delete(teamMembershipsTable)
+    .where(eq(teamMembershipsTable.teamId, team.id));
+
+  await db.delete(teamsTable)
+    .where(eq(teamsTable.id, team.id));
+
+  res.status(204).end();
+});
+
+// DELETE /teams/leave — athlete leaves their current team
+router.delete("/teams/leave", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const deleted = await db.delete(teamMembershipsTable)
+    .where(eq(teamMembershipsTable.athleteUserId, req.user.id))
+    .returning();
+
+  if (deleted.length === 0) {
+    res.status(404).json({ error: "You are not a member of any team" });
+    return;
+  }
+
+  res.status(204).end();
+});
+
 export default router;

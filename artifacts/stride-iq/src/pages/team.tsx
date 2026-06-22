@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Users, Copy, Check, Link as LinkIcon, UserPlus, Zap, ChevronRight } from "lucide-react";
+import { Users, Copy, Check, Link as LinkIcon, UserPlus, Zap, ChevronRight, RefreshCw, Trash2, LogOut, AlertTriangle } from "lucide-react";
 import { useGetAthleteProfile } from "@workspace/api-client-react";
+import { useToast } from "@/hooks/use-toast";
 import AthleteProfileModal from "../components/AthleteProfileModal";
 
 interface TeamInfo {
@@ -27,6 +28,8 @@ interface StravaStatus {
 export default function Team() {
   const { data: profile } = useGetAthleteProfile();
   const isCoach = profile?.userRole === "coach";
+  const { toast } = useToast();
+
   const [team, setTeam] = useState<TeamInfo | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [stravaStatus, setStravaStatus] = useState<Map<string, StravaStatus>>(new Map());
@@ -38,6 +41,13 @@ export default function Team() {
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+
+  // New state for management actions
+  const [regenerating, setRegenerating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
   useEffect(() => {
     fetch("/api/teams/my", { credentials: "include" })
@@ -84,8 +94,12 @@ export default function Team() {
         setCreating(false);
         fetchMembers(data.id);
         fetchStravaStatus(data.id);
+        toast({ title: "Team created!", description: `Share the invite code to add athletes.` });
       })
-      .catch(() => setCreating(false));
+      .catch(() => {
+        setCreating(false);
+        toast({ title: "Failed to create team", variant: "destructive" });
+      });
   }
 
   function joinTeam() {
@@ -108,6 +122,7 @@ export default function Team() {
       .then(data => {
         setTeam(data);
         setJoining(false);
+        toast({ title: "Joined team!", description: `Welcome to ${data.name}.` });
       })
       .catch(err => {
         setJoinError(err.message ?? "Invalid invite code");
@@ -120,6 +135,58 @@ export default function Team() {
     navigator.clipboard.writeText(team.inviteCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  function regenerateCode() {
+    setRegenerating(true);
+    fetch("/api/teams/code", { method: "PATCH", credentials: "include" })
+      .then(async r => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
+      .then(data => {
+        setTeam(prev => prev ? { ...prev, inviteCode: data.inviteCode } : prev);
+        setRegenerating(false);
+        toast({ title: "New code generated", description: `Old code is now invalid.` });
+      })
+      .catch(() => {
+        setRegenerating(false);
+        toast({ title: "Failed to regenerate code", variant: "destructive" });
+      });
+  }
+
+  function deleteTeam() {
+    setDeleting(true);
+    fetch("/api/teams", { method: "DELETE", credentials: "include" })
+      .then(r => {
+        if (!r.ok && r.status !== 204) throw new Error();
+        setTeam(null);
+        setMembers([]);
+        setStravaStatus(new Map());
+        setConfirmDelete(false);
+        setDeleting(false);
+        toast({ title: "Team deleted", description: "All members have been removed." });
+      })
+      .catch(() => {
+        setDeleting(false);
+        toast({ title: "Failed to delete team", variant: "destructive" });
+      });
+  }
+
+  function leaveTeam() {
+    setLeaving(true);
+    fetch("/api/teams/leave", { method: "DELETE", credentials: "include" })
+      .then(r => {
+        if (!r.ok && r.status !== 204) throw new Error();
+        setTeam(null);
+        setConfirmLeave(false);
+        setLeaving(false);
+        toast({ title: "You've left the team" });
+      })
+      .catch(() => {
+        setLeaving(false);
+        toast({ title: "Failed to leave team", variant: "destructive" });
+      });
   }
 
   if (loading) {
@@ -188,11 +255,12 @@ export default function Team() {
     );
   }
 
+  // ── Athlete view ──────────────────────────────────────────────────────────
   if (!isCoach) {
     return (
       <div className="p-6 max-w-xl mx-auto space-y-6">
         <h1 className="text-2xl font-bold text-foreground">Team</h1>
-        <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+        <div className="bg-card border border-border rounded-xl p-6 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center">
               <Users className="w-5 h-5 text-primary" />
@@ -206,11 +274,54 @@ export default function Team() {
             <Check className="w-3.5 h-3.5 text-green-500" />
             Your coach can now see your training and send you guidance.
           </p>
+
+          <div className="pt-2 border-t border-border">
+            <button
+              onClick={() => setConfirmLeave(true)}
+              className="flex items-center gap-2 text-xs text-destructive hover:text-destructive/80 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Leave team
+            </button>
+          </div>
         </div>
+
+        {/* Leave team confirmation modal */}
+        {confirmLeave && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="bg-card border border-border rounded-2xl p-6 max-w-sm w-full mx-4 space-y-4 shadow-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-destructive/10 border border-destructive/20 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-destructive" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Leave team?</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">You'll be removed from <span className="font-medium text-foreground">{team.name}</span>. You can rejoin with the invite code.</p>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={() => setConfirmLeave(false)}
+                  className="flex-1 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={leaveTeam}
+                  disabled={leaving}
+                  className="flex-1 py-2 rounded-lg bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {leaving ? <><div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />Leaving…</> : "Leave team"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
+  // ── Coach view ────────────────────────────────────────────────────────────
   const connectedCount = Array.from(stravaStatus.values()).filter(s => s.connected).length;
   const totalMembers = members.length;
 
@@ -222,8 +333,8 @@ export default function Team() {
       </div>
 
       {/* Invite code card */}
-      <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-4">
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4">
+        <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
             <LinkIcon className="w-5 h-5" />
           </div>
@@ -253,6 +364,18 @@ export default function Team() {
               </>
             )}
           </button>
+        </div>
+        <div className="flex items-center gap-3 pt-1 border-t border-border">
+          <button
+            onClick={regenerateCode}
+            disabled={regenerating}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${regenerating ? "animate-spin" : ""}`} />
+            {regenerating ? "Regenerating…" : "Regenerate code"}
+          </button>
+          <span className="text-border">·</span>
+          <p className="text-xs text-muted-foreground">Old code will stop working immediately.</p>
         </div>
       </div>
 
@@ -337,6 +460,51 @@ export default function Team() {
           </div>
         )}
       </div>
+
+      {/* Danger zone */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Danger zone</p>
+        <button
+          onClick={() => setConfirmDelete(true)}
+          className="flex items-center gap-2 text-sm text-destructive hover:text-destructive/80 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete team
+        </button>
+        <p className="text-xs text-muted-foreground mt-1.5">Permanently removes the team and all memberships.</p>
+      </div>
+
+      {/* Delete team confirmation modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl p-6 max-w-sm w-full mx-4 space-y-4 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-destructive/10 border border-destructive/20 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Delete <span className="text-destructive">{team.name}</span>?</p>
+                <p className="text-xs text-muted-foreground mt-0.5">This will remove the team and all {team.memberCount} member{team.memberCount !== 1 ? "s" : ""}. This cannot be undone.</p>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="flex-1 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={deleteTeam}
+                disabled={deleting}
+                className="flex-1 py-2 rounded-lg bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {deleting ? <><div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />Deleting…</> : "Delete team"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedUserId && team && (
         <AthleteProfileModal
