@@ -232,6 +232,7 @@ export default function Activities() {
           </div>
           <a
             href="/api/strava/connect"
+            target="_top"
             className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg bg-[#FC4C02] hover:bg-[#e34400] text-white transition-colors shrink-0"
           >
             Connect Strava
