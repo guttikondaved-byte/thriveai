@@ -245,9 +245,10 @@ function AthleteSignup({ onBack }: { onBack: () => void }) {
     setErr("");
     setLoading(true);
     try {
-      // If already authenticated (e.g. returning to sign-up after previous attempt), skip registration
+      // Skip registration if already authenticated (e.g. returning after a previous attempt)
       const authCheck = await fetch("/api/auth/user", { credentials: "include" });
-      const alreadyLoggedIn = authCheck.ok && authCheck.status !== 401;
+      const authData = authCheck.ok ? await authCheck.json() : { user: null };
+      const alreadyLoggedIn = authData.user != null;
       if (!alreadyLoggedIn) {
         await register(email, password, firstName, lastName);
       }
@@ -259,7 +260,7 @@ function AthleteSignup({ onBack }: { onBack: () => void }) {
         primaryGoal: goal,
         ...(weeklyKm ? { weeklyMileageGoal: parseFloat(weeklyKm) } : {}),
       });
-      window.location.href = dataSource === "strava" ? "/?connect=strava" : "/";
+      window.location.href = "/";
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Something went wrong");
       setLoading(false);
@@ -450,7 +451,8 @@ function CoachSignup({ onBack }: { onBack: () => void }) {
     setLoading(true);
     try {
       const authCheck = await fetch("/api/auth/user", { credentials: "include" });
-      const alreadyLoggedIn = authCheck.ok && authCheck.status !== 401;
+      const authData = authCheck.ok ? await authCheck.json() : { user: null };
+      const alreadyLoggedIn = authData.user != null;
       if (!alreadyLoggedIn) {
         await register(email, password, firstName, lastName);
       }
