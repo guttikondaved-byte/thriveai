@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { TrendingUp, Users, Activity, ChevronRight } from "lucide-react";
-import { useAuth } from "@workspace/replit-auth-web";
 import AthleteProfileModal from "../components/AthleteProfileModal";
 
 type RiskLevel = "high" | "medium" | "low";
@@ -50,14 +49,12 @@ function StatCard({ label, value, sub, icon: Icon, accent }: { label: string; va
 }
 
 export default function CoachDashboard() {
-  const { isAuthenticated } = useAuth();
   const [team, setTeam] = useState<TeamInfo | null>(null);
   const [members, setMembers] = useState<RosterMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
     fetch("/api/teams/my", { credentials: "include" })
       .then(r => r.ok ? r.json() : { team: null })
       .then(data => {
@@ -75,7 +72,7 @@ export default function CoachDashboard() {
         }
       })
       .catch(() => setLoading(false));
-  }, [isAuthenticated]);
+  }, []);
 
   const weeklyMiles = members.map(m => m.weeklyDistanceKm);
   const avgMiles = members.length > 0 ? (weeklyMiles.reduce((a, b) => a + b, 0) / members.length) : 0;

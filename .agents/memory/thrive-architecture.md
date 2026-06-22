@@ -4,9 +4,19 @@ description: Key decisions, file locations, and quirks for the Thrive running co
 ---
 
 ## App identity
-- Product name: **Thrive**, AI coach: **Avera**
+- Product name: **Thrive**, AI coach: **AveraAI**
 - Artifact slug: `stride-iq`, preview path `/`, dir: `artifacts/stride-iq`
 - DB schema: `lib/db/src/schema/` (athlete.ts, activities.ts, trainingPlans.ts, alerts.ts, conversations.ts, messages.ts)
+
+## Auth — Clerk (replaced custom email/password)
+- `@clerk/react` client, `@clerk/express` server; Google + email/password enabled
+- `authMiddleware.ts` uses `getAuth(req)` → DB lookup → JIT-provision via `clerkClient.users.getUser()`
+- Users table `id` is varchar PK storing Clerk `user_xxx` IDs
+- Clerk proxy path `/api/__clerk` (no-op in dev, active in prod)
+- Client: `useUser()` for user info, `useClerk().signOut({ redirectUrl: "/" })` for logout
+- Tailwind v4 Clerk layer: `@layer theme, base, clerk, components, utilities` before `@import 'tailwindcss'`; `tailwindcss({ optimize: false })` in vite.config.ts; `cssLayerName: "clerk"` in appearance
+- Sign-in: `/sign-in/*?`, sign-up: `/sign-up/*?` (Clerk `routing="path"`)
+- Landing page (`pages/login.tsx`) shown when `!isSignedIn`; role picker buttons both navigate to `/sign-up`
 
 ## AI integration quirk
 - OpenAI integration (`setupReplitAIIntegrations`) may return `awaiting_phone_verification` — means AI env vars not set

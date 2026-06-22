@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Bell, Check, CheckCheck } from "lucide-react";
-import { useAuth } from "@workspace/replit-auth-web";
+import { useUser } from "@clerk/react";
 
 interface Notification {
   id: number;
@@ -12,7 +12,7 @@ interface Notification {
 }
 
 export default function NotificationBell() {
-  const { isAuthenticated } = useAuth();
+  const { isSignedIn } = useUser();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const ref = useRef<HTMLDivElement>(null);
@@ -20,7 +20,7 @@ export default function NotificationBell() {
   const unread = notifications.filter(n => !n.isRead).length;
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isSignedIn) return;
     const fetchNotifications = () => {
       fetch("/api/notifications", { credentials: "include" })
         .then(r => r.ok ? r.json() : [])
@@ -30,7 +30,7 @@ export default function NotificationBell() {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
-  }, [isAuthenticated]);
+  }, [isSignedIn]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -54,7 +54,7 @@ export default function NotificationBell() {
       .catch(() => {});
   }
 
-  if (!isAuthenticated) return null;
+  if (!isSignedIn) return null;
 
   return (
     <div className="relative" ref={ref}>

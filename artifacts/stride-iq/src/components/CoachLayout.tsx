@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { LayoutDashboard, Users, Bot, Settings, LogOut, Calendar, X, Zap, Check } from "lucide-react";
-import { useAuth } from "@workspace/replit-auth-web";
+import { useUser, useClerk } from "@clerk/react";
 import NotificationBell from "./NotificationBell";
 import { useState, useEffect, useRef } from "react";
 
@@ -255,7 +255,8 @@ function AveraTipPopup() {
 
 export default function CoachLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user, logout } = useAuth();
+  const { user } = useUser();
+  const { signOut } = useClerk();
 
   const initials = user
     ? `${user.firstName?.charAt(0) ?? ""}${user.lastName?.charAt(0) ?? ""}`.toUpperCase() || "C"
@@ -296,8 +297,8 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
 
         <div className="px-4 py-4 border-t border-sidebar-border space-y-3">
           <div className="flex items-center gap-3">
-            {user?.profileImageUrl ? (
-              <img src={user.profileImageUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover shadow-sm border border-border" />
+            {user?.imageUrl ? (
+              <img src={user.imageUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover shadow-sm border border-border" />
             ) : (
               <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-xs font-bold text-primary shadow-sm">
                 {initials}
@@ -305,11 +306,11 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
             )}
             <div className="flex-1 min-w-0">
               <div className="text-xs font-semibold text-foreground truncate">{user?.firstName ?? "Coach"}</div>
-              <div className="text-[10px] text-muted-foreground font-medium truncate">{user?.email ?? "Thrive Athletics"}</div>
+              <div className="text-[10px] text-muted-foreground font-medium truncate">{user?.primaryEmailAddress?.emailAddress ?? "Thrive Athletics"}</div>
             </div>
           </div>
           <button
-            onClick={logout}
+            onClick={() => signOut({ redirectUrl: "/" })}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground font-medium hover:text-foreground hover:bg-secondary/50 transition-colors"
           >
             <LogOut size={14} className="opacity-70" />

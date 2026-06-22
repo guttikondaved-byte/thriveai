@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Users, Copy, Check, Link as LinkIcon, UserPlus, Zap, ChevronRight } from "lucide-react";
-import { useAuth } from "@workspace/replit-auth-web";
 import { useGetAthleteProfile } from "@workspace/api-client-react";
 import AthleteProfileModal from "../components/AthleteProfileModal";
 
@@ -26,7 +25,6 @@ interface StravaStatus {
 }
 
 export default function Team() {
-  const { isAuthenticated } = useAuth();
   const { data: profile } = useGetAthleteProfile();
   const isCoach = profile?.userRole === "coach";
   const [team, setTeam] = useState<TeamInfo | null>(null);
@@ -42,7 +40,6 @@ export default function Team() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
     fetch("/api/teams/my", { credentials: "include" })
       .then(r => r.ok ? r.json() : { team: null })
       .then(data => {
@@ -54,7 +51,7 @@ export default function Team() {
         }
       })
       .catch(() => setLoading(false));
-  }, [isAuthenticated, isCoach]);
+  }, [isCoach]);
 
   function fetchMembers(teamId: number) {
     fetch(`/api/teams/${teamId}/members`, { credentials: "include" })
