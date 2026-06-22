@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { AlertTriangle, TrendingUp, Users, Activity, ChevronRight } from "lucide-react";
+import { TrendingUp, Users, Activity, ChevronRight } from "lucide-react";
 import { useAuth } from "@workspace/replit-auth-web";
 import AthleteProfileModal from "../components/AthleteProfileModal";
 
@@ -77,8 +77,6 @@ export default function CoachDashboard() {
       .catch(() => setLoading(false));
   }, [isAuthenticated]);
 
-  const highRisk = members.filter(m => m.riskLevel === "high").length;
-  const caution = members.filter(m => m.riskLevel === "medium" || m.riskLevel === "low").length;
   const weeklyMiles = members.map(m => m.weeklyDistanceKm);
   const avgMiles = members.length > 0 ? (weeklyMiles.reduce((a, b) => a + b, 0) / members.length) : 0;
   const hrvVals = members.map(m => m.hrv).filter((v): v is number => v != null);
@@ -107,22 +105,13 @@ export default function CoachDashboard() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Team Dashboard</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{team.name}</p>
-        </div>
-        {highRisk > 0 && (
-          <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-            <AlertTriangle size={14} className="text-red-400" />
-            <span className="text-red-400 text-sm font-medium">{highRisk} athlete{highRisk !== 1 ? "s" : ""} need attention</span>
-          </div>
-        )}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-white">Team Dashboard</h1>
+        <p className="text-slate-500 text-sm mt-0.5">{team.name}</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <StatCard label="Total Athletes" value={members.length} sub="On your team" icon={Users} accent="bg-cyan-500/10 text-cyan-400" />
-        <StatCard label="Injury Risk" value={highRisk} sub={`${caution} on caution`} icon={AlertTriangle} accent="bg-red-500/10 text-red-400" />
         <StatCard label="Team Avg" value={avgMiles.toFixed(1)} sub="mi this week" icon={Activity} accent="bg-cyan-500/10 text-cyan-400" />
         <StatCard label="Avg HRV" value={avgHrv != null ? avgHrv.toFixed(1) : "—"} sub={avgHrv != null ? "across team" : "no data yet"} icon={TrendingUp} accent="bg-violet-500/10 text-violet-400" />
       </div>
