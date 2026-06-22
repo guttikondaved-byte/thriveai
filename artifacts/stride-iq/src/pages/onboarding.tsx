@@ -2,16 +2,12 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useUpdateAthleteProfile, getGetAthleteProfileQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, ChevronLeft, Check, Upload, Zap, Users, User, Mail, Phone, LayoutDashboard, ShieldAlert, Bot, TrendingUp, Activity } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, Upload, Zap, Users, User, LayoutDashboard, ShieldAlert, Bot, TrendingUp, Activity } from "lucide-react";
 
 type Role = "athlete" | "coach";
 type FitnessLevel = "beginner" | "intermediate" | "advanced" | "elite";
 type CoachExp = "new" | "developing" | "experienced" | "veteran";
-type ContactMethod = "email" | "phone";
-
 interface FormData {
-  contactMethod: ContactMethod | null;
-  contactValue: string;
   role: Role | null;
   name: string;
   age: string;
@@ -26,9 +22,9 @@ interface FormData {
 }
 
 // Step indices for each role
-// 0 = Contact, 1 = Role, 2 = About You / Coach Profile, 3 = Connect / Get Started
-const ATHLETE_STEPS = ["Contact", "Your Role", "About You", "Connect Data"];
-const COACH_STEPS   = ["Contact", "Your Role", "Your Profile", "Get Started"];
+// 0 = Role, 1 = About You / Coach Profile, 2 = Connect / Get Started
+const ATHLETE_STEPS = ["Your Role", "About You", "Connect Data"];
+const COACH_STEPS   = ["Your Role", "Your Profile", "Get Started"];
 
 const FITNESS_LEVELS: { value: FitnessLevel; label: string; desc: string }[] = [
   { value: "beginner",     label: "Beginner",     desc: "Running < 6 months" },
@@ -121,14 +117,6 @@ const inputCls = (error?: string) =>
     error ? "border-red-500" : "border-slate-700 focus:border-cyan-500"
   }`;
 
-function isValidEmail(v: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-}
-
-function isValidPhone(v: string) {
-  return /^\+?[\d\s\-().]{7,15}$/.test(v);
-}
-
 export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormData>(() => {
@@ -136,8 +124,6 @@ export default function Onboarding() {
     const pendingRole = stored === "athlete" || stored === "coach" ? stored : null;
     if (pendingRole) sessionStorage.removeItem("thrive_pending_role");
     return {
-      contactMethod: null,
-      contactValue: "",
       role: pendingRole,
       name: "", age: "",
       fitnessLevel: "intermediate",
@@ -162,29 +148,14 @@ export default function Onboarding() {
     setErrors(e => ({ ...e, [key]: undefined }));
   }
 
-  // Step 0: Contact method
+  // Step 0: Role selection
   function validateStep0() {
-    const e: typeof errors = {};
-    if (!form.contactMethod) { e.contactMethod = "Please choose a contact method"; }
-    else if (!form.contactValue.trim()) {
-      e.contactValue = form.contactMethod === "email" ? "Email is required" : "Phone number is required";
-    } else if (form.contactMethod === "email" && !isValidEmail(form.contactValue)) {
-      e.contactValue = "Enter a valid email address";
-    } else if (form.contactMethod === "phone" && !isValidPhone(form.contactValue)) {
-      e.contactValue = "Enter a valid phone number";
-    }
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  }
-
-  // Step 1: Role selection
-  function validateStep1() {
     if (!form.role) { setErrors({ role: "Please select a role to continue" }); return false; }
     return true;
   }
 
-  // Step 2: About you (athlete)
-  function validateStep2Athlete() {
+  // Step 1: About you (athlete)
+  function validateStep1Athlete() {
     const e: typeof errors = {};
     if (!form.name.trim()) e.name = "Name is required";
     if (!form.age) e.age = "Age is required";
@@ -196,8 +167,8 @@ export default function Onboarding() {
     return Object.keys(e).length === 0;
   }
 
-  // Step 2: Coach profile
-  function validateStep2Coach() {
+  // Step 1: Coach profile
+  function validateStep1Coach() {
     const e: typeof errors = {};
     if (!form.name.trim()) e.name = "Name is required";
     if (!form.teamName.trim()) e.teamName = "Team name is required";
@@ -210,10 +181,9 @@ export default function Onboarding() {
 
   function next() {
     if (step === 0 && !validateStep0()) return;
-    if (step === 1 && !validateStep1()) return;
-    if (step === 2) {
-      if (form.role === "athlete" && !validateStep2Athlete()) return;
-      if (form.role === "coach"   && !validateStep2Coach())   return;
+    if (step === 1) {
+      if (form.role === "athlete" && !validateStep1Athlete()) return;
+      if (form.role === "coach"   && !validateStep1Coach())   return;
     }
     setStep(s => s + 1);
   }
@@ -225,8 +195,6 @@ export default function Onboarding() {
         name: form.name.trim() || (isCoach ? "Coach" : "Athlete"),
         ...(form.age ? { age: parseInt(form.age) } : {}),
         userRole: form.role!,
-        contactMethod: form.contactMethod!,
-        contactValue: form.contactValue,
         ...(isCoach
           ? {
               primaryGoal: form.coachFocus || "Coaching",
@@ -267,85 +235,8 @@ export default function Onboarding() {
 
         <StepIndicator step={step} steps={steps} />
 
-        {/* ── Step 0: Contact Method ── */}
+        {/* ── Step 0: Role Selection ── */}
         {step === 0 && (
-          <div className="space-y-8">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-1">How should we contact you?</h1>
-              <p className="text-slate-400">Choose one — you can update this later in your profile.</p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {([
-                {
-                  id: "email" as ContactMethod,
-                  Icon: Mail,
-                  label: "Email",
-                  desc: "Get training summaries, alerts, and updates by email.",
-                  placeholder: "you@example.com",
-                  inputType: "email",
-                },
-                {
-                  id: "phone" as ContactMethod,
-                  Icon: Phone,
-                  label: "Phone number",
-                  desc: "Receive quick notifications and reminders via text.",
-                  placeholder: "+1 (555) 000-0000",
-                  inputType: "tel",
-                },
-              ] as const).map(opt => {
-                const selected = form.contactMethod === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => { set("contactMethod", opt.id); }}
-                    className={`relative text-left rounded-xl border p-6 transition-all duration-200
-                      ${selected
-                        ? "border-cyan-500 bg-cyan-500/5 shadow-sm scale-[1.01]"
-                        : "border-slate-800 bg-slate-900/50 hover:border-slate-700 hover:bg-slate-800"}`}
-                  >
-                    {selected && (
-                      <div className="absolute top-4 right-4 w-5 h-5 rounded-full bg-cyan-500 flex items-center justify-center">
-                        <Check size={12} className="text-slate-900" />
-                      </div>
-                    )}
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-                        <opt.Icon className="w-5 h-5 text-slate-400" />
-                      </div>
-                      <h2 className="text-lg font-medium text-white">{opt.label}</h2>
-                    </div>
-                    <p className="text-slate-400 text-sm leading-relaxed">{opt.desc}</p>
-                  </button>
-                );
-              })}
-            </div>
-            {errors.contactMethod && <p className="text-red-400 text-xs -mt-4">{errors.contactMethod}</p>}
-
-            {/* Input appears once a method is chosen */}
-            {form.contactMethod && (
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-slate-300">
-                  {form.contactMethod === "email" ? "Email address" : "Phone number"}
-                  <span className="text-red-400 ml-0.5">*</span>
-                </label>
-                <input
-                  type={form.contactMethod === "email" ? "email" : "tel"}
-                  value={form.contactValue}
-                  onChange={e => set("contactValue", e.target.value)}
-                  placeholder={form.contactMethod === "email" ? "you@example.com" : "+1 (555) 000-0000"}
-                  className={inputCls(errors.contactValue)}
-                  autoFocus
-                />
-                {errors.contactValue && <p className="text-red-400 text-xs">{errors.contactValue}</p>}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Step 1: Role Selection ── */}
-        {step === 1 && (
           <div>
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-white mb-1">Welcome to Thrive</h1>
@@ -408,8 +299,8 @@ export default function Onboarding() {
           </div>
         )}
 
-        {/* ── Step 2 (Athlete): About You ── */}
-        {step === 2 && form.role === "athlete" && (
+        {/* ── Step 1 (Athlete): About You ── */}
+        {step === 1 && form.role === "athlete" && (
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-white mb-1">Tell us about yourself</h1>
@@ -491,8 +382,8 @@ export default function Onboarding() {
           </div>
         )}
 
-        {/* ── Step 2 (Coach): Your Profile ── */}
-        {step === 2 && form.role === "coach" && (
+        {/* ── Step 1 (Coach): Your Profile ── */}
+        {step === 1 && form.role === "coach" && (
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-white mb-1">Tell us about your coaching</h1>
@@ -571,8 +462,8 @@ export default function Onboarding() {
           </div>
         )}
 
-        {/* ── Step 3 (Athlete): Connect Data ── */}
-        {step === 3 && form.role === "athlete" && (
+        {/* ── Step 2 (Athlete): Connect Data ── */}
+        {step === 2 && form.role === "athlete" && (
           <div>
             <div className="mb-7">
               <h1 className="text-3xl font-bold text-white mb-1">How will you import runs?</h1>
@@ -615,8 +506,8 @@ export default function Onboarding() {
           </div>
         )}
 
-        {/* ── Step 3 (Coach): Get Started ── */}
-        {step === 3 && form.role === "coach" && (
+        {/* ── Step 2 (Coach): Get Started ── */}
+        {step === 2 && form.role === "coach" && (
           <div>
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-white mb-1">You're all set, Coach!</h1>

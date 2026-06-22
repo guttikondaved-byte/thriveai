@@ -21,17 +21,27 @@ declare global {
 
 /**
  * Migrate an old account (UUID id) to a Clerk user ID.
- * Updates all FK tables that reference users.id before changing the PK itself.
+ * Strategy: create new user row with Clerk ID, reparent all child rows,
+ * then delete the old row. This avoids FK chicken-and-egg problems.
  */
 async function migrateUserToClerkId(
   oldId: string,
   clerkUserId: string,
+  email: string | null,
   firstName: string | null,
   lastName: string | null,
   profileImageUrl: string | null,
 ) {
   await db.transaction(async (tx) => {
-    // Update all child tables first (FK constraints are IMMEDIATE, so order matters)
+    const tempEmail = `migrated_${oldId}@placeholder.local`;
+    // 1. Free the email on the old row so we can insert the new one
+    await tx.execute(sql`UPDATE users SET email = ${tempEmail} WHERE id = ${oldId}`);
+    // 2. Insert the new user row with Clerk ID (email is now unique)
+    await tx.execute(sql`
+      INSERT INTO users (id, email, first_name, last_name, profile_image_url, created_at, updated_at)
+      VALUES (${clerkUserId}, ${email}, ${firstName}, ${lastName}, ${profileImageUrl}, NOW(), NOW())
+    `);
+    // 3. Reparent all child tables (FK now valid because clerkUserId exists in users)
     await tx.execute(sql`UPDATE athlete_profile SET user_id = ${clerkUserId} WHERE user_id = ${oldId}`);
     await tx.execute(sql`UPDATE teams SET coach_user_id = ${clerkUserId} WHERE coach_user_id = ${oldId}`);
     await tx.execute(sql`UPDATE team_memberships SET athlete_user_id = ${clerkUserId} WHERE athlete_user_id = ${oldId}`);
@@ -40,16 +50,9 @@ async function migrateUserToClerkId(
     await tx.execute(sql`UPDATE activities SET user_id = ${clerkUserId} WHERE user_id = ${oldId}`);
     await tx.execute(sql`UPDATE injury_alerts SET user_id = ${clerkUserId} WHERE user_id = ${oldId}`);
     await tx.execute(sql`UPDATE training_plans SET user_id = ${clerkUserId} WHERE user_id = ${oldId}`);
-    // Now safe to update the PK — no child rows reference the old id anymore
-    await tx.execute(sql`
-      UPDATE users
-      SET id = ${clerkUserId},
-          first_name = ${firstName},
-          last_name = ${lastName},
-          profile_image_url = ${profileImageUrl},
-          updated_at = NOW()
-      WHERE id = ${oldId}
-    `);
+    await tx.execute(sql`UPDATE conversations SET user_id = ${clerkUserId} WHERE user_id = ${oldId}`);
+    // 4. Safe to delete old row — nothing references it any more
+    await tx.execute(sql`DELETE FROM users WHERE id = ${oldId}`);
   });
 }
 
@@ -122,7 +125,7 @@ export async function authMiddleware(
 
         if (oldUser && oldUser.id !== clerkUserId) {
           req.log?.info({ oldId: oldUser.id, clerkUserId }, "Migrating pre-Clerk account to Clerk ID");
-          await migrateUserToClerkId(oldUser.id, clerkUserId, firstName, lastName, profileImageUrl);
+          await migrateUserToClerkId(oldUser.id, clerkUserId, email, firstName, lastName, profileImageUrl);
           [newUser] = await db
             .select()
             .from(usersTable)
