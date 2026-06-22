@@ -28,6 +28,10 @@ export interface AthleteProfile {
   /** @nullable */
   userRole?: AthleteProfileUserRole;
   /** @nullable */
+  country?: string | null;
+  /** @nullable */
+  state?: string | null;
+  /** @nullable */
   pr5k?: string | null;
   /** @nullable */
   pr10k?: string | null;

@@ -202,6 +202,7 @@ async function buildCoachContext(userId: string): Promise<string> {
     const weeklyMi = (weeklyByUser.get(mid) ?? 0).toFixed(1);
     const parts = [
       `Name: ${name}`,
+      (p?.state || p?.country) ? `Location: ${[p?.state, p?.country].filter(Boolean).join(", ")}` : null,
       p?.fitnessLevel ? `Level: ${p.fitnessLevel}` : null,
       p?.primaryGoal ? `Goal: ${p.primaryGoal}` : null,
       `Weekly: ${weeklyMi}mi (last 7 days)`,
@@ -246,6 +247,7 @@ async function buildAthleteContext(userId: string): Promise<string> {
     [
       profile.name ? `Name: ${profile.name}` : null,
       profile.age ? `Age: ${profile.age}` : null,
+      (profile.state || profile.country) ? `Location: ${[profile.state, profile.country].filter(Boolean).join(", ")}` : null,
       `Fitness: ${profile.fitnessLevel}`,
       profile.primaryGoal ? `Goal: ${profile.primaryGoal}` : null,
       profile.weeklyMileageGoal ? `Weekly target: ${Number(profile.weeklyMileageGoal)}mi` : null,

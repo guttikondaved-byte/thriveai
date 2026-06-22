@@ -786,6 +786,10 @@ components:
         userRole:
           type: ["string", "null"]
           enum: [athlete, coach, null]
+        country:
+          type: ["string", "null"]
+        state:
+          type: ["string", "null"]
         pr5k:
           type: ["string", "null"]
         pr10k:
@@ -835,6 +839,10 @@ components:
         userRole:
           type: string
           enum: [athlete, coach]
+        country:
+          type: string
+        state:
+          type: string
         pr5k:
           type: string
         pr10k:

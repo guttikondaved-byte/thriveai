@@ -61,6 +61,8 @@ router.patch("/athlete/profile", async (req, res): Promise<void> => {
   if (parsed.data.hrv !== undefined) updateData.hrv = String(parsed.data.hrv);
   if (parsed.data.selectedCoach !== undefined) updateData.selectedCoach = parsed.data.selectedCoach;
   if (parsed.data.userRole !== undefined) updateData.userRole = parsed.data.userRole;
+  if (parsed.data.country !== undefined) updateData.country = parsed.data.country;
+  if (parsed.data.state !== undefined) updateData.state = parsed.data.state;
 
   const [updated] = await db
     .update(athleteProfileTable)

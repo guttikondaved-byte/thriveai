@@ -11,6 +11,8 @@ interface FormData {
   role: Role | null;
   name: string;
   age: string;
+  country: string;
+  state: string;
   fitnessLevel: FitnessLevel;
   primaryGoal: string;
   weeklyMileageGoal: string;
@@ -125,6 +127,7 @@ export default function Onboarding() {
     return {
       role: pendingRole,
       name: "", age: "",
+      country: "", state: "",
       fitnessLevel: "intermediate",
       primaryGoal: "",
       weeklyMileageGoal: "",
@@ -160,6 +163,8 @@ export default function Onboarding() {
     if (!form.age) e.age = "Age is required";
     else if (isNaN(Number(form.age)) || Number(form.age) < 10 || Number(form.age) > 99)
       e.age = "Enter a valid age (10–99)";
+    if (!form.country.trim()) e.country = "Country is required";
+    if (!form.state.trim()) e.state = "State / region is required";
     if (!form.weeklyMileageGoal) e.weeklyMileageGoal = "Weekly goal is required";
     if (!form.primaryGoal) e.primaryGoal = "Select or type a goal";
     setErrors(e);
@@ -171,6 +176,8 @@ export default function Onboarding() {
     const e: typeof errors = {};
     if (!form.name.trim()) e.name = "Name is required";
     if (!form.teamName.trim()) e.teamName = "Team name is required";
+    if (!form.country.trim()) e.country = "Country is required";
+    if (!form.state.trim()) e.state = "State / region is required";
     if (!form.athleteCount) e.athleteCount = "Number of athletes is required";
     if (!form.coachingExp) e.coachingExp = "Select your experience level";
     if (!form.coachFocus) e.coachFocus = "Select a coaching focus";
@@ -193,6 +200,8 @@ export default function Onboarding() {
       data: {
         name: form.name.trim() || (isCoach ? "Coach" : "Athlete"),
         ...(form.age ? { age: parseInt(form.age) } : {}),
+        ...(form.country.trim() ? { country: form.country.trim() } : {}),
+        ...(form.state.trim() ? { state: form.state.trim() } : {}),
         userRole: form.role!,
         ...(isCoach
           ? {
@@ -337,6 +346,26 @@ export default function Onboarding() {
                 />
                 {errors.weeklyMileageGoal && <p className="text-red-400 text-xs mt-1">{errors.weeklyMileageGoal}</p>}
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Country <span className="text-red-400">*</span></label>
+                <input
+                  value={form.country} onChange={e => set("country", e.target.value)}
+                  placeholder="United States"
+                  className={inputCls(errors.country)}
+                />
+                {errors.country && <p className="text-red-400 text-xs mt-1">{errors.country}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">State / Region <span className="text-red-400">*</span></label>
+                <input
+                  value={form.state} onChange={e => set("state", e.target.value)}
+                  placeholder="California"
+                  className={inputCls(errors.state)}
+                />
+                {errors.state && <p className="text-red-400 text-xs mt-1">{errors.state}</p>}
+              </div>
             </div>
 
             <div>
@@ -421,6 +450,26 @@ export default function Onboarding() {
                   className={inputCls(errors.athleteCount)}
                 />
                 {errors.athleteCount && <p className="text-red-400 text-xs mt-1">{errors.athleteCount}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Country <span className="text-red-400">*</span></label>
+                <input
+                  value={form.country} onChange={e => set("country", e.target.value)}
+                  placeholder="United States"
+                  className={inputCls(errors.country)}
+                />
+                {errors.country && <p className="text-red-400 text-xs mt-1">{errors.country}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">State / Region <span className="text-red-400">*</span></label>
+                <input
+                  value={form.state} onChange={e => set("state", e.target.value)}
+                  placeholder="California"
+                  className={inputCls(errors.state)}
+                />
+                {errors.state && <p className="text-red-400 text-xs mt-1">{errors.state}</p>}
               </div>
             </div>
 
