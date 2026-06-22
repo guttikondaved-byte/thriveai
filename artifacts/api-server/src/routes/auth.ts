@@ -16,8 +16,10 @@ import {
   athleteProfileTable,
   teamMembershipsTable,
   teamsTable,
+  trainingPlansTable,
+  injuryAlertsTable,
 } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import {
   clearSession,
   getOidcConfig,
@@ -380,20 +382,41 @@ router.delete("/account", async (req: Request, res: Response): Promise<void> => 
   const userId = req.user.id;
 
   try {
-    // Delete child rows in dependency order (only tables that actually have a userId FK)
-    await db.delete(activitiesTable).where(eq(activitiesTable.userId, userId));
-    await db.delete(notificationsTable).where(eq(notificationsTable.userId, userId));
-    await db.delete(stravaTokensTable).where(eq(stravaTokensTable.userId, userId));
-    await db.delete(teamMembershipsTable).where(eq(teamMembershipsTable.athleteUserId, userId));
-    await db.delete(teamsTable).where(eq(teamsTable.coachUserId, userId));
-    await db.delete(athleteProfileTable).where(eq(athleteProfileTable.userId, userId));
+    // Run as a single transaction so a partial failure never orphans the account.
+    await db.transaction(async (tx) => {
+      // Rows with a direct user_id FK to users
+      await tx.delete(activitiesTable).where(eq(activitiesTable.userId, userId));
+      await tx.delete(notificationsTable).where(eq(notificationsTable.userId, userId));
+      await tx.delete(stravaTokensTable).where(eq(stravaTokensTable.userId, userId));
+      await tx.delete(injuryAlertsTable).where(eq(injuryAlertsTable.userId, userId));
+      // training_plans -> plan_sessions are removed via ON DELETE CASCADE
+      await tx.delete(trainingPlansTable).where(eq(trainingPlansTable.userId, userId));
+
+      // This user's own team memberships (as an athlete)
+      await tx.delete(teamMembershipsTable).where(eq(teamMembershipsTable.athleteUserId, userId));
+
+      // Teams this user coaches: other athletes' memberships reference team_id with no
+      // cascade, so delete every membership for those teams before deleting the teams.
+      const ownedTeams = await tx
+        .select({ id: teamsTable.id })
+        .from(teamsTable)
+        .where(eq(teamsTable.coachUserId, userId));
+      if (ownedTeams.length > 0) {
+        const teamIds = ownedTeams.map((t) => t.id);
+        await tx.delete(teamMembershipsTable).where(inArray(teamMembershipsTable.teamId, teamIds));
+        await tx.delete(teamsTable).where(eq(teamsTable.coachUserId, userId));
+      }
+
+      // athlete_profile -> conversations & injuries cascade (messages cascade off conversations)
+      await tx.delete(athleteProfileTable).where(eq(athleteProfileTable.userId, userId));
+
+      // Finally the user row
+      await tx.delete(usersTable).where(eq(usersTable.id, userId));
+    });
 
     // Clear the active session (sessions table stores data as JSONB with no direct userId column)
     const sid = getSessionId(req);
     if (sid) await deleteSession(sid);
-
-    // Finally delete the user row
-    await db.delete(usersTable).where(eq(usersTable.id, userId));
 
     res.clearCookie(SESSION_COOKIE, { path: "/" });
     res.json({ success: true });
