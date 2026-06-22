@@ -20,7 +20,8 @@ export default function CoachAI() {
   const [input, setInput] = useState("");
   const [streamMessages, setStreamMessages] = useState<StreamMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScroll = useRef(true);
   const qc = useQueryClient();
   const { toast } = useToast();
 
@@ -38,9 +39,28 @@ export default function CoachAI() {
     }
   }, [conversation?.id, conversation?.messages?.length]);
 
+  // Pin the messages container to the bottom as content grows, but only when the
+  // user is already near the bottom. Scrolling the container directly (instant)
+  // avoids the janky, stacked smooth-scroll animations that fired on every token.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = messagesRef.current;
+    if (!el || !shouldAutoScroll.current) return;
+    el.scrollTop = el.scrollHeight;
   }, [streamMessages]);
+
+  // When switching conversations, always start pinned to the bottom.
+  useEffect(() => {
+    shouldAutoScroll.current = true;
+    const el = messagesRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [selectedId]);
+
+  function handleMessagesScroll() {
+    const el = messagesRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    shouldAutoScroll.current = distanceFromBottom < 80;
+  }
 
   function startNewConversation() {
     createConv.mutate({ data: { title: "New conversation" } }, {
@@ -56,6 +76,7 @@ export default function CoachAI() {
     if (!input.trim() || !selectedId || isStreaming) return;
     const userContent = input.trim();
     setInput("");
+    shouldAutoScroll.current = true;
     setStreamMessages(prev => [...prev, { role: "user", content: userContent }]);
     setStreamMessages(prev => [...prev, { role: "assistant", content: "", streaming: true }]);
     setIsStreaming(true);
@@ -196,7 +217,7 @@ export default function CoachAI() {
         ) : (
           <>
             {/* Messages */}
-            <div className="flex-1 overflow-auto p-6 space-y-4" data-testid="messages-container">
+            <div ref={messagesRef} onScroll={handleMessagesScroll} className="flex-1 overflow-auto p-6 space-y-4" data-testid="messages-container">
               {streamMessages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full">
                   <p className="text-sm text-slate-500">Ask AveraAI anything about your team or athletes.</p>
@@ -223,7 +244,6 @@ export default function CoachAI() {
                   )}
                 </div>
               ))}
-              <div ref={bottomRef} />
             </div>
 
             {/* Input */}
