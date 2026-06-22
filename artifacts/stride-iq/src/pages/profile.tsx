@@ -13,12 +13,12 @@ import { HelpCircle, X } from "lucide-react";
 
 const schema = z.object({
   name: z.string().min(1, "Required"),
-  age: z.string().optional(),
-  weeklyMileageGoal: z.string().optional(),
+  age: z.string().min(1, "Required"),
+  weeklyMileageGoal: z.string().min(1, "Required"),
   fitnessLevel: z.enum(["beginner", "intermediate", "advanced", "elite"]),
   primaryGoal: z.string().min(1, "Required"),
-  restingHeartRate: z.string().optional(),
-  hrv: z.string().optional(),
+  restingHeartRate: z.string().min(1, "Required"),
+  hrv: z.string().min(1, "Required"),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -182,10 +182,10 @@ export default function Profile() {
         name: values.name,
         fitnessLevel: values.fitnessLevel,
         primaryGoal: values.primaryGoal,
-        ...(values.age ? { age: parseInt(values.age) } : {}),
-        ...(values.weeklyMileageGoal ? { weeklyMileageGoal: parseFloat(values.weeklyMileageGoal) } : {}),
-        ...(values.restingHeartRate ? { restingHeartRate: parseInt(values.restingHeartRate) } : {}),
-        ...(values.hrv ? { hrv: parseFloat(values.hrv) } : {}),
+        age: parseInt(values.age),
+        weeklyMileageGoal: parseFloat(values.weeklyMileageGoal),
+        restingHeartRate: parseInt(values.restingHeartRate),
+        hrv: parseFloat(values.hrv),
       }
     }, {
       onSuccess: () => {
@@ -230,14 +230,14 @@ export default function Profile() {
                   )} />
                   <FormField control={form.control} name="age" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Age</FormLabel>
+                      <FormLabel>Age <span className="text-red-400">*</span></FormLabel>
                       <FormControl><Input type="number" data-testid="input-age" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={form.control} name="fitnessLevel" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Fitness Level</FormLabel>
+                      <FormLabel>Fitness Level <span className="text-red-400">*</span></FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-fitness-level">
@@ -256,14 +256,14 @@ export default function Profile() {
                   )} />
                   <FormField control={form.control} name="primaryGoal" render={({ field }) => (
                     <FormItem className="col-span-2">
-                      <FormLabel>Primary Goal</FormLabel>
+                      <FormLabel>Primary Goal <span className="text-red-400">*</span></FormLabel>
                       <FormControl><Input placeholder="Sub-4:00 marathon finish" data-testid="input-goal" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={form.control} name="weeklyMileageGoal" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Weekly Distance Goal (km)</FormLabel>
+                      <FormLabel>Weekly Distance Goal (km) <span className="text-red-400">*</span></FormLabel>
                       <FormControl><Input type="number" step="0.1" data-testid="input-weekly-goal" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>

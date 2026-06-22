@@ -141,8 +141,10 @@ export default function Onboarding() {
   function validateStep1Athlete() {
     const e: typeof errors = {};
     if (!form.name.trim()) e.name = "Name is required";
-    if (form.age && (isNaN(Number(form.age)) || Number(form.age) < 10 || Number(form.age) > 99))
+    if (!form.age) e.age = "Age is required";
+    else if (isNaN(Number(form.age)) || Number(form.age) < 10 || Number(form.age) > 99)
       e.age = "Enter a valid age (10–99)";
+    if (!form.weeklyMileageGoal) e.weeklyMileageGoal = "Weekly goal is required";
     if (!form.primaryGoal) e.primaryGoal = "Select or type a goal";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -151,6 +153,10 @@ export default function Onboarding() {
   function validateStep1Coach() {
     const e: typeof errors = {};
     if (!form.name.trim()) e.name = "Name is required";
+    if (!form.teamName.trim()) e.teamName = "Team name is required";
+    if (!form.athleteCount) e.athleteCount = "Number of athletes is required";
+    if (!form.coachingExp) e.coachingExp = "Select your experience level";
+    if (!form.coachFocus) e.coachFocus = "Select a coaching focus";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -286,7 +292,7 @@ export default function Onboarding() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Age <span className="text-slate-500">(optional)</span></label>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Age <span className="text-red-400">*</span></label>
                 <input
                   type="number" value={form.age} onChange={e => set("age", e.target.value)}
                   placeholder="17"
@@ -296,12 +302,13 @@ export default function Onboarding() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Weekly Distance Goal <span className="text-slate-500">(km, optional)</span></label>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Weekly Distance Goal (km) <span className="text-red-400">*</span></label>
                 <input
                   type="number" step="0.1" value={form.weeklyMileageGoal} onChange={e => set("weeklyMileageGoal", e.target.value)}
                   placeholder="50"
-                  className={inputCls()}
+                  className={inputCls(errors.weeklyMileageGoal)}
                 />
+                {errors.weeklyMileageGoal && <p className="text-red-400 text-xs mt-1">{errors.weeklyMileageGoal}</p>}
               </div>
             </div>
 
@@ -368,28 +375,30 @@ export default function Onboarding() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Team / Club Name <span className="text-slate-500">(optional)</span></label>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Team / Club Name <span className="text-red-400">*</span></label>
                 <input
                   value={form.teamName}
                   onChange={e => set("teamName", e.target.value)}
                   placeholder="Westview Track & Field"
-                  className={inputCls()}
+                  className={inputCls(errors.teamName)}
                 />
+                {errors.teamName && <p className="text-red-400 text-xs mt-1">{errors.teamName}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Number of Athletes <span className="text-slate-500">(optional)</span></label>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Number of Athletes <span className="text-red-400">*</span></label>
                 <input
                   type="number" min="1" value={form.athleteCount}
                   onChange={e => set("athleteCount", e.target.value)}
                   placeholder="24"
-                  className={inputCls()}
+                  className={inputCls(errors.athleteCount)}
                 />
+                {errors.athleteCount && <p className="text-red-400 text-xs mt-1">{errors.athleteCount}</p>}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Coaching Experience</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Coaching Experience <span className="text-red-400">*</span></label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {COACHING_EXP.map(exp => (
                   <button key={exp.value} onClick={() => set("coachingExp", exp.value)}
@@ -403,10 +412,11 @@ export default function Onboarding() {
                   </button>
                 ))}
               </div>
+              {errors.coachingExp && <p className="text-red-400 text-xs mt-2">{errors.coachingExp}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Coaching Focus <span className="text-slate-500">(optional)</span></label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Coaching Focus <span className="text-red-400">*</span></label>
               <div className="flex flex-wrap gap-2">
                 {COACH_FOCUSES.map(f => (
                   <button key={f} onClick={() => set("coachFocus", form.coachFocus === f ? "" : f)}
@@ -419,6 +429,7 @@ export default function Onboarding() {
                   </button>
                 ))}
               </div>
+              {errors.coachFocus && <p className="text-red-400 text-xs mt-2">{errors.coachFocus}</p>}
             </div>
           </div>
         )}
