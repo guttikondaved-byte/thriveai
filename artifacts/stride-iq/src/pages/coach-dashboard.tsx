@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { AlertTriangle, TrendingUp, Users, Activity, ChevronRight, Flame } from "lucide-react";
+import { AlertTriangle, TrendingUp, Users, Activity, ChevronRight } from "lucide-react";
 import { useAuth } from "@workspace/replit-auth-web";
 import AthleteProfileModal from "../components/AthleteProfileModal";
 
@@ -83,7 +83,6 @@ export default function CoachDashboard() {
   const avgMiles = members.length > 0 ? (weeklyMiles.reduce((a, b) => a + b, 0) / members.length) : 0;
   const hrvVals = members.map(m => m.hrv).filter((v): v is number => v != null);
   const avgHrv = hrvVals.length > 0 ? (hrvVals.reduce((a, b) => a + b, 0) / hrvVals.length) : null;
-  const atRisk = members.filter(m => m.riskLevel != null);
 
   if (loading) {
     return (
@@ -128,8 +127,8 @@ export default function CoachDashboard() {
         <StatCard label="Avg HRV" value={avgHrv != null ? avgHrv.toFixed(1) : "—"} sub={avgHrv != null ? "across team" : "no data yet"} icon={TrendingUp} accent="bg-violet-500/10 text-violet-400" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="lg:col-span-2 bg-[#0d1529] border border-slate-800 rounded-xl overflow-hidden">
+      <div className="mb-6">
+        <div className="bg-[#0d1529] border border-slate-800 rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
             <h2 className="font-semibold text-white text-sm">Athlete Roster</h2>
             <span className="text-slate-500 text-xs">{members.length} athlete{members.length !== 1 ? "s" : ""}</span>
@@ -175,37 +174,6 @@ export default function CoachDashboard() {
               })}
             </div>
           )}
-        </div>
-
-        <div className="space-y-5">
-          <div className="bg-[#0d1529] border border-slate-800 rounded-xl p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Flame size={15} className="text-red-400" />
-              <h2 className="font-semibold text-white text-sm">Risk Alerts</h2>
-            </div>
-            {atRisk.length === 0 ? (
-              <p className="text-xs text-slate-500">No active risk alerts. Your team is training within safe limits.</p>
-            ) : (
-              <div className="space-y-3">
-                {atRisk.map((athlete) => {
-                  const cfg = RISK_CONFIG[athlete.riskLevel!];
-                  return (
-                    <button
-                      key={athlete.userId}
-                      onClick={() => setSelectedUserId(athlete.userId)}
-                      className="w-full flex items-start gap-2.5 text-left hover:opacity-80 transition-opacity"
-                    >
-                      <span className={`w-2 h-2 rounded-full mt-1 flex-shrink-0 ${cfg.dot}`} />
-                      <div className="min-w-0">
-                        <div className="text-xs font-medium text-white truncate">{athlete.name}</div>
-                        <div className="text-[10px] text-slate-500 leading-relaxed">{cfg.label} — open profile for details</div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
