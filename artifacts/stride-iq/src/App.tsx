@@ -14,11 +14,32 @@ import Coach from "@/pages/coach";
 import Profile from "@/pages/profile";
 import Onboarding from "@/pages/onboarding";
 import CoachDashboard from "@/pages/coach-dashboard";
+import Team from "@/pages/team";
+import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import { useGetAthleteProfile } from "@workspace/api-client-react";
+import { useAuth } from "@workspace/replit-auth-web";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
+
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { isLoading, isAuthenticated, login } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
+  return <>{children}</>;
+}
 
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { data: profile, isLoading } = useGetAthleteProfile();
@@ -56,6 +77,7 @@ function AthleteRouter() {
         <Route path="/alerts" component={Alerts} />
         <Route path="/history" component={History} />
         <Route path="/coach" component={Coach} />
+        <Route path="/team" component={Team} />
         <Route path="/profile" component={Profile} />
         <Route component={NotFound} />
       </Switch>
@@ -69,6 +91,7 @@ function CoachRouter() {
       <Switch>
         <Route path="/" component={CoachDashboard} />
         <Route path="/alerts" component={Alerts} />
+        <Route path="/team" component={Team} />
         <Route path="/ai-assistant" component={Coach} />
         <Route path="/profile" component={Profile} />
         <Route component={CoachDashboard} />
@@ -95,9 +118,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <OnboardingGuard>
-            <Router />
-          </OnboardingGuard>
+          <AuthGuard>
+            <OnboardingGuard>
+              <Router />
+            </OnboardingGuard>
+          </AuthGuard>
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

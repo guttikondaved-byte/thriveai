@@ -405,3 +405,197 @@ export const DeleteInjuryParams = zod.object({
 })
 
 
+/**
+ * @summary Get the currently authenticated user
+ */
+export const GetCurrentAuthUserHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const GetCurrentAuthUserResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullable(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "profileImageUrl": zod.string().nullable()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Start the browser OIDC login flow
+ */
+export const BeginBrowserLoginQueryParams = zod.object({
+  "returnTo": zod.coerce.string().optional()
+})
+
+
+/**
+ * @summary Complete the browser OIDC login flow
+ */
+export const HandleBrowserLoginCallbackQueryParams = zod.object({
+  "code": zod.coerce.string().optional(),
+  "state": zod.coerce.string().optional(),
+  "iss": zod.coerce.string().url().optional()
+})
+
+
+/**
+ * @summary Clear the session and begin OIDC logout
+ */
+export const LogoutBrowserSessionHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+
+/**
+ * @summary Exchange a mobile OIDC code for a session token
+ */
+
+
+
+
+
+
+
+export const ExchangeMobileAuthorizationCodeBody = zod.object({
+  "code": zod.string().min(1),
+  "code_verifier": zod.string().min(1),
+  "redirect_uri": zod.string().min(1),
+  "state": zod.string().min(1),
+  "nonce": zod.string().min(1).optional()
+})
+
+export const ExchangeMobileAuthorizationCodeResponse = zod.object({
+  "token": zod.string()
+})
+
+
+/**
+ * @summary Delete a mobile session token
+ */
+export const LogoutMobileSessionHeader = zod.object({
+  "Authorization": zod.string().optional().describe('Opaque session token — `Bearer <sid>`.')
+})
+
+export const LogoutMobileSessionResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Create a team (coach only)
+ */
+
+
+
+export const CreateTeamBody = zod.object({
+  "name": zod.string().min(1)
+})
+
+
+/**
+ * @summary Get the current user's team
+ */
+export const GetMyTeamResponse = zod.object({
+  "team": zod.union([zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "inviteCode": zod.string(),
+  "memberCount": zod.number().optional(),
+  "createdAt": zod.coerce.date()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Look up a team by invite code
+ */
+export const GetTeamByInviteCodeParams = zod.object({
+  "inviteCode": zod.coerce.string()
+})
+
+export const GetTeamByInviteCodeResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "inviteCode": zod.string(),
+  "memberCount": zod.number().optional(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Athlete joins a team using an invite code
+ */
+
+
+
+export const JoinTeamBody = zod.object({
+  "inviteCode": zod.string().min(1)
+})
+
+export const JoinTeamResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "inviteCode": zod.string(),
+  "memberCount": zod.number().optional(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get athletes in a team (coach only)
+ */
+export const GetTeamMembersParams = zod.object({
+  "teamId": zod.coerce.number()
+})
+
+export const GetTeamMembersResponseItem = zod.object({
+  "userId": zod.string(),
+  "name": zod.string(),
+  "email": zod.string().nullish(),
+  "joinedAt": zod.coerce.date()
+})
+export const GetTeamMembersResponse = zod.array(GetTeamMembersResponseItem)
+
+
+/**
+ * @summary Get all notifications for the current user
+ */
+export const GetNotificationsResponseItem = zod.object({
+  "id": zod.number(),
+  "type": zod.string(),
+  "title": zod.string(),
+  "message": zod.string(),
+  "isRead": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+export const GetNotificationsResponse = zod.array(GetNotificationsResponseItem)
+
+
+/**
+ * @summary Mark a notification as read
+ */
+export const MarkNotificationReadParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const MarkNotificationReadResponse = zod.object({
+  "id": zod.number(),
+  "type": zod.string(),
+  "title": zod.string(),
+  "message": zod.string(),
+  "isRead": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Mark all notifications as read
+ */
+export const MarkAllNotificationsReadResponse = zod.object({
+  "updated": zod.number()
+})
+
+

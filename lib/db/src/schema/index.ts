@@ -1,3 +1,4 @@
+export * from "./auth";
 export * from "./athlete";
 export * from "./activities";
 export * from "./trainingPlans";
@@ -5,3 +6,5 @@ export * from "./alerts";
 export * from "./conversations";
 export * from "./messages";
 export * from "./injuries";
+export * from "./teams";
+export * from "./notifications";

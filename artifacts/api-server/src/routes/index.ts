@@ -7,9 +7,13 @@ import alertsRouter from "./alerts";
 import dashboardRouter from "./dashboard";
 import openaiRouter from "./openai";
 import injuriesRouter from "./injuries";
+import authRouter from "./auth";
+import teamsRouter from "./teams";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
+router.use(authRouter);
 router.use(healthRouter);
 router.use(athleteRouter);
 router.use(activitiesRouter);
@@ -18,5 +22,7 @@ router.use(alertsRouter);
 router.use(dashboardRouter);
 router.use(openaiRouter);
 router.use(injuriesRouter);
+router.use(teamsRouter);
+router.use(notificationsRouter);
 
 export default router;

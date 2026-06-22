@@ -1,1 +1,2 @@
 - [Thrive app architecture](thrive-architecture.md) — full-stack running app: routes, DB schema, frontend pages, AI coach Avera
+- [esbuild nullish-coalescing pitfall](esbuild-nullish.md) — esbuild rejects `x ?? y || z` without parens; always write `(x ?? y) || z`.

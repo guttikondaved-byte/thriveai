@@ -1,9 +1,11 @@
 import { pgTable, text, serial, integer, numeric, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./auth";
 
 export const athleteProfileTable = pgTable("athlete_profile", {
   id: serial("id").primaryKey(),
+  userId: text("user_id").references(() => usersTable.id),
   name: text("name").notNull().default("Athlete"),
   age: integer("age"),
   weeklyMileageGoal: numeric("weekly_mileage_goal", { precision: 6, scale: 2 }),

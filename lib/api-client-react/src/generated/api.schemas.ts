@@ -355,7 +355,107 @@ export interface OpenaiError {
   error: string;
 }
 
+export interface AuthUser {
+  id: string;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  firstName: string | null;
+  /** @nullable */
+  lastName: string | null;
+  /** @nullable */
+  profileImageUrl: string | null;
+}
+
+export interface AuthUserEnvelope {
+  user: AuthUser | null;
+}
+
+export interface MobileTokenExchangeRequest {
+  /** @minLength 1 */
+  code: string;
+  /** @minLength 1 */
+  code_verifier: string;
+  /** @minLength 1 */
+  redirect_uri: string;
+  /** @minLength 1 */
+  state: string;
+  /** @minLength 1 */
+  nonce?: string;
+}
+
+export interface MobileTokenExchangeSuccess {
+  token: string;
+}
+
+export const LogoutSuccessValue = {
+  success: true,
+} as const;
+export type LogoutSuccess = typeof LogoutSuccessValue;
+
+export interface ErrorEnvelope {
+  error: string;
+}
+
+export interface TeamInfo {
+  id: number;
+  name: string;
+  inviteCode: string;
+  memberCount?: number;
+  createdAt: string;
+}
+
+export interface TeamEnvelope {
+  team: TeamInfo | null;
+}
+
+export interface TeamMember {
+  userId: string;
+  name: string;
+  /** @nullable */
+  email?: string | null;
+  joinedAt: string;
+}
+
+export interface CreateTeamBody {
+  /** @minLength 1 */
+  name: string;
+}
+
+export interface JoinTeamBody {
+  /** @minLength 1 */
+  inviteCode: string;
+}
+
+export interface NotificationItem {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface MarkAllReadResponse {
+  updated: number;
+}
+
+/**
+ * Opaque session token — `Bearer <sid>`.
+ */
+export type AuthorizationSessionHeaderParameter = string;
+
 export type ListActivitiesParams = {
 limit?: number;
+};
+
+export type BeginBrowserLoginParams = {
+returnTo?: string;
+};
+
+export type HandleBrowserLoginCallbackParams = {
+code?: string;
+state?: string;
+iss?: string;
 };
 
