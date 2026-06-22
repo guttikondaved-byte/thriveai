@@ -260,7 +260,11 @@ function AthleteSignup({ onBack }: { onBack: () => void }) {
         primaryGoal: goal,
         ...(weeklyKm ? { weeklyMileageGoal: parseFloat(weeklyKm) } : {}),
       });
-      window.location.href = dataSource === "strava" ? "/api/strava/connect" : "/";
+      if (dataSource === "strava") {
+        // Open in a new top-level tab — Strava blocks being loaded inside an iframe
+        window.open("/api/strava/connect", "_blank", "noopener,noreferrer");
+      }
+      window.location.href = "/";
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Something went wrong");
       setLoading(false);
