@@ -810,6 +810,19 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center px-4 py-12">
+      {/* Top-right nav */}
+      {view === "landing" && (
+        <div className="fixed top-4 right-5 z-50 flex items-center gap-2">
+          <button onClick={() => setView("athlete")}
+            className="text-xs font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg border border-slate-700/60 hover:border-slate-500 bg-slate-900/70 backdrop-blur-sm transition-all">
+            Sign up
+          </button>
+          <button onClick={() => setView("login")}
+            className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-500/40 hover:bg-cyan-500/30 hover:border-cyan-400/60 backdrop-blur-sm transition-all">
+            Log in
+          </button>
+        </div>
+      )}
       {view === "landing"  && <Landing onSelect={setView} />}
       {view === "athlete"  && <AthleteSignup onBack={() => setView("landing")} />}
       {view === "coach"    && <CoachSignup   onBack={() => setView("landing")} />}
