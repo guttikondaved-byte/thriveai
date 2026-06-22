@@ -65,7 +65,9 @@ export default function CoachDashboard() {
   const { data: authData } = useGetCurrentAuthUser();
   const { data: profile } = useGetAthleteProfile();
   const focus = getFocusConfig(profile?.primaryGoal);
-  const displayName = [authData?.user?.firstName, authData?.user?.lastName].filter(Boolean).join(" ") || "";
+  const authName = [authData?.user?.firstName, authData?.user?.lastName].filter(Boolean).join(" ");
+  const profileName = profile?.name && profile.name.toLowerCase() !== "athlete" ? profile.name : "";
+  const displayName = profileName || authName;
   const greeting = greetingFor(new Date());
 
   useEffect(() => {
