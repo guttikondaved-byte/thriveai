@@ -57,101 +57,71 @@ function Landing() {
         ))}
       </div>
 
-      {/* Thrive AI Section */}
-      <div className="mb-8 text-left rounded-2xl border border-cyan-500/20 overflow-hidden"
-        style={{ background: "linear-gradient(160deg, rgba(6,182,212,0.06) 0%, rgba(15,23,42,0.95) 40%)" }}>
-        {/* Header */}
-        <div className="px-5 pt-5 pb-4 border-b border-slate-800/60">
-          <div className="flex items-center gap-2.5 mb-2">
-            <div className="w-6 h-6 rounded-md bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
-              <Brain className="w-3.5 h-3.5 text-cyan-400" />
-            </div>
-            <span className="text-[10px] font-bold tracking-widest uppercase text-cyan-500">Powered by Thrive AI</span>
-          </div>
-          <h2 className="text-lg font-bold text-white leading-tight">
-            Your AI coach. <span className="text-cyan-400">Always on.</span>
-          </h2>
-          <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-            Thrive AI learns from your training data to give personalised coaching, catch injury risk early, and build plans that adapt as you grow.
-          </p>
-        </div>
-
-        {/* Meet AveraAI */}
-        <div className="px-5 py-4 border-b border-slate-800/60">
-          <p className="text-[10px] font-bold text-cyan-600 uppercase tracking-widest mb-3">Meet AveraAI</p>
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-md shadow-cyan-500/20"
-              style={{ background: "linear-gradient(135deg, rgba(6,182,212,0.3) 0%, rgba(59,130,246,0.2) 100%)", border: "1px solid rgba(6,182,212,0.35)" }}>
-              <Bot className="w-5 h-5 text-cyan-300" />
+      {/* AveraAI Section */}
+      <div className="mb-8 text-left rounded-2xl border border-cyan-500/20 overflow-hidden">
+        {/* Hero header */}
+        <div className="px-6 pt-6 pb-5"
+          style={{ background: "linear-gradient(135deg, rgba(6,182,212,0.12) 0%, rgba(59,130,246,0.08) 50%, rgba(15,23,42,0.0) 100%)" }}>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-cyan-500/25"
+              style={{ background: "linear-gradient(135deg, rgba(6,182,212,0.35) 0%, rgba(59,130,246,0.25) 100%)", border: "1px solid rgba(6,182,212,0.4)" }}>
+              <Bot className="w-7 h-7 text-cyan-200" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">AveraAI</p>
-              <p className="text-[11px] text-slate-400 leading-relaxed mt-0.5">
-                Your always-available AI running coach. Ask about pace strategy, recovery windows, race-day nutrition, or "why do my legs feel heavy?" — Avera answers in seconds, powered by your real training data.
-              </p>
-              <div className="flex flex-wrap gap-1.5 mt-2.5">
-                {[
-                  { label: "Pace strategy", c: "text-cyan-400 border-cyan-500/30 bg-cyan-500/10" },
-                  { label: "Race prep",     c: "text-blue-400 border-blue-500/30 bg-blue-500/10" },
-                  { label: "Recovery",      c: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
-                  { label: "Injury Q&A",   c: "text-red-400 border-red-500/30 bg-red-500/10" },
-                  { label: "Plan reviews", c: "text-violet-400 border-violet-500/30 bg-violet-500/10" },
-                ].map(t => (
-                  <span key={t.label} className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${t.c}`}>{t.label}</span>
-                ))}
+              <div className="flex items-center gap-2 mb-0.5">
+                <p className="text-base font-bold text-white">AveraAI</p>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-semibold">Online</span>
               </div>
+              <p className="text-xs text-slate-400">Your AI running coach, always available</p>
             </div>
           </div>
-        </div>
-
-        {/* AI Capabilities grid */}
-        <div className="px-5 py-4 border-b border-slate-800/60">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">What Thrive AI does</p>
-          <div className="space-y-3">
+          <div className="flex flex-wrap gap-1.5">
             {[
-              { Icon: ShieldCheck, color: "text-red-400",    bg: "bg-red-500/15 border-red-400/30",       title: "Injury Risk Detection",      desc: "Flags mileage spikes, HRV dips, and overtraining patterns before they cause an injury." },
-              { Icon: Dumbbell,    color: "text-amber-400",  bg: "bg-amber-500/15 border-amber-400/30",   title: "Adaptive Training Plans",    desc: "AI builds week-by-week plans around your goal, fitness level, and real progress." },
-              { Icon: LineChart,   color: "text-blue-400",   bg: "bg-blue-500/15 border-blue-400/30",     title: "Load & Recovery Monitoring", desc: "Tracks cumulative fatigue vs. fitness to tell you when to push and when to rest." },
-              { Icon: Users,       color: "text-violet-400", bg: "bg-violet-500/15 border-violet-400/30", title: "Coach Intelligence",          desc: "Coaches get AI-powered roster summaries, per-athlete risk flags, and team-wide insights." },
-            ].map(({ Icon, color, bg, title, desc }) => (
-              <div key={title} className="flex items-start gap-3">
-                <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 ${bg}`}>
-                  <Icon className={`w-3.5 h-3.5 ${color}`} />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-white">{title}</p>
-                  <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5">{desc}</p>
-                </div>
-              </div>
+              { label: "Pace strategy", c: "text-cyan-400 border-cyan-500/30 bg-cyan-500/10" },
+              { label: "Race prep",     c: "text-blue-400 border-blue-500/30 bg-blue-500/10" },
+              { label: "Recovery",      c: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+              { label: "Injury Q&A",   c: "text-red-400 border-red-500/30 bg-red-500/10" },
+              { label: "Training plans", c: "text-violet-400 border-violet-500/30 bg-violet-500/10" },
+            ].map(t => (
+              <span key={t.label} className={`text-[10px] px-2.5 py-1 rounded-full border font-medium ${t.c}`}>{t.label}</span>
             ))}
           </div>
         </div>
 
-        {/* Chat preview strip */}
-        <div className="px-5 py-4">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Example conversations</p>
-          <div className="space-y-2">
-            {[
-              { q: "Am I ready to race this weekend?", a: "Based on your last 7 days — 42 mi with solid HRV — you're in good shape. Taper today and you'll peak on race day." },
-              { q: "My knee hurts after long runs.", a: "Could be ITB tightness from your mileage jump last week (+23%). I'd suggest dropping volume 15% and adding hip strengthening." },
-            ].map(({ q, a }) => (
-              <div key={q} className="rounded-xl border border-slate-700/50 p-3 space-y-2"
-                style={{ background: "rgba(15,23,42,0.7)" }}>
-                <div className="flex items-start gap-2">
-                  <div className="w-4 h-4 rounded bg-slate-700/80 flex items-center justify-center shrink-0 mt-0.5">
-                    <MessageSquare className="w-2.5 h-2.5 text-slate-400" />
-                  </div>
-                  <p className="text-[11px] text-slate-300 italic">"{q}"</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-4 h-4 rounded bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center shrink-0 mt-0.5">
-                    <Bot className="w-2.5 h-2.5 text-cyan-400" />
-                  </div>
-                  <p className="text-[11px] text-cyan-300 leading-relaxed">{a}</p>
+        {/* Chat preview */}
+        <div className="px-5 pb-5 pt-4 space-y-3" style={{ background: "rgba(10,15,30,0.6)" }}>
+          {[
+            {
+              q: "Am I ready to race this weekend?",
+              a: "Based on your last 7 days — 42 mi with solid HRV — you're in good shape. Taper today and you'll peak on race day. 🏁",
+            },
+            {
+              q: "My knee hurts after long runs.",
+              a: "Looks like you jumped mileage +23% last week. Could be early ITB irritation. I'd cut volume 15% this week and add hip strengthening — I can build you a recovery plan.",
+            },
+          ].map(({ q, a }) => (
+            <div key={q} className="space-y-2">
+              {/* User bubble */}
+              <div className="flex justify-end">
+                <div className="max-w-[80%] px-3.5 py-2.5 rounded-2xl rounded-tr-sm text-xs text-white"
+                  style={{ background: "rgba(30,41,59,0.9)", border: "1px solid rgba(51,65,85,0.6)" }}>
+                  {q}
                 </div>
               </div>
-            ))}
-          </div>
+              {/* Avera bubble */}
+              <div className="flex items-end gap-2">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mb-0.5"
+                  style={{ background: "linear-gradient(135deg, rgba(6,182,212,0.4), rgba(59,130,246,0.3))", border: "1px solid rgba(6,182,212,0.35)" }}>
+                  <Bot className="w-3.5 h-3.5 text-cyan-300" />
+                </div>
+                <div className="max-w-[82%] px-3.5 py-2.5 rounded-2xl rounded-bl-sm text-xs text-cyan-100 leading-relaxed"
+                  style={{ background: "linear-gradient(135deg, rgba(6,182,212,0.12), rgba(59,130,246,0.08))", border: "1px solid rgba(6,182,212,0.2)" }}>
+                  {a}
+                </div>
+              </div>
+            </div>
+          ))}
+          <p className="text-[10px] text-slate-600 text-center pt-1">Powered by your real training data</p>
         </div>
       </div>
 
