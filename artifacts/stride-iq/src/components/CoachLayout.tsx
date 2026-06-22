@@ -1,15 +1,90 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, AlertTriangle, Bot, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, AlertTriangle, Bot, Settings, LogOut, Calendar, X, Zap } from "lucide-react";
 import { useAuth } from "@workspace/replit-auth-web";
 import NotificationBell from "./NotificationBell";
+import { useState, useEffect, useRef } from "react";
 
 const NAV = [
   { href: "/", label: "Team Dashboard", icon: LayoutDashboard },
   { href: "/team", label: "Athlete Roster", icon: Users },
+  { href: "/plans", label: "Training Plans", icon: Calendar },
   { href: "/alerts", label: "Injury Alerts", icon: AlertTriangle },
   { href: "/ai-assistant", label: "AveraAI", icon: Bot },
   { href: "/profile", label: "Settings", icon: Settings },
 ];
+
+function AveraTipPopup() {
+  const [tip, setTip] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const alreadyShown = sessionStorage.getItem("avera_tip_shown");
+    if (alreadyShown) return;
+
+    const fetchTip = async () => {
+      try {
+        const res = await fetch("/api/openai/coach-tip", { credentials: "include" });
+        if (!res.ok) return;
+        const data = await res.json() as { tip: string | null };
+        if (data.tip) {
+          setTip(data.tip);
+          setVisible(true);
+          sessionStorage.setItem("avera_tip_shown", "1");
+          timerRef.current = setTimeout(() => setVisible(false), 30000);
+        }
+      } catch {
+        // silently fail — popup is non-critical
+      }
+    };
+
+    const delay = setTimeout(fetchTip, 5000);
+    return () => {
+      clearTimeout(delay);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  if (!visible || dismissed || !tip) return null;
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50 w-80 animate-in slide-in-from-bottom-4 fade-in duration-300">
+      <div className="bg-[#0d1529] border border-cyan-500/30 rounded-xl shadow-2xl shadow-black/50 overflow-hidden">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-800 bg-cyan-500/5">
+          <div className="w-6 h-6 rounded-full bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center shrink-0">
+            <Zap className="w-3 h-3 text-cyan-400" />
+          </div>
+          <span className="text-xs font-semibold text-cyan-400">AveraAI has a suggestion</span>
+          <button
+            onClick={() => { setDismissed(true); setVisible(false); }}
+            className="ml-auto text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <div className="px-4 py-3">
+          <p className="text-sm text-slate-300 leading-relaxed">{tip}</p>
+        </div>
+        <div className="px-4 pb-3 flex items-center gap-2">
+          <Link
+            href="/ai-assistant"
+            onClick={() => setVisible(false)}
+            className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+          >
+            Open AveraAI →
+          </Link>
+          <button
+            onClick={() => { setDismissed(true); setVisible(false); }}
+            className="ml-auto text-xs text-slate-500 hover:text-slate-400 transition-colors"
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function CoachLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -82,6 +157,8 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
         </header>
         {children}
       </main>
+
+      <AveraTipPopup />
     </div>
   );
 }

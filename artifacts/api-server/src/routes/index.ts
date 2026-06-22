@@ -11,6 +11,7 @@ import authRouter from "./auth";
 import teamsRouter from "./teams";
 import notificationsRouter from "./notifications";
 import stravaRouter from "./strava";
+import coachPlansRouter from "./coach-plans";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(injuriesRouter);
 router.use(teamsRouter);
 router.use(notificationsRouter);
 router.use(stravaRouter);
+router.use(coachPlansRouter);
 
 export default router;

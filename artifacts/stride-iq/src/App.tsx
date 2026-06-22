@@ -14,6 +14,7 @@ import Coach from "@/pages/coach";
 import Profile from "@/pages/profile";
 import Onboarding from "@/pages/onboarding";
 import CoachDashboard from "@/pages/coach-dashboard";
+import CoachPlans from "@/pages/coach-plans";
 import Team from "@/pages/team";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
@@ -63,6 +64,7 @@ function CoachRouter() {
         <Route path="/" component={CoachDashboard} />
         <Route path="/alerts" component={Alerts} />
         <Route path="/team" component={Team} />
+        <Route path="/plans" component={CoachPlans} />
         <Route path="/ai-assistant" component={Coach} />
         <Route path="/profile" component={Profile} />
         <Route component={CoachDashboard} />

@@ -127,17 +127,20 @@ async function buildCoachContext(userId: string): Promise<string> {
     return lines.join("\n");
   }
 
-  const [athleteProfiles, userRows, recentActivities, teamAlerts] = await Promise.all([
+  const [athleteProfiles, userRows, recentActivities, teamAlerts, teamPlans] = await Promise.all([
     db.select().from(athleteProfileTable).where(inArray(athleteProfileTable.userId, memberIds)),
     db.select().from(usersTable).where(inArray(usersTable.id, memberIds)),
     db.select().from(activitiesTable)
       .where(inArray(activitiesTable.userId, memberIds))
       .orderBy(desc(activitiesTable.activityDate))
-      .limit(memberIds.length * 5),
+      .limit(memberIds.length * 8),
     db.select().from(injuryAlertsTable)
       .where(and(inArray(injuryAlertsTable.userId, memberIds), eq(injuryAlertsTable.acknowledged, false)))
       .orderBy(desc(injuryAlertsTable.createdAt))
       .limit(20),
+    db.select().from(trainingPlansTable)
+      .where(inArray(trainingPlansTable.userId, memberIds))
+      .orderBy(desc(trainingPlansTable.createdAt)),
   ]);
 
   const profileByUser = new Map(athleteProfiles.map(p => [p.userId, p]));
@@ -156,6 +159,14 @@ async function buildCoachContext(userId: string): Promise<string> {
     alertsByUser.set(al.userId, existing);
   }
 
+  const plansByUser = new Map<string, typeof teamPlans>();
+  for (const plan of teamPlans) {
+    if (!plan.userId) continue;
+    const existing = plansByUser.get(plan.userId) ?? [];
+    existing.push(plan);
+    plansByUser.set(plan.userId, existing);
+  }
+
   lines.push("\n--- Athlete Roster ---");
   for (const mid of memberIds) {
     const p = profileByUser.get(mid);
@@ -166,7 +177,7 @@ async function buildCoachContext(userId: string): Promise<string> {
       `Name: ${name}`,
       p?.fitnessLevel ? `Level: ${p.fitnessLevel}` : null,
       p?.primaryGoal ? `Goal: ${p.primaryGoal}` : null,
-      `Weekly: ${weeklyMi}mi`,
+      `Weekly: ${weeklyMi}mi (last 7 days)`,
       p?.restingHeartRate ? `RHR: ${p.restingHeartRate}bpm` : null,
       p?.hrv ? `HRV: ${Number(p.hrv).toFixed(0)}ms` : null,
     ].filter(Boolean).join(" | ");
@@ -174,6 +185,10 @@ async function buildCoachContext(userId: string): Promise<string> {
     const alerts = alertsByUser.get(mid) ?? [];
     for (const al of alerts) {
       lines.push(`  ⚠ ${al.riskLevel.toUpperCase()} RISK — ${al.bodyPart}: ${al.message}`);
+    }
+    const plans = plansByUser.get(mid) ?? [];
+    for (const plan of plans) {
+      lines.push(`  📋 Plan: "${plan.name}" | ${plan.goal} | ${plan.startDate}–${plan.endDate} | Status: ${plan.status}${plan.weeklyMileage ? ` | ${Number(plan.weeklyMileage)}mi/wk` : ""}`);
     }
   }
 
@@ -469,6 +484,45 @@ router.post("/openai/conversations/:id/messages", async (req: Request, res): Pro
   await db.insert(messages).values({ conversationId: conv.id, role: "assistant", content: fullResponse });
   res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
   res.end();
+});
+
+// ── Coach proactive tip (non-streaming) ──────────────────────────────────────
+
+router.get("/openai/coach-tip", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const userId = req.user.id;
+  const profileRows = await db.select({ userRole: athleteProfileTable.userRole }).from(athleteProfileTable).where(eq(athleteProfileTable.userId, userId)).limit(1);
+  const profile = profileRows[0];
+  if (profile?.userRole !== "coach") {
+    res.status(403).json({ error: "Coach only" });
+    return;
+  }
+  if (!openaiClient) {
+    res.json({ tip: null });
+    return;
+  }
+  try {
+    const context = await buildCoachContext(userId);
+    const completion = await openaiClient.chat.completions.create({
+      model: "glm-4-flash",
+      max_tokens: 100,
+      messages: [
+        {
+          role: "system",
+          content: "You are AveraAI, a coaching assistant. Based on the team data provided, give ONE specific, actionable coaching insight in 1-2 sentences. No greeting or intro — just the direct insight. Focus on the most pressing concern or opportunity you see.",
+        },
+        { role: "user", content: context + "\nWhat is your most important insight right now?" },
+      ],
+    });
+    const tip = completion.choices[0]?.message?.content ?? null;
+    res.json({ tip });
+  } catch (err) {
+    logger.error({ err }, "coach-tip error");
+    res.json({ tip: null });
+  }
 });
 
 export default router;
