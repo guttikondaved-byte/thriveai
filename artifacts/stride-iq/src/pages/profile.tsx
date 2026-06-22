@@ -418,14 +418,14 @@ function AthleteProfile() {
       {activeGuide && <HelpModal guideKey={activeGuide} onClose={() => setActiveGuide(null)} />}
       {showDeleteModal && <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />}
 
-      <div className="p-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-foreground" data-testid="profile-title">Athlete Profile</h1>
-          <p className="text-sm text-muted-foreground mt-1">Your training profile and physiological metrics</p>
+      <div className="p-8 max-w-3xl mx-auto">
+        <div className="mb-8 border-b border-border pb-6">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight" data-testid="profile-title">Athlete Profile</h1>
+          <p className="text-sm text-muted-foreground mt-1.5 font-medium">Your training profile and physiological metrics</p>
         </div>
 
-        <div className="max-w-xl space-y-6">
-          <div className="bg-card border border-border rounded-lg p-6">
+        <div className="space-y-6">
+          <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                 <div className="grid grid-cols-2 gap-4">

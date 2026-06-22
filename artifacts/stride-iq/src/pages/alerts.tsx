@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 const RISK_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; icon: React.ElementType }> = {
-  low: { label: "Low Risk", color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/20", icon: Shield },
-  medium: { label: "Medium Risk", color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/20", icon: AlertTriangle },
-  high: { label: "High Risk", color: "text-red-400", bg: "bg-red-400/10", border: "border-red-400/30", icon: ShieldAlert },
-  critical: { label: "Critical", color: "text-red-300", bg: "bg-red-600/20", border: "border-red-600/40", icon: ShieldAlert },
+  low: { label: "Low Risk", color: "text-[#10b981]", bg: "bg-[#10b981]/10", border: "border-[#10b981]/20", icon: Shield },
+  medium: { label: "Medium Risk", color: "text-[#f59e0b]", bg: "bg-[#f59e0b]/10", border: "border-[#f59e0b]/20", icon: AlertTriangle },
+  high: { label: "High Risk", color: "text-[#ef4444]", bg: "bg-[#ef4444]/10", border: "border-[#ef4444]/30", icon: ShieldAlert },
+  critical: { label: "Critical", color: "text-[#ef4444]", bg: "bg-[#ef4444]/20", border: "border-[#ef4444]/40", icon: ShieldAlert },
 };
 
 export default function Alerts() {

@@ -97,18 +97,18 @@ function StepIndicator({ step, steps }: { step: number; steps: string[] }) {
         <div key={i} className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all
-              ${i < step  ? "bg-cyan-500 text-slate-900" :
-                i === step ? "bg-cyan-500/20 border-2 border-cyan-500 text-cyan-400" :
-                "bg-slate-800 border border-slate-700 text-slate-600"}`}>
+              ${i < step  ? "bg-primary text-primary-foreground shadow-[0_0_10px_rgba(var(--primary),0.3)]" :
+                i === step ? "bg-primary/10 border-2 border-primary text-primary shadow-[0_0_10px_rgba(var(--primary),0.1)]" :
+                "bg-secondary/50 border border-border text-muted-foreground"}`}>
               {i < step ? <Check size={13} /> : i + 1}
             </div>
-            <span className={`text-sm font-medium hidden sm:block
-              ${i === step ? "text-white" : i < step ? "text-cyan-400" : "text-slate-600"}`}>
+            <span className={`text-sm font-semibold hidden sm:block
+              ${i === step ? "text-foreground" : i < step ? "text-primary" : "text-muted-foreground"}`}>
               {label}
             </span>
           </div>
           {i < steps.length - 1 && (
-            <div className={`w-8 sm:w-14 h-px ${i < step ? "bg-cyan-500" : "bg-slate-700"}`} />
+            <div className={`w-8 sm:w-14 h-px ${i < step ? "bg-primary" : "bg-border"}`} />
           )}
         </div>
       ))}

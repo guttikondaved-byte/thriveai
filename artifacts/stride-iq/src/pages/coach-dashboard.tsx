@@ -27,24 +27,24 @@ interface RosterMember {
 }
 
 const RISK_CONFIG: Record<RiskLevel, { label: string; dot: string; badge: string; row: string }> = {
-  low:    { label: "Low Risk",    dot: "bg-yellow-400", badge: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20", row: "bg-yellow-500/5" },
-  medium: { label: "Caution",     dot: "bg-amber-400",  badge: "bg-amber-500/10 text-amber-400 border-amber-500/20",   row: "bg-amber-500/5" },
-  high:   { label: "Injury Risk", dot: "bg-red-400 animate-pulse", badge: "bg-red-500/10 text-red-400 border-red-500/20", row: "bg-red-500/5" },
+  low:    { label: "Low Risk",    dot: "bg-[#10b981]", badge: "bg-[#10b981]/10 text-[#10b981] border-[#10b981]/20", row: "bg-[#10b981]/5" }, // Emerald
+  medium: { label: "Caution",     dot: "bg-[#f59e0b]", badge: "bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/20", row: "bg-[#f59e0b]/5" }, // Amber
+  high:   { label: "Injury Risk", dot: "bg-[#ef4444] animate-pulse", badge: "bg-[#ef4444]/10 text-[#ef4444] border-[#ef4444]/20", row: "bg-[#ef4444]/5" }, // Red
 };
 
-const READY = { label: "Ready", dot: "bg-emerald-400", badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" };
+const READY = { label: "Ready", dot: "bg-[#10b981]", badge: "bg-[#10b981]/10 text-[#10b981] border-[#10b981]/20" };
 
 function StatCard({ label, value, sub, icon: Icon, accent }: { label: string; value: string | number; sub: string; icon: React.ElementType; accent: string }) {
   return (
-    <div className="bg-[#0d1529] border border-slate-800 rounded-xl p-5">
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">{label}</span>
+    <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+      <div className="flex items-start justify-between mb-4">
+        <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">{label}</span>
         <div className={`w-8 h-8 rounded-lg ${accent} flex items-center justify-center`}>
-          <Icon size={15} />
+          <Icon size={16} />
         </div>
       </div>
-      <div className="text-3xl font-bold text-white mb-0.5">{value}</div>
-      <div className="text-slate-500 text-xs">{sub}</div>
+      <div className="text-3xl font-bold text-foreground mb-1 tracking-tight">{value}</div>
+      <div className="text-muted-foreground text-xs font-medium">{sub}</div>
     </div>
   );
 }

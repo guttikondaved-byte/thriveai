@@ -141,36 +141,36 @@ export default function AthleteProfileModal({ teamId, userId, onClose }: Props) 
 
             {/* Stat grid */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-background border border-border rounded-xl p-3">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                  <Activity className="w-3 h-3" /> This week
+              <div className="bg-secondary/30 border border-border rounded-xl p-4 flex flex-col justify-between">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-widest font-semibold flex items-center gap-1.5 mb-2">
+                  <Activity className="w-3.5 h-3.5" /> This week
                 </p>
-                <p className="text-base font-bold text-foreground mt-1">
-                  {data.weeklyDistanceKm.toFixed(1)} mi
+                <p className="text-2xl font-bold text-foreground tracking-tight">
+                  {data.weeklyDistanceKm.toFixed(1)} <span className="text-sm font-medium text-muted-foreground">mi</span>
                 </p>
               </div>
-              <div className="bg-background border border-border rounded-xl p-3">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                  <Target className="w-3 h-3" /> Weekly goal
+              <div className="bg-secondary/30 border border-border rounded-xl p-4 flex flex-col justify-between">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-widest font-semibold flex items-center gap-1.5 mb-2">
+                  <Target className="w-3.5 h-3.5" /> Weekly goal
                 </p>
-                <p className="text-base font-bold text-foreground mt-1">
+                <p className="text-2xl font-bold text-foreground tracking-tight">
                   {data.profile?.weeklyMileageGoal != null
-                    ? `${data.profile.weeklyMileageGoal.toFixed(0)} mi`
-                    : "—"}
+                    ? <>{data.profile.weeklyMileageGoal.toFixed(0)} <span className="text-sm font-medium text-muted-foreground">mi</span></>
+                    : <span className="text-muted-foreground/50 text-base italic font-normal">Not set</span>}
                 </p>
               </div>
-              <div className="bg-background border border-border rounded-xl p-3">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                  <Heart className="w-3 h-3" /> Resting HR
+              <div className="bg-secondary/30 border border-border rounded-xl p-4 flex flex-col justify-between">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-widest font-semibold flex items-center gap-1.5 mb-2">
+                  <Heart className="w-3.5 h-3.5" /> Resting HR
                 </p>
-                <p className="text-base font-bold text-foreground mt-1">
-                  {data.profile?.restingHeartRate != null ? `${data.profile.restingHeartRate} bpm` : "—"}
+                <p className="text-2xl font-bold text-foreground tracking-tight">
+                  {data.profile?.restingHeartRate != null ? <>{data.profile.restingHeartRate} <span className="text-sm font-medium text-muted-foreground">bpm</span></> : <span className="text-muted-foreground/50 text-base italic font-normal">Not set</span>}
                 </p>
               </div>
-              <div className="bg-background border border-border rounded-xl p-3">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">HRV</p>
-                <p className="text-base font-bold text-foreground mt-1">
-                  {data.profile?.hrv != null ? data.profile.hrv.toFixed(0) : "—"}
+              <div className="bg-secondary/30 border border-border rounded-xl p-4 flex flex-col justify-between">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-widest font-semibold mb-2">HRV</p>
+                <p className="text-2xl font-bold text-foreground tracking-tight">
+                  {data.profile?.hrv != null ? <>{data.profile.hrv.toFixed(0)} <span className="text-sm font-medium text-muted-foreground">ms</span></> : <span className="text-muted-foreground/50 text-base italic font-normal">Not set</span>}
                 </p>
               </div>
             </div>

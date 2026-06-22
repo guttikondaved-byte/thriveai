@@ -47,9 +47,9 @@ interface AveraProposal {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  active: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
+  active: "text-[#10b981] bg-[#10b981]/10 border-[#10b981]/20",
   completed: "text-slate-400 bg-slate-400/10 border-slate-400/20",
-  paused: "text-amber-400 bg-amber-400/10 border-amber-400/20",
+  paused: "text-[#f59e0b] bg-[#f59e0b]/10 border-[#f59e0b]/20",
 };
 
 export default function CoachPlans() {

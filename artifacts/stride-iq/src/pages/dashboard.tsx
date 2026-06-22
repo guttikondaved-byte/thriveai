@@ -21,15 +21,17 @@ const ACTIVITY_LABELS: Record<string, string> = {
 };
 
 const LOAD_COLORS: Record<string, string> = {
-  low: "text-emerald-400", moderate: "text-cyan-400",
-  high: "text-amber-400", very_high: "text-red-400",
+  low: "text-[#3b82f6]", // Blue
+  moderate: "text-[#10b981]", // Emerald
+  high: "text-[#f59e0b]", // Amber
+  very_high: "text-[#ef4444]", // Red
 };
 
 const RISK_COLORS: Record<string, string> = {
-  low: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  medium: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  high: "bg-red-500/20 text-red-400 border-red-500/30",
-  critical: "bg-red-600/30 text-red-300 border-red-600/40",
+  low: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  medium: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  high: "bg-red-500/10 text-red-400 border-red-500/20",
+  critical: "bg-red-600/20 text-red-300 border-red-600/30",
 };
 
 function StatCard({ label, value, sub, icon: Icon }: { label: string; value: string | number; sub?: string; icon: React.ElementType }) {
@@ -133,7 +135,12 @@ export default function Dashboard() {
             </div>
             <div className="mt-3 h-1.5 bg-secondary rounded-full overflow-hidden">
               <div
-                className="h-full bg-primary rounded-full transition-all"
+                className={`h-full rounded-full transition-all ${
+                  data.trainingLoad === "low" ? "bg-[#3b82f6]" :
+                  data.trainingLoad === "moderate" ? "bg-[#10b981]" :
+                  data.trainingLoad === "high" ? "bg-[#f59e0b]" :
+                  "bg-[#ef4444]"
+                }`}
                 style={{ width: data.trainingLoad === "low" ? "25%" : data.trainingLoad === "moderate" ? "50%" : data.trainingLoad === "high" ? "75%" : "95%" }}
               />
             </div>
@@ -174,15 +181,15 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-2">
                 {data.recentActivities.map(a => (
-                  <div key={a.id} className="flex items-center justify-between py-3 border-b border-border last:border-0" data-testid={`activity-row-${a.id}`}>
+                  <div key={a.id} className="flex items-center justify-between py-4 border-b border-border last:border-0 hover:bg-secondary/20 transition-colors px-3 -mx-3 rounded-lg" data-testid={`activity-row-${a.id}`}>
                     <div>
-                      <span className="text-sm font-medium text-foreground">{ACTIVITY_LABELS[a.type] ?? a.type}</span>
-                      <span className="text-xs text-muted-foreground ml-3">{format(new Date(a.activityDate), "MMM d")}</span>
+                      <span className="text-sm font-semibold text-foreground">{ACTIVITY_LABELS[a.type] ?? a.type}</span>
+                      <span className="text-xs text-muted-foreground ml-3 font-medium">{format(new Date(a.activityDate), "MMM d")}</span>
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-5 text-sm font-medium text-foreground">
                       {a.distanceKm && <span>{a.distanceKm} mi</span>}
-                      {a.durationMinutes && <span>{a.durationMinutes} min</span>}
-                      {a.avgHeartRate && <span>{a.avgHeartRate} bpm</span>}
+                      {a.durationMinutes && <span className="text-muted-foreground">{a.durationMinutes} min</span>}
+                      {a.avgHeartRate && <span className="text-muted-foreground">{a.avgHeartRate} bpm</span>}
                     </div>
                   </div>
                 ))}

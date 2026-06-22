@@ -205,20 +205,20 @@ export default function CoachAI() {
               {streamMessages.map((msg, i) => (
                 <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`} data-testid={`message-${i}`}>
                   {msg.role === "assistant" && (
-                    <div className="w-7 h-7 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                      <Bot className="w-3.5 h-3.5 text-cyan-400" />
+                    <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <Bot className="w-4 h-4 text-primary" />
                     </div>
                   )}
-                  <div className={`max-w-[75%] rounded-lg px-4 py-3 text-sm leading-relaxed ${
+                  <div className={`max-w-[80%] rounded-2xl px-5 py-3.5 text-sm leading-relaxed ${
                     msg.role === "user"
-                      ? "bg-cyan-600 text-white"
-                      : "bg-white/5 border border-white/10 text-slate-200"
+                      ? "bg-primary text-primary-foreground rounded-tr-sm shadow-md"
+                      : "bg-card border border-border text-foreground rounded-tl-sm shadow-sm"
                   }`}>
-                    {msg.content || (msg.streaming && <span className="inline-block w-2 h-4 bg-cyan-400 opacity-70 animate-pulse rounded-sm" />)}
+                    {msg.content || (msg.streaming && <span className="inline-block w-2 h-4 bg-primary opacity-70 animate-pulse rounded-sm" />)}
                   </div>
                   {msg.role === "user" && (
-                    <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 mt-0.5">
-                      <User className="w-3.5 h-3.5 text-slate-400" />
+                    <div className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center shrink-0 mt-0.5">
+                      <User className="w-4 h-4 text-muted-foreground" />
                     </div>
                   )}
                 </div>

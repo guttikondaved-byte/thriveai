@@ -40,28 +40,28 @@ function PRCard({ label, value, onChange }: { label: string; value: string; onCh
   };
 
   return (
-    <div className="bg-secondary/30 border border-border rounded-xl p-4 flex flex-col gap-2">
-      <p className="text-xs text-muted-foreground uppercase tracking-wider">{label}</p>
+    <div className="bg-card border border-border rounded-xl p-5 flex flex-col gap-3 shadow-sm transition-all hover:shadow-md">
+      <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">{label}</p>
       {editing ? (
         <div className="flex items-center gap-2">
           <input
-            className="flex-1 bg-background border border-border rounded px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            className="flex-1 bg-background border border-border rounded-md px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
             value={draft}
             onChange={e => setDraft(e.target.value)}
             placeholder="e.g. 22:30"
             autoFocus
             onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") cancel(); }}
           />
-          <button onClick={commit} className="text-primary hover:text-primary/80"><Check className="w-4 h-4" /></button>
-          <button onClick={cancel} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+          <button onClick={commit} className="text-emerald-400 hover:text-emerald-300 p-1.5 bg-emerald-400/10 rounded-md transition-colors"><Check className="w-4 h-4" /></button>
+          <button onClick={cancel} className="text-muted-foreground hover:text-foreground p-1.5 bg-secondary rounded-md transition-colors"><X className="w-4 h-4" /></button>
         </div>
       ) : (
         <div className="flex items-center justify-between">
-          <span className="text-lg font-semibold text-foreground">
-            {value || <span className="text-muted-foreground text-sm font-normal">Not set</span>}
+          <span className="text-2xl font-bold text-foreground tracking-tight">
+            {value || <span className="text-muted-foreground/50 text-sm font-normal italic">Not set</span>}
           </span>
-          <button onClick={() => { setDraft(value); setEditing(true); }} className="text-muted-foreground hover:text-primary">
-            <Edit2 className="w-3.5 h-3.5" />
+          <button onClick={() => { setDraft(value); setEditing(true); }} className="text-muted-foreground hover:text-primary p-2 rounded-full hover:bg-primary/10 transition-colors">
+            <Edit2 className="w-4 h-4" />
           </button>
         </div>
       )}
@@ -241,22 +241,22 @@ export default function History() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="mb-6">
+    <div className="p-8 max-w-4xl mx-auto">
+      <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground">Health & History</h1>
-        <p className="text-muted-foreground text-sm mt-1">Your personal records, injury history, and health notes</p>
+        <p className="text-muted-foreground text-sm mt-1.5">Your personal records, injury history, and health notes</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-secondary/30 rounded-lg p-1 w-fit border border-border">
+      <div className="flex gap-2 mb-8 border-b border-border pb-px">
         {tabs.map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all border-b-2 -mb-px ${
               tab === t.id
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
+                ? "text-primary border-primary"
+                : "text-muted-foreground border-transparent hover:text-foreground hover:border-muted-foreground/30"
             }`}
           >
             {t.icon}

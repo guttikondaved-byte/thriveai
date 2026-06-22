@@ -32,7 +32,7 @@ const COACH_FOCUSES = [
 
 const DATA_SOURCES = [
   { id: "strava",  icon: <Activity className="w-5 h-5" />, title: "Connect Strava",    badge: "Recommended", badgeColor: "text-[#FC4C02] border-[#FC4C02]/40 bg-transparent", desc: "Every run syncs automatically — no imports ever." },
-  { id: "gpx",     icon: <Upload className="w-5 h-5" />, title: "Import GPX Files",   badge: "Free",            badgeColor: "text-cyan-400 border-cyan-500/30 bg-transparent",    desc: "Export from Garmin, Apple Health, Coros, Polar, etc." },
+  { id: "gpx",     icon: <Upload className="w-5 h-5" />, title: "Import GPX Files",   badge: "Free",            badgeColor: "text-primary border-primary/30 bg-transparent",    desc: "Export from Garmin, Apple Health, Coros, Polar, etc." },
   { id: "manual",  icon: <MessageSquare className="w-5 h-5" />, title: "Manual Logging",     badge: "Always available", badgeColor: "text-slate-400 border-slate-600/40 bg-transparent", desc: "Enter distance, duration, and effort by hand." },
 ];
 
@@ -91,15 +91,15 @@ function Steps({ current, labels }: { current: number; labels: string[] }) {
         <div key={i} className="flex items-center gap-2">
           <div className="flex items-center gap-1.5">
             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ${
-              i < current ? "bg-cyan-500 text-slate-900" :
-              i === current ? "border-2 border-cyan-500 text-cyan-400 bg-cyan-500/10" :
-              "border border-slate-700 text-slate-600 bg-slate-800"
+              i < current ? "bg-primary text-primary-foreground shadow-[0_0_10px_rgba(var(--primary),0.3)]" :
+              i === current ? "border-2 border-primary text-primary bg-primary/10 shadow-[0_0_10px_rgba(var(--primary),0.1)]" :
+              "border border-border text-muted-foreground bg-secondary/50"
             }`}>
               {i < current ? <Check size={11} /> : i + 1}
             </div>
-            <span className={`text-xs font-medium hidden sm:block ${i === current ? "text-white" : i < current ? "text-cyan-400" : "text-slate-600"}`}>{label}</span>
+            <span className={`text-xs font-semibold hidden sm:block ${i === current ? "text-foreground" : i < current ? "text-primary" : "text-muted-foreground"}`}>{label}</span>
           </div>
-          {i < labels.length - 1 && <div className={`h-px w-6 sm:w-10 ${i < current ? "bg-cyan-500" : "bg-slate-700"}`} />}
+          {i < labels.length - 1 && <div className={`h-px w-6 sm:w-10 ${i < current ? "bg-primary" : "bg-border"}`} />}
         </div>
       ))}
     </div>

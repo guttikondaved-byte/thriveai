@@ -40,13 +40,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 key={href}
                 href={href}
                 data-testid={`nav-${label.toLowerCase().replace(/\s+/g, "-")}`}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   active
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                 }`}
               >
-                <Icon className="w-4 h-4 shrink-0" />
+                <Icon className={`w-4 h-4 shrink-0 ${active ? "opacity-100" : "opacity-70"}`} />
                 {label}
               </Link>
             );

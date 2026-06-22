@@ -22,13 +22,13 @@ const ACTIVITY_LABELS: Record<string, string> = {
 };
 
 const ACTIVITY_COLORS: Record<string, string> = {
-  easy_run: "text-emerald-400 bg-emerald-400/10",
-  tempo_run: "text-cyan-400 bg-cyan-400/10",
-  interval: "text-violet-400 bg-violet-400/10",
-  long_run: "text-blue-400 bg-blue-400/10",
-  race: "text-amber-400 bg-amber-400/10",
-  cross_training: "text-slate-400 bg-slate-400/10",
-  rest: "text-muted-foreground bg-secondary",
+  easy_run: "text-[#10b981] bg-[#10b981]/10 border-[#10b981]/20", // Emerald
+  tempo_run: "text-[#3b82f6] bg-[#3b82f6]/10 border-[#3b82f6]/20", // Blue
+  interval: "text-[#8b5cf6] bg-[#8b5cf6]/10 border-[#8b5cf6]/20", // Violet
+  long_run: "text-[#f59e0b] bg-[#f59e0b]/10 border-[#f59e0b]/20", // Amber
+  race: "text-[#ef4444] bg-[#ef4444]/10 border-[#ef4444]/20", // Red
+  cross_training: "text-[#06b6d4] bg-[#06b6d4]/10 border-[#06b6d4]/20", // Cyan
+  rest: "text-slate-400 bg-slate-800 border-slate-700",
 };
 
 const schema = z.object({
@@ -336,13 +336,13 @@ export default function Activities() {
           {activities.map(a => (
             <div key={a.id} className="flex items-center px-5 py-4 hover:bg-secondary/40 transition-colors" data-testid={`activity-item-${a.id}`}>
               <div className="flex-1">
-                <div className="flex items-center gap-3 mb-1">
-                  <span className={`text-xs px-2 py-0.5 rounded font-medium ${ACTIVITY_COLORS[a.type] ?? "text-muted-foreground bg-secondary"}`}>
+                <div className="flex items-center gap-3 mb-1.5">
+                  <span className={`text-[10px] px-2 py-0.5 rounded border font-semibold tracking-wide uppercase ${ACTIVITY_COLORS[a.type] ?? "text-muted-foreground bg-secondary border-border"}`}>
                     {ACTIVITY_LABELS[a.type] ?? a.type}
                   </span>
-                  <span className="text-xs text-muted-foreground">{format(new Date(a.activityDate), "MMM d, yyyy")}</span>
+                  <span className="text-xs text-muted-foreground font-medium">{format(new Date(a.activityDate), "MMM d, yyyy")}</span>
                 </div>
-                {a.notes && <p className="text-xs text-muted-foreground">{a.notes}</p>}
+                {a.notes && <p className="text-sm text-foreground/80 leading-relaxed">{a.notes}</p>}
               </div>
               <div className="flex items-center gap-6 text-sm text-muted-foreground">
                 {a.distanceKm != null && <span data-testid={`text-distance-${a.id}`}>{a.distanceKm} mi</span>}

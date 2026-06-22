@@ -13,9 +13,9 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 const STATUS_COLORS: Record<string, string> = {
-  active: "text-emerald-400 bg-emerald-400/10",
-  completed: "text-slate-400 bg-slate-400/10",
-  paused: "text-amber-400 bg-amber-400/10",
+  active: "text-[#10b981] bg-[#10b981]/10 border border-[#10b981]/20",
+  completed: "text-[#3b82f6] bg-[#3b82f6]/10 border border-[#3b82f6]/20",
+  paused: "text-[#f59e0b] bg-[#f59e0b]/10 border border-[#f59e0b]/20",
 };
 
 const schema = z.object({
