@@ -183,7 +183,7 @@ function SignUpPage() {
                   <User className="w-5 h-5 text-cyan-300" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-white group-hover:text-cyan-200 transition-colors">Student Athlete</p>
+                  <p className="text-sm font-bold text-white group-hover:text-cyan-200 transition-colors">Athlete</p>
                   <p className="text-xs text-slate-500 mt-0.5">Personal training log · AI coach · Injury alerts · Plans</p>
                 </div>
                 <svg className="w-4 h-4 text-cyan-500/60 group-hover:text-cyan-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
@@ -216,7 +216,7 @@ function SignUpPage() {
     );
   }
 
-  const roleLabel = role === "athlete" ? "Student Athlete" : "Coach";
+  const roleLabel = role === "athlete" ? "Athlete" : "Coach";
   const roleColor = role === "athlete" ? "text-cyan-300 border-cyan-500/30 bg-cyan-500/10" : "text-violet-300 border-violet-500/30 bg-violet-500/10";
 
   return (

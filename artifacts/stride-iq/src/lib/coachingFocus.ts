@@ -128,7 +128,7 @@ const FOCUS_MAP: Record<string, FocusConfig> = {
     headline: "Collegiate Program Center",
     tagline: "Built for season periodization, championship peaking, and high-volume management.",
     philosophy: "Manage the season. Peak when it counts.",
-    athleteNoun: "student athletes",
+    athleteNoun: "athletes",
     focusAreas: ["Season periodization", "Championship peaking", "High-volume management", "Academic-balance load"],
     keySessionTypes: ["Workout Wednesday", "Long run", "Shakeout", "Championship tune-up"],
     distanceLabel: "Program Miles",

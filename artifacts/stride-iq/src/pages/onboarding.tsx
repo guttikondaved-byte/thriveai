@@ -246,7 +246,7 @@ export default function Onboarding() {
                 {
                   id: "athlete" as Role,
                   Icon: User,
-                  label: "Student Athlete",
+                  label: "Athlete",
                   desc: "I want to track my own training, monitor injury risk, and get personalised AI coaching.",
                   features: ["Personal dashboard & activity log", "AI coach AveraAI", "Injury risk alerts", "Custom training plans"],
                 },
