@@ -53,7 +53,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        <div className="px-4 py-4 border-t border-slate-800">
+        <div className="px-4 py-4 border-t border-slate-800 space-y-3">
           <div className="flex items-center gap-3">
             {user?.profileImageUrl ? (
               <img src={user.profileImageUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
@@ -66,14 +66,14 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
               <div className="text-xs font-semibold text-white truncate">{user?.firstName ?? "Coach"}</div>
               <div className="text-[10px] text-slate-500 truncate">{user?.email ?? "Thrive Athletics"}</div>
             </div>
-            <button
-              onClick={logout}
-              className="p-1.5 rounded text-slate-500 hover:text-white hover:bg-slate-800 transition-colors"
-              title="Log out"
-            >
-              <LogOut size={14} />
-            </button>
           </div>
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <LogOut size={14} />
+            Log out
+          </button>
         </div>
       </aside>
 

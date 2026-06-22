@@ -53,7 +53,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="px-4 py-4 border-t border-border">
+        <div className="px-4 py-4 border-t border-border space-y-3">
           <div className="flex items-center gap-3">
             {user?.profileImageUrl ? (
               <img src={user.profileImageUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
@@ -68,14 +68,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </p>
               <p className="text-[10px] text-muted-foreground truncate">{user?.email ?? ""}</p>
             </div>
-            <button
-              onClick={logout}
-              className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-              title="Log out"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
           </div>
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Log out
+          </button>
         </div>
       </aside>
 
