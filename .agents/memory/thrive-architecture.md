@@ -30,3 +30,7 @@ description: Key decisions, file locations, and quirks for the Thrive running co
 - Layout: `artifacts/stride-iq/src/components/Layout.tsx`
 
 **Why:** Recorded to avoid re-discovering the phone verification issue and SSE streaming pattern.
+
+## Coach role routing (verified working)
+- App.tsx routes by `profile.userRole === "coach"` → CoachRouter (CoachLayout "Coach Portal"), else AthleteRouter. Backend GET /api/athlete/profile returns userRole correctly; signup+login both verified via Playwright to reach the coach dashboard.
+- **If a user reports coach routing "still broken" but tests pass:** suspect a stale cached frontend bundle in their preview iframe. Restart the `artifacts/stride-iq: web` workflow and have them hard-refresh. The code path is correct.
