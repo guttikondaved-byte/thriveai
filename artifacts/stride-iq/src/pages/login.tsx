@@ -70,7 +70,6 @@ function Landing() {
             <div>
               <div className="flex items-center gap-2 mb-0.5">
                 <p className="text-base font-bold text-white">AveraAI</p>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-semibold">Online</span>
               </div>
               <p className="text-xs text-slate-400">Your AI running coach, always available</p>
             </div>
