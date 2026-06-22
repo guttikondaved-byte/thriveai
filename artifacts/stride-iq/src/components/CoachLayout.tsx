@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, AlertTriangle, Bot, Settings, LogOut, Calendar, X, Zap } from "lucide-react";
+import { LayoutDashboard, Users, Bot, Settings, LogOut, Calendar, X, Zap } from "lucide-react";
 import { useAuth } from "@workspace/replit-auth-web";
 import NotificationBell from "./NotificationBell";
 import { useState, useEffect, useRef } from "react";
@@ -8,7 +8,6 @@ const NAV = [
   { href: "/", label: "Team Dashboard", icon: LayoutDashboard },
   { href: "/team", label: "Athlete Roster", icon: Users },
   { href: "/plans", label: "Training Plans", icon: Calendar },
-  { href: "/alerts", label: "Injury Alerts", icon: AlertTriangle },
   { href: "/ai-assistant", label: "AveraAI", icon: Bot },
   { href: "/profile", label: "Settings", icon: Settings },
 ];
