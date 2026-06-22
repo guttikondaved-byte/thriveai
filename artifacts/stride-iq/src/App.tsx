@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Zap, User, Users } from "lucide-react";
+import { Zap, User, Users, ArrowLeft } from "lucide-react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ClerkProvider, SignIn, SignUp, useUser, useClerk } from "@clerk/react";
@@ -106,8 +106,16 @@ const Spinner = () => (
 );
 
 function SignInPage() {
+  const [, navigate] = useLocation();
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center px-4">
+      <button
+        onClick={() => navigate("/")}
+        className="absolute top-6 left-6 flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+      >
+        <ArrowLeft size={16} />
+        Back
+      </button>
       <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
     </div>
   );
@@ -142,6 +150,13 @@ function SignUpPage() {
     return (
       <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center px-4">
         <div className="w-full max-w-md">
+          <button
+            onClick={() => navigate("/")}
+            className="absolute top-6 left-6 flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft size={16} />
+            Back
+          </button>
           <div className="flex justify-center mb-8">
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/25"
@@ -212,6 +227,13 @@ function SignUpPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center px-4 gap-5">
+      <button
+        onClick={() => navigate("/")}
+        className="absolute top-6 left-6 flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+      >
+        <ArrowLeft size={16} />
+        Back
+      </button>
       <div className="flex items-center gap-3">
         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold ${roleColor}`}>
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
