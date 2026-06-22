@@ -66,8 +66,7 @@ export default function CoachDashboard() {
   const { user } = useUser();
   const { data: profile } = useGetAthleteProfile();
   const focus = getFocusConfig(profile?.primaryGoal);
-  const firstName = user?.firstName ?? null;
-  const lastName = user?.lastName ?? null;
+  const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || profile?.firstName || "";
   const greeting = greetingFor(new Date());
 
   useEffect(() => {
@@ -106,7 +105,7 @@ export default function CoachDashboard() {
   if (!team) {
     return (
       <div className="p-6 max-w-2xl mx-auto">
-        <p className={`text-xs font-semibold uppercase tracking-[0.15em] ${focus.accentText}`}>{greeting}{firstName || lastName ? `, ${firstName ?? ""}${firstName && lastName ? " " : ""}${lastName ?? ""}`.trim() : ""}</p>
+        <p className={`text-xs font-semibold uppercase tracking-[0.15em] ${focus.accentText}`}>{greeting}{displayName ? `, ${displayName}` : ""}</p>
         <h1 className="text-2xl font-bold text-white mb-2 mt-1">{focus.headline}</h1>
         <div className="bg-[#0d1529] border border-slate-800 rounded-xl p-8 text-center mt-6">
           <div className={`w-12 h-12 rounded-xl ${focus.accentBg} border ${focus.accentBorder} flex items-center justify-center mx-auto mb-3 ${focus.accentText}`}>
@@ -122,7 +121,7 @@ export default function CoachDashboard() {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="mb-6">
-        <p className={`text-xs font-semibold uppercase tracking-[0.15em] ${focus.accentText}`}>{greeting}{firstName || lastName ? `, ${firstName ?? ""}${firstName && lastName ? " " : ""}${lastName ?? ""}`.trim() : ""}</p>
+        <p className={`text-xs font-semibold uppercase tracking-[0.15em] ${focus.accentText}`}>{greeting}{displayName ? `, ${displayName}` : ""}</p>
         <h1 className="text-2xl font-bold text-white mt-1">{focus.headline}</h1>
         <p className="text-slate-500 text-sm mt-0.5">{team.name} · {members.length} {focus.athleteNoun}</p>
       </div>
