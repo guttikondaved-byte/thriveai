@@ -224,12 +224,15 @@ function AthleteSignup({ onBack }: { onBack: () => void }) {
 
   function validateStep0() {
     if (!firstName.trim()) { setErr("First name is required"); return false; }
+    if (!lastName.trim()) { setErr("Last name is required"); return false; }
     if (!email.includes("@")) { setErr("Enter a valid email"); return false; }
     if (password.length < 8) { setErr("Password must be at least 8 characters"); return false; }
     return true;
   }
 
   function validateStep1() {
+    if (!age || isNaN(Number(age)) || Number(age) < 10 || Number(age) > 100) { setErr("Enter a valid age (10–100)"); return false; }
+    if (!weeklyKm || isNaN(Number(weeklyKm)) || Number(weeklyKm) <= 0) { setErr("Enter a weekly distance goal"); return false; }
     if (!goal) { setErr("Pick a training goal"); return false; }
     return true;
   }
@@ -319,11 +322,11 @@ function AthleteSignup({ onBack }: { onBack: () => void }) {
         <div className="space-y-5">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Age (optional)</Label>
+              <Label>Age</Label>
               <input type="number" className={input} placeholder="17" min="10" max="100" value={age} onChange={e => setAge(e.target.value)} />
             </div>
             <div>
-              <Label>Weekly distance goal (km)</Label>
+              <Label>Weekly goal (km)</Label>
               <input type="number" className={input} placeholder="50" step="0.1" value={weeklyKm} onChange={e => setWeeklyKm(e.target.value)} />
             </div>
           </div>
@@ -439,6 +442,7 @@ function CoachSignup({ onBack }: { onBack: () => void }) {
 
   function validateStep0() {
     if (!firstName.trim()) { setErr("First name is required"); return false; }
+    if (!lastName.trim()) { setErr("Last name is required"); return false; }
     if (!email.includes("@")) { setErr("Enter a valid email"); return false; }
     if (password.length < 8) { setErr("Password must be at least 8 characters"); return false; }
     return true;
@@ -446,6 +450,8 @@ function CoachSignup({ onBack }: { onBack: () => void }) {
 
   function validateStep1() {
     if (!teamName.trim()) { setErr("Team or club name is required"); return false; }
+    if (!athleteCount || isNaN(Number(athleteCount)) || Number(athleteCount) < 1) { setErr("Enter the number of athletes you coach"); return false; }
+    if (!focus) { setErr("Pick a coaching focus"); return false; }
     return true;
   }
 
@@ -531,7 +537,7 @@ function CoachSignup({ onBack }: { onBack: () => void }) {
               <input className={input} placeholder="Westview Track & Field" value={teamName} onChange={e => setTeamName(e.target.value)} autoFocus />
             </div>
             <div className="col-span-2">
-              <Label>Number of athletes (optional)</Label>
+              <Label>Number of athletes</Label>
               <input type="number" min="1" className={input} placeholder="24" value={athleteCount} onChange={e => setAthleteCount(e.target.value)} />
             </div>
           </div>
@@ -550,7 +556,7 @@ function CoachSignup({ onBack }: { onBack: () => void }) {
           </div>
 
           <div>
-            <Label>Coaching focus (optional)</Label>
+            <Label>Coaching focus</Label>
             <div className="flex flex-wrap gap-2">
               {COACH_FOCUSES.map(f => (
                 <button key={f} type="button" onClick={() => setFocus(focus === f ? "" : f)}
