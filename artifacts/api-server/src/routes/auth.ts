@@ -18,6 +18,7 @@ import {
   teamsTable,
   trainingPlansTable,
   injuryAlertsTable,
+  conversations,
 } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import {
@@ -407,7 +408,11 @@ router.delete("/account", async (req: Request, res: Response): Promise<void> => 
         await tx.delete(teamsTable).where(eq(teamsTable.coachUserId, userId));
       }
 
-      // athlete_profile -> conversations & injuries cascade (messages cascade off conversations)
+      // conversations.userId has no FK so they won't cascade; delete explicitly.
+      // (messages cascade off conversations automatically)
+      await tx.delete(conversations).where(eq(conversations.userId, userId));
+
+      // athlete_profile -> injuries cascade (messages cascade off conversations)
       await tx.delete(athleteProfileTable).where(eq(athleteProfileTable.userId, userId));
 
       // Finally the user row
