@@ -167,42 +167,6 @@ function Landing() {
         ))}
       </div>
 
-      {/* Role picker */}
-
-      <div className="space-y-3 mb-6">
-        <button onClick={() => navigate("/sign-up?role=athlete")}
-          className="w-full text-left rounded-2xl border border-cyan-500/40 p-5 transition-all group hover:border-cyan-400/70 hover:shadow-lg hover:shadow-cyan-500/10"
-          style={{ background: "linear-gradient(135deg, rgba(6,182,212,0.08) 0%, rgba(6,182,212,0.03) 100%)" }}>
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-md shadow-cyan-500/20"
-              style={{ background: "linear-gradient(135deg, rgba(6,182,212,0.25) 0%, rgba(59,130,246,0.15) 100%)", border: "1px solid rgba(6,182,212,0.4)" }}>
-              <User className="w-5 h-5 text-cyan-300" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-white group-hover:text-cyan-200 transition-colors">Student Athlete</p>
-              <p className="text-xs text-slate-500 mt-0.5">Track training · AI coach · Injury alerts · Training plans</p>
-            </div>
-            <ChevronRight size={16} className="text-cyan-500/60 group-hover:text-cyan-400 transition-colors" />
-          </div>
-        </button>
-
-        <button onClick={() => navigate("/sign-up?role=coach")}
-          className="w-full text-left rounded-2xl border border-violet-500/40 p-5 transition-all group hover:border-violet-400/70 hover:shadow-lg hover:shadow-violet-500/10"
-          style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(139,92,246,0.03) 100%)" }}>
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-md shadow-violet-500/20"
-              style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.25) 0%, rgba(99,102,241,0.15) 100%)", border: "1px solid rgba(139,92,246,0.4)" }}>
-              <Users className="w-5 h-5 text-violet-300" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-white group-hover:text-violet-200 transition-colors">Coach</p>
-              <p className="text-xs text-slate-500 mt-0.5">Team roster · Workload monitoring · Risk dashboard · Alerts</p>
-            </div>
-            <ChevronRight size={16} className="text-violet-500/60 group-hover:text-violet-400 transition-colors" />
-          </div>
-        </button>
-      </div>
-
     </div>
   );
 }
