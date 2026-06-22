@@ -337,7 +337,7 @@ export default function Profile() {
                   )} />
                   <FormField control={form.control} name="weeklyMileageGoal" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Weekly Distance Goal (km) <span className="text-red-400">*</span></FormLabel>
+                      <FormLabel>Weekly Distance Goal (mi) <span className="text-red-400">*</span></FormLabel>
                       <FormControl><Input type="number" step="0.1" data-testid="input-weekly-goal" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>

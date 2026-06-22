@@ -99,7 +99,7 @@ export default function Dashboard() {
   if (!data) return null;
 
   const paceStr = data.avgPaceMinPerKm
-    ? `${Math.floor(data.avgPaceMinPerKm)}:${String(Math.round((data.avgPaceMinPerKm % 1) * 60)).padStart(2, "0")} /km`
+    ? `${Math.floor(data.avgPaceMinPerKm)}:${String(Math.round((data.avgPaceMinPerKm % 1) * 60)).padStart(2, "0")} /mi`
     : "—";
 
   const loadLabel = data.trainingLoad.replace("_", " ");
@@ -117,9 +117,9 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Weekly Distance" value={`${data.weeklyDistanceKm} km`} sub="last 7 days" icon={Activity} />
+        <StatCard label="Weekly Distance" value={`${data.weeklyDistanceKm} mi`} sub="last 7 days" icon={Activity} />
         <StatCard label="Weekly Runs" value={data.weeklyRuns} sub="this week" icon={TrendingUp} />
-        <StatCard label="Avg Pace" value={paceStr} sub="per km" icon={Zap} />
+        <StatCard label="Avg Pace" value={paceStr} sub="per mi" icon={Zap} />
         <StatCard label="Injury Alerts" value={data.activeAlerts} sub="active" icon={AlertTriangle} />
       </div>
 
@@ -180,7 +180,7 @@ export default function Dashboard() {
                       <span className="text-xs text-muted-foreground ml-3">{format(new Date(a.activityDate), "MMM d")}</span>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      {a.distanceKm && <span>{a.distanceKm} km</span>}
+                      {a.distanceKm && <span>{a.distanceKm} mi</span>}
                       {a.durationMinutes && <span>{a.durationMinutes} min</span>}
                       {a.avgHeartRate && <span>{a.avgHeartRate} bpm</span>}
                     </div>

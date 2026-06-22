@@ -57,7 +57,7 @@ export default function PlanDetail() {
         <p className="text-sm text-muted-foreground mt-1">{plan.goal}</p>
         <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
           <span>{format(new Date(plan.startDate), "MMM d, yyyy")} – {format(new Date(plan.endDate), "MMM d, yyyy")}</span>
-          {plan.weeklyMileage && <span>{plan.weeklyMileage} km/week target</span>}
+          {plan.weeklyMileage && <span>{plan.weeklyMileage} mi/week target</span>}
         </div>
       </div>
 
@@ -92,7 +92,7 @@ export default function PlanDetail() {
                         </div>
                         <p className="text-sm text-foreground">{session.description}</p>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                          {session.distanceKm && <span>{session.distanceKm} km</span>}
+                          {session.distanceKm && <span>{session.distanceKm} mi</span>}
                           {session.durationMinutes && <span>{session.durationMinutes} min</span>}
                         </div>
                       </div>

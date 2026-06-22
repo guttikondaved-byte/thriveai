@@ -428,7 +428,7 @@ export default function Onboarding() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Weekly Distance Goal (km) <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Weekly Distance Goal (mi) <span className="text-red-400">*</span></label>
                 <input
                   type="number" step="0.1" value={form.weeklyMileageGoal} onChange={e => set("weeklyMileageGoal", e.target.value)}
                   placeholder="50"

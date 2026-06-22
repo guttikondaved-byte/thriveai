@@ -53,7 +53,7 @@ export default function GpxImport({ onImport, onClose }: Props) {
     const paceMin = durMin / distKm;
     const m = Math.floor(paceMin);
     const s = Math.round((paceMin - m) * 60).toString().padStart(2, "0");
-    return `${m}:${s} /km`;
+    return `${m}:${s} /mi`;
   };
 
   return (
@@ -108,7 +108,7 @@ export default function GpxImport({ onImport, onClose }: Props) {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Stat label="Distance" value={`${parsed.distanceKm} km`} />
+            <Stat label="Distance" value={`${parsed.distanceKm} mi`} />
             <Stat label="Duration" value={`${parsed.durationMinutes} min`} />
             <Stat label="Pace" value={fmtPace(parsed.distanceKm, parsed.durationMinutes)} />
             <Stat label="Elevation" value={`+${parsed.elevationGainM} m`} />

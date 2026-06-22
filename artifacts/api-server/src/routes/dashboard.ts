@@ -31,9 +31,9 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
   const currentPlan = allPlans[0] ?? null;
 
   let trainingLoad: "low" | "moderate" | "high" | "very_high" = "low";
-  if (weeklyDistanceKm > 60) trainingLoad = "very_high";
-  else if (weeklyDistanceKm > 40) trainingLoad = "high";
-  else if (weeklyDistanceKm > 20) trainingLoad = "moderate";
+  if (weeklyDistanceKm > 37) trainingLoad = "very_high";
+  else if (weeklyDistanceKm > 25) trainingLoad = "high";
+  else if (weeklyDistanceKm > 12) trainingLoad = "moderate";
 
   res.json(GetDashboardSummaryResponse.parse({
     weeklyDistanceKm: Math.round(weeklyDistanceKm * 10) / 10,

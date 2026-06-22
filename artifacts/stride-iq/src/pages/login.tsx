@@ -330,8 +330,8 @@ function AthleteSignup({ onBack }: { onBack: () => void }) {
               <input type="number" className={input} placeholder="17" min="10" max="100" value={age} onChange={e => setAge(e.target.value)} />
             </div>
             <div>
-              <Label>Weekly goal (km)</Label>
-              <input type="number" className={input} placeholder="50" step="0.1" value={weeklyKm} onChange={e => setWeeklyKm(e.target.value)} />
+              <Label>Weekly goal (mi)</Label>
+              <input type="number" className={input} placeholder="31" step="0.1" value={weeklyKm} onChange={e => setWeeklyKm(e.target.value)} />
             </div>
           </div>
 

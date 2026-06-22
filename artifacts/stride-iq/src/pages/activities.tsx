@@ -151,7 +151,7 @@ export default function Activities() {
     }, {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getListActivitiesQueryKey() });
-        toast({ title: "GPX activity imported", description: `${gpx.distanceKm} km · ${gpx.durationMinutes} min` });
+        toast({ title: "GPX activity imported", description: `${gpx.distanceKm} mi · ${gpx.durationMinutes} min` });
         setShowGpx(false);
       },
       onError: () => {
@@ -278,7 +278,7 @@ export default function Activities() {
               )} />
               <FormField control={form.control} name="distanceKm" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Distance (km)</FormLabel>
+                  <FormLabel>Distance (mi)</FormLabel>
                   <FormControl><Input type="number" step="0.01" placeholder="10.5" data-testid="input-distance" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -345,7 +345,7 @@ export default function Activities() {
                 {a.notes && <p className="text-xs text-muted-foreground">{a.notes}</p>}
               </div>
               <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                {a.distanceKm != null && <span data-testid={`text-distance-${a.id}`}>{a.distanceKm} km</span>}
+                {a.distanceKm != null && <span data-testid={`text-distance-${a.id}`}>{a.distanceKm} mi</span>}
                 {a.durationMinutes != null && <span>{a.durationMinutes} min</span>}
                 {a.avgHeartRate != null && <span>{a.avgHeartRate} bpm</span>}
                 {a.perceivedEffort != null && (

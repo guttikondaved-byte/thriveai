@@ -106,8 +106,8 @@ export default function Plans() {
               )} />
               <FormField control={form.control} name="weeklyMileage" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Weekly Mileage Target (km)</FormLabel>
-                  <FormControl><Input type="number" step="0.1" placeholder="65" data-testid="input-weekly-mileage" {...field} /></FormControl>
+                  <FormLabel>Weekly Mileage Target (mi)</FormLabel>
+                  <FormControl><Input type="number" step="0.1" placeholder="40" data-testid="input-weekly-mileage" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -155,7 +155,7 @@ export default function Plans() {
                 </div>
                 <div className="flex items-center gap-6 text-xs text-muted-foreground mb-3">
                   <span>{format(start, "MMM d")} – {format(end, "MMM d, yyyy")}</span>
-                  {plan.weeklyMileage && <span>{plan.weeklyMileage} km/week</span>}
+                  {plan.weeklyMileage && <span>{plan.weeklyMileage} mi/week</span>}
                 </div>
                 {plan.status === "active" && (
                   <div>

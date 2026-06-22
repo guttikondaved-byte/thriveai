@@ -14,12 +14,12 @@ interface TeamAthlete {
 }
 
 const TEAM: TeamAthlete[] = [
-  { name: "Alex Chen", event: "5K / 10K", weeklyKm: 58, hr: 62, hrv: 74, risk: "ready", riskNote: "Training well within load limits", trend: "up" },
-  { name: "Sam Rivera", event: "Marathon", weeklyKm: 89, hr: 71, hrv: 52, risk: "caution", riskNote: "Mileage spike +28% this week", trend: "flat" },
-  { name: "Jordan Park", event: "Cross Country", weeklyKm: 72, hr: 78, hrv: 38, risk: "high", riskNote: "Low HRV + high resting HR — rest advised", trend: "down" },
-  { name: "Taylor Kim", event: "Half Marathon", weeklyKm: 64, hr: 65, hrv: 69, risk: "ready", riskNote: "Consistent load, good recovery", trend: "up" },
-  { name: "Morgan Liu", event: "Track 1500m", weeklyKm: 51, hr: 60, hrv: 81, risk: "ready", riskNote: "Excellent recovery metrics", trend: "up" },
-  { name: "Casey Nguyen", event: "Marathon", weeklyKm: 94, hr: 74, hrv: 44, risk: "caution", riskNote: "Back-to-back long runs this weekend", trend: "flat" },
+  { name: "Alex Chen", event: "5K / 10K", weeklyKm: 36, hr: 62, hrv: 74, risk: "ready", riskNote: "Training well within load limits", trend: "up" },
+  { name: "Sam Rivera", event: "Marathon", weeklyKm: 55, hr: 71, hrv: 52, risk: "caution", riskNote: "Mileage spike +28% this week", trend: "flat" },
+  { name: "Jordan Park", event: "Cross Country", weeklyKm: 45, hr: 78, hrv: 38, risk: "high", riskNote: "Low HRV + high resting HR — rest advised", trend: "down" },
+  { name: "Taylor Kim", event: "Half Marathon", weeklyKm: 40, hr: 65, hrv: 69, risk: "ready", riskNote: "Consistent load, good recovery", trend: "up" },
+  { name: "Morgan Liu", event: "Track 1500m", weeklyKm: 32, hr: 60, hrv: 81, risk: "ready", riskNote: "Excellent recovery metrics", trend: "up" },
+  { name: "Casey Nguyen", event: "Marathon", weeklyKm: 58, hr: 74, hrv: 44, risk: "caution", riskNote: "Back-to-back long runs this weekend", trend: "flat" },
 ];
 
 const RISK_CONFIG: Record<RiskLevel, { label: string; dot: string; badge: string; row: string }> = {
@@ -75,7 +75,7 @@ export default function CoachDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard label="Total Athletes" value={TEAM.length} sub="Active this week" icon={Users} accent="bg-cyan-500/10 text-cyan-400" />
         <StatCard label="Injury Risk" value={highRisk} sub={`${caution} on caution`} icon={AlertTriangle} accent="bg-red-500/10 text-red-400" />
-        <StatCard label="Team Avg km" value="71.3" sub="km this week" icon={Activity} accent="bg-cyan-500/10 text-cyan-400" />
+        <StatCard label="Team Avg mi" value="44.3" sub="mi this week" icon={Activity} accent="bg-cyan-500/10 text-cyan-400" />
         <StatCard label="Avg HRV" value="59.7" sub="↓ 4 pts from last week" icon={TrendingUp} accent="bg-violet-500/10 text-violet-400" />
       </div>
 
@@ -98,7 +98,7 @@ export default function CoachDashboard() {
                     <div className="text-xs text-slate-500">{athlete.event}</div>
                   </div>
                   <div className="text-right hidden sm:block">
-                    <div className="text-xs text-slate-300 font-medium">{athlete.weeklyKm} km</div>
+                    <div className="text-xs text-slate-300 font-medium">{athlete.weeklyKm} mi</div>
                     <div className="text-[10px] text-slate-600">this week</div>
                   </div>
                   <div className="text-right hidden md:block">

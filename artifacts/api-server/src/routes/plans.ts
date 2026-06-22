@@ -54,9 +54,9 @@ router.post("/plans", async (req, res): Promise<void> => {
   const end = new Date(plan.endDate);
   const weeks = Math.ceil((end.getTime() - start.getTime()) / (7 * 24 * 3600 * 1000));
   const sessionTemplates = [
-    { dayOfWeek: 1, sessionType: "easy_run", description: "Easy recovery run", distanceKm: "5.00" },
-    { dayOfWeek: 3, sessionType: "tempo_run", description: "Tempo run at comfortably hard pace", distanceKm: "8.00" },
-    { dayOfWeek: 6, sessionType: "long_run", description: "Long slow distance run", distanceKm: "14.00" },
+    { dayOfWeek: 1, sessionType: "easy_run", description: "Easy recovery run", distanceKm: "3.10" },
+    { dayOfWeek: 3, sessionType: "tempo_run", description: "Tempo run at comfortably hard pace", distanceKm: "5.00" },
+    { dayOfWeek: 6, sessionType: "long_run", description: "Long slow distance run", distanceKm: "8.70" },
   ];
 
   const sessions = [];

@@ -108,7 +108,7 @@ export async function syncStravaActivity(
   };
 
   const activityType = TYPE_MAP[act.type] ?? "easy_run";
-  const distanceKm = act.distance ? String((act.distance / 1000).toFixed(2)) : undefined;
+  const distanceKm = act.distance ? String((act.distance / 1609.344).toFixed(2)) : undefined;
   const durationMinutes = act.moving_time ? Math.round(act.moving_time / 60) : undefined;
   const activityDate = act.start_date_local
     ? act.start_date_local.substring(0, 10)

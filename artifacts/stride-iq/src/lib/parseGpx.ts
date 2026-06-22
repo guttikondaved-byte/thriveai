@@ -10,8 +10,8 @@ export interface GpxResult {
   suggestedType: string;
 }
 
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
+function haversineMi(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3958.8;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -28,12 +28,12 @@ function getText(el: Element | null, tag: string): string | null {
   return found?.textContent?.trim() ?? null;
 }
 
-function suggestType(distanceKm: number, durationMinutes: number): string {
-  const pace = durationMinutes / distanceKm;
-  if (distanceKm >= 21) return "long_run";
-  if (distanceKm >= 10) return "long_run";
-  if (pace < 4.5) return "interval";
-  if (pace < 5.2) return "tempo_run";
+function suggestType(distanceMi: number, durationMinutes: number): string {
+  const pace = durationMinutes / distanceMi;
+  if (distanceMi >= 13) return "long_run";
+  if (distanceMi >= 6) return "long_run";
+  if (pace < 7.2) return "interval";
+  if (pace < 8.4) return "tempo_run";
   return "easy_run";
 }
 
@@ -49,7 +49,7 @@ export function parseGpx(xmlText: string): GpxResult {
   const trkpts = Array.from(doc.querySelectorAll("trkpt"));
   if (trkpts.length < 2) throw new Error("GPX file has no track points");
 
-  let distanceKm = 0;
+  let distanceMi = 0;
   let elevationGainM = 0;
   let prevLat: number | null = null;
   let prevLon: number | null = null;
@@ -69,7 +69,7 @@ export function parseGpx(xmlText: string): GpxResult {
 
     if (!isNaN(lat) && !isNaN(lon)) {
       if (prevLat !== null && prevLon !== null) {
-        distanceKm += haversineKm(prevLat, prevLon, lat, lon);
+        distanceMi += haversineMi(prevLat, prevLon, lat, lon);
       }
       prevLat = lat;
       prevLon = lon;
@@ -128,12 +128,12 @@ export function parseGpx(xmlText: string): GpxResult {
   return {
     name,
     activityDate,
-    distanceKm: Math.round(distanceKm * 100) / 100,
+    distanceKm: Math.round(distanceMi * 100) / 100,
     durationMinutes,
     elevationGainM: Math.round(elevationGainM),
     avgHeartRate,
     maxHeartRate,
     avgCadence,
-    suggestedType: suggestType(distanceKm, durationMinutes),
+    suggestedType: suggestType(distanceMi, durationMinutes),
   };
 }
