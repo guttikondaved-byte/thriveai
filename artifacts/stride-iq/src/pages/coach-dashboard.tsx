@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { TrendingUp, Users, Activity, ChevronRight } from "lucide-react";
+import { useGetAthleteProfile } from "@workspace/api-client-react";
 import AthleteProfileModal from "../components/AthleteProfileModal";
+import { getFocusConfig } from "@/lib/coachingFocus";
 
 type RiskLevel = "high" | "medium" | "low";
 
@@ -53,6 +55,8 @@ export default function CoachDashboard() {
   const [members, setMembers] = useState<RosterMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const { data: profile } = useGetAthleteProfile();
+  const focus = getFocusConfig(profile?.primaryGoal);
 
   useEffect(() => {
     fetch("/api/teams/my", { credentials: "include" })
@@ -90,11 +94,13 @@ export default function CoachDashboard() {
   if (!team) {
     return (
       <div className="p-6 max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold text-white mb-2">Team Dashboard</h1>
+        <h1 className="text-2xl font-bold text-white mb-2">{focus.headline}</h1>
         <div className="bg-[#0d1529] border border-slate-800 rounded-xl p-8 text-center mt-6">
-          <Users className="w-8 h-8 text-slate-600 mx-auto mb-3" />
+          <div className={`w-12 h-12 rounded-xl ${focus.accentBg} border ${focus.accentBorder} flex items-center justify-center mx-auto mb-3 ${focus.accentText}`}>
+            <focus.icon className="w-6 h-6" />
+          </div>
           <p className="text-white font-medium">No team yet</p>
-          <p className="text-slate-500 text-sm mt-1">Create a team from the Team page and share the invite code to start seeing your athletes here.</p>
+          <p className="text-slate-500 text-sm mt-1">Create a team from the Team page and share the invite code to start tracking your {focus.athleteNoun} here.</p>
         </div>
       </div>
     );
@@ -102,14 +108,41 @@ export default function CoachDashboard() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Team Dashboard</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-white">{focus.headline}</h1>
         <p className="text-slate-500 text-sm mt-0.5">{team.name}</p>
       </div>
 
+      {/* Discipline-tuned focus banner */}
+      <div className={`mb-8 rounded-xl border ${focus.accentBorder} ${focus.accentBg} p-5`}>
+        <div className="flex items-start gap-4">
+          <div className={`w-10 h-10 rounded-lg ${focus.accentBg} border ${focus.accentBorder} flex items-center justify-center shrink-0 ${focus.accentText}`}>
+            <focus.icon size={20} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`text-xs font-bold uppercase tracking-[0.15em] ${focus.accentText}`}>{focus.label}</span>
+              <span className="text-[10px] text-slate-500">·</span>
+              <span className="text-[11px] text-slate-500">Portal tuned for your {focus.athleteNoun}</span>
+            </div>
+            <p className="text-sm text-slate-300 mt-1 leading-relaxed">{focus.tagline}</p>
+            <div className="flex flex-wrap gap-2 mt-3">
+              {focus.focusAreas.map(area => (
+                <span
+                  key={area}
+                  className={`text-[11px] font-medium px-2.5 py-1 rounded-full border ${focus.accentBorder} ${focus.accentText} bg-slate-900/30`}
+                >
+                  {area}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        <StatCard label="Total Athletes" value={members.length} sub="On your team" icon={Users} accent="bg-cyan-500/10 text-cyan-400" />
-        <StatCard label="Team Avg" value={avgMiles.toFixed(1)} sub="mi this week" icon={Activity} accent="bg-cyan-500/10 text-cyan-400" />
+        <StatCard label={`Total ${focus.athleteNoun}`} value={members.length} sub="On your team" icon={Users} accent={`${focus.accentBg} ${focus.accentText}`} />
+        <StatCard label="Team Avg" value={avgMiles.toFixed(1)} sub="mi this week" icon={Activity} accent={`${focus.accentBg} ${focus.accentText}`} />
         <StatCard label="Avg HRV" value={avgHrv != null ? avgHrv.toFixed(1) : "—"} sub={avgHrv != null ? "across team" : "no data yet"} icon={TrendingUp} accent="bg-violet-500/10 text-violet-400" />
       </div>
 

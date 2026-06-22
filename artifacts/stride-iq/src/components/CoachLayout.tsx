@@ -1,7 +1,9 @@
 import { Link, useLocation } from "wouter";
 import { LayoutDashboard, Users, Bot, Settings, LogOut, Calendar, X, Zap, Check } from "lucide-react";
 import { useUser, useClerk } from "@clerk/react";
+import { useGetAthleteProfile } from "@workspace/api-client-react";
 import NotificationBell from "./NotificationBell";
+import { getFocusConfig } from "@/lib/coachingFocus";
 import { useState, useEffect, useRef } from "react";
 
 const NAV = [
@@ -257,6 +259,8 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
   const [location] = useLocation();
   const { user } = useUser();
   const { signOut } = useClerk();
+  const { data: profile } = useGetAthleteProfile();
+  const focus = getFocusConfig(profile?.primaryGoal);
 
   const initials = user
     ? `${user.firstName?.charAt(0) ?? ""}${user.lastName?.charAt(0) ?? ""}`.toUpperCase() || "C"
@@ -267,10 +271,12 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
       <aside className="w-60 flex-shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border">
         <div className="px-5 py-5 border-b border-sidebar-border flex items-center">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-bold text-primary">T</div>
+            <div className={`w-8 h-8 rounded-lg ${focus.accentBg} border ${focus.accentBorder} flex items-center justify-center ${focus.accentText}`}>
+              <focus.icon size={16} />
+            </div>
             <div>
               <div className="text-sm font-bold text-foreground tracking-tight">Thrive</div>
-              <div className="text-[10px] text-primary font-bold uppercase tracking-[0.15em]">Coach Portal</div>
+              <div className={`text-[10px] font-bold uppercase tracking-[0.15em] ${focus.accentText}`}>{focus.label} Coach</div>
             </div>
           </div>
         </div>
