@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db, conversations, messages, athleteProfileTable } from "@workspace/db";
 import {
   CreateOpenaiConversationBody,
@@ -99,8 +99,22 @@ function getOpenaiClient() {
   return openaiClient;
 }
 
+async function getCurrentProfileId(): Promise<number | null> {
+  const [profile] = await db.select({ id: athleteProfileTable.id }).from(athleteProfileTable).limit(1);
+  return profile?.id ?? null;
+}
+
 router.get("/openai/conversations", async (_req, res): Promise<void> => {
-  const convs = await db.select().from(conversations).orderBy(conversations.createdAt);
+  const profileId = await getCurrentProfileId();
+  if (!profileId) {
+    res.json([]);
+    return;
+  }
+  const convs = await db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.profileId, profileId))
+    .orderBy(conversations.createdAt);
   res.json(ListOpenaiConversationsResponse.parse(convs.map(serializeConversation)));
 });
 
@@ -110,7 +124,11 @@ router.post("/openai/conversations", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [conv] = await db.insert(conversations).values({ title: parsed.data.title }).returning();
+  const profileId = await getCurrentProfileId();
+  const [conv] = await db
+    .insert(conversations)
+    .values({ title: parsed.data.title, profileId: profileId ?? undefined })
+    .returning();
   res.status(201).json(serializeConversation(conv));
 });
 
@@ -121,7 +139,11 @@ router.get("/openai/conversations/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  const [conv] = await db.select().from(conversations).where(eq(conversations.id, params.data.id));
+  const profileId = await getCurrentProfileId();
+  const [conv] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.id, params.data.id), eq(conversations.profileId, profileId ?? -1)));
   if (!conv) {
     res.status(404).json({ error: "Conversation not found" });
     return;
@@ -137,7 +159,11 @@ router.delete("/openai/conversations/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  const [conv] = await db.delete(conversations).where(eq(conversations.id, params.data.id)).returning();
+  const profileId = await getCurrentProfileId();
+  const [conv] = await db
+    .delete(conversations)
+    .where(and(eq(conversations.id, params.data.id), eq(conversations.profileId, profileId ?? -1)))
+    .returning();
   if (!conv) {
     res.status(404).json({ error: "Conversation not found" });
     return;
