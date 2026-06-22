@@ -1,7 +1,19 @@
 import { useGetDashboardSummary } from "@workspace/api-client-react";
-import { AlertTriangle, Activity, Calendar, TrendingUp, Zap } from "lucide-react";
+import { AlertTriangle, Activity, TrendingUp, Zap, X } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+
+function useStravaStatus() {
+  return useQuery({
+    queryKey: ["strava-status"],
+    queryFn: async () => {
+      const r = await fetch("/api/strava/status", { credentials: "include" });
+      return r.json() as Promise<{ connected: boolean; stravaAthleteId: number | null }>;
+    },
+  });
+}
 
 const ACTIVITY_LABELS: Record<string, string> = {
   easy_run: "Easy Run", tempo_run: "Tempo", interval: "Interval",
@@ -29,6 +41,41 @@ function StatCard({ label, value, sub, icon: Icon }: { label: string; value: str
       </div>
       <p className="text-2xl font-semibold text-foreground">{value}</p>
       {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+    </div>
+  );
+}
+
+function StravaBanner() {
+  const stravaStatus = useStravaStatus();
+  const [dismissed, setDismissed] = useState(false);
+
+  // Auto-prompt if user arrived with ?connect=strava
+  const [autoPrompt] = useState(() => new URLSearchParams(window.location.search).get("connect") === "strava");
+
+  useEffect(() => {
+    if (autoPrompt) window.history.replaceState({}, "", "/");
+  }, [autoPrompt]);
+
+  if (dismissed || stravaStatus.isLoading || stravaStatus.data?.connected) return null;
+
+  return (
+    <div className={`mb-6 flex items-center gap-4 rounded-xl border px-5 py-4 ${autoPrompt ? "border-[#FC4C02]/50 bg-[#FC4C02]/10" : "border-slate-700/60 bg-slate-800/40"}`}>
+      <span className="text-2xl shrink-0">🟠</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-white">
+          {autoPrompt ? "One more step — connect Strava" : "Connect Strava for automatic run syncing"}
+        </p>
+        <p className="text-xs text-slate-400 mt-0.5">Every run will appear in Thrive automatically. No imports needed.</p>
+      </div>
+      <a
+        href="/api/strava/connect"
+        className="shrink-0 px-4 py-2 rounded-lg bg-[#FC4C02] hover:bg-[#e34400] text-white text-xs font-bold transition-colors"
+      >
+        Connect Strava
+      </a>
+      <button onClick={() => setDismissed(true)} className="shrink-0 text-slate-500 hover:text-slate-300 transition-colors" aria-label="Dismiss">
+        <X size={15} />
+      </button>
     </div>
   );
 }
@@ -63,6 +110,8 @@ export default function Dashboard() {
           {format(new Date(), "EEEE, MMMM d")}
         </p>
       </div>
+
+      <StravaBanner />
 
       {/* Stats */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
