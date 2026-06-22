@@ -60,6 +60,12 @@ function AveraTipPopup() {
 
     const fetchTip = async () => {
       try {
+        // Only show suggestions when the coach actually has team members
+        const teamRes = await fetch("/api/teams/my", { credentials: "include" });
+        if (!teamRes.ok) return;
+        const teamData = await teamRes.json() as { team: { memberCount: number } | null };
+        if (!teamData.team || teamData.team.memberCount === 0) return;
+
         const res = await fetch("/api/openai/coach-tip", { credentials: "include" });
         if (!res.ok) return;
         const data = await res.json() as { tip: string | null };
