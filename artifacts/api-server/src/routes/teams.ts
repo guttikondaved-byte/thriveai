@@ -150,17 +150,65 @@ router.get("/teams/:teamId/members", async (req, res): Promise<void> => {
     lastName: usersTable.lastName,
     email: usersTable.email,
     profileName: athleteProfileTable.name,
+    primaryGoal: athleteProfileTable.primaryGoal,
+    fitnessLevel: athleteProfileTable.fitnessLevel,
+    restingHeartRate: athleteProfileTable.restingHeartRate,
+    hrv: athleteProfileTable.hrv,
   })
     .from(teamMembershipsTable)
     .innerJoin(usersTable, eq(teamMembershipsTable.athleteUserId, usersTable.id))
     .leftJoin(athleteProfileTable, eq(athleteProfileTable.userId, teamMembershipsTable.athleteUserId))
     .where(eq(teamMembershipsTable.teamId, teamId));
 
+  const memberIds = memberships.map(m => m.userId);
+
+  // Weekly distance per athlete (last 7 days)
+  const weeklyByUser = new Map<string, number>();
+  const riskByUser = new Map<string, "high" | "medium" | "low">();
+  if (memberIds.length > 0) {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const last7 = await db.select({
+      userId: activitiesTable.userId,
+      distanceKm: activitiesTable.distanceKm,
+    })
+      .from(activitiesTable)
+      .where(and(
+        inArray(activitiesTable.userId, memberIds),
+        gte(activitiesTable.activityDate, sevenDaysAgo.toISOString().slice(0, 10)),
+      ));
+    for (const a of last7) {
+      if (!a.userId) continue;
+      weeklyByUser.set(a.userId, (weeklyByUser.get(a.userId) ?? 0) + Number(a.distanceKm ?? 0));
+    }
+
+    // Highest active (unacknowledged) injury-alert risk per athlete
+    const activeAlerts = await db.select({
+      userId: injuryAlertsTable.userId,
+      riskLevel: injuryAlertsTable.riskLevel,
+    })
+      .from(injuryAlertsTable)
+      .where(and(inArray(injuryAlertsTable.userId, memberIds), eq(injuryAlertsTable.acknowledged, false)));
+    const rank: Record<string, number> = { low: 1, medium: 2, high: 3 };
+    for (const al of activeAlerts) {
+      if (!al.userId) continue;
+      const cur = riskByUser.get(al.userId);
+      const lvl = (al.riskLevel as "high" | "medium" | "low");
+      if (!cur || (rank[lvl] ?? 0) > (rank[cur] ?? 0)) riskByUser.set(al.userId, lvl);
+    }
+  }
+
   res.json(memberships.map(m => ({
     userId: m.userId,
     name: (m.profileName ?? `${m.firstName ?? ""} ${m.lastName ?? ""}`.trim()) || "Athlete",
     email: m.email,
     joinedAt: m.joinedAt.toISOString(),
+    primaryGoal: m.primaryGoal ?? null,
+    fitnessLevel: m.fitnessLevel ?? null,
+    restingHeartRate: m.restingHeartRate ?? null,
+    hrv: m.hrv != null ? Number(m.hrv) : null,
+    weeklyDistanceKm: weeklyByUser.get(m.userId) ?? 0,
+    riskLevel: riskByUser.get(m.userId) ?? null,
   })));
 });
 
