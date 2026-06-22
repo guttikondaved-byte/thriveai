@@ -20,9 +20,13 @@ function serializeActivity(a: typeof activitiesTable.$inferSelect) {
 }
 
 router.get("/activities", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
   const query = ListActivitiesQueryParams.safeParse(req.query);
   const limit = query.success ? (query.data.limit ?? 20) : 20;
-  const userId = req.user!.id;
+  const userId = req.user.id;
   const activities = await db
     .select()
     .from(activitiesTable)
@@ -33,13 +37,17 @@ router.get("/activities", async (req: Request, res): Promise<void> => {
 });
 
 router.post("/activities", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
   const parsed = CreateActivityBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
-  const userId = req.user!.id;
+  const userId = req.user.id;
   const insertData: Record<string, unknown> = {
     userId,
     type: parsed.data.type,
@@ -56,13 +64,17 @@ router.post("/activities", async (req: Request, res): Promise<void> => {
 });
 
 router.get("/activities/:id", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = GetActivityParams.safeParse({ id: parseInt(raw, 10) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const userId = req.user!.id;
+  const userId = req.user.id;
   const [activity] = await db
     .select()
     .from(activitiesTable)
