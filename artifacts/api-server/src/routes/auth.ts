@@ -7,7 +7,16 @@ import {
   ExchangeMobileAuthorizationCodeResponse,
   LogoutMobileSessionResponse,
 } from "@workspace/api-zod";
-import { db, usersTable } from "@workspace/db";
+import {
+  db,
+  usersTable,
+  activitiesTable,
+  notificationsTable,
+  stravaTokensTable,
+  athleteProfileTable,
+  teamMembershipsTable,
+  teamsTable,
+} from "@workspace/db";
 import { eq } from "drizzle-orm";
 import {
   clearSession,
@@ -370,34 +379,21 @@ router.delete("/account", async (req: Request, res: Response): Promise<void> => 
   const userId = req.user.id;
 
   try {
-    // Import child tables inline to keep imports clean
-    const {
-      activitiesTable,
-      injuryAlertsTable,
-      notificationsTable,
-      stravaTokensTable,
-      trainingPlansTable,
-      sessionsTable,
-    } = await import("@workspace/db");
+    // Delete child rows in dependency order (only tables that actually have a userId FK)
+    await db.delete(activitiesTable).where(eq(activitiesTable.userId, userId));
+    await db.delete(notificationsTable).where(eq(notificationsTable.userId, userId));
+    await db.delete(stravaTokensTable).where(eq(stravaTokensTable.userId, userId));
+    await db.delete(teamMembershipsTable).where(eq(teamMembershipsTable.athleteUserId, userId));
+    await db.delete(teamsTable).where(eq(teamsTable.coachUserId, userId));
+    await db.delete(athleteProfileTable).where(eq(athleteProfileTable.userId, userId));
 
-    const { eq: eqOp } = await import("drizzle-orm");
-
-    // Delete all user-owned rows in dependency order
-    await db.delete(activitiesTable).where(eqOp(activitiesTable.userId, userId));
-    await db.delete(injuryAlertsTable).where(eqOp(injuryAlertsTable.userId, userId));
-    await db.delete(notificationsTable).where(eqOp(notificationsTable.userId, userId));
-    await db.delete(stravaTokensTable).where(eqOp(stravaTokensTable.userId, userId));
-    await db.delete(trainingPlansTable).where(eqOp(trainingPlansTable.userId, userId));
-
-    // Clear session before deleting from sessions table
+    // Clear the active session (sessions table stores data as JSONB with no direct userId column)
     const sid = getSessionId(req);
     if (sid) await deleteSession(sid);
-    await db.delete(sessionsTable).where(eqOp(sessionsTable.userId, userId));
 
     // Finally delete the user row
-    await db.delete(usersTable).where(eqOp(usersTable.id, userId));
+    await db.delete(usersTable).where(eq(usersTable.id, userId));
 
-    // Clear the session cookie
     res.clearCookie(SESSION_COOKIE, { path: "/" });
     res.json({ success: true });
   } catch (err) {
