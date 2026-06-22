@@ -15,6 +15,8 @@ export const athleteProfileTable = pgTable("athlete_profile", {
   hrv: numeric("hrv", { precision: 6, scale: 2 }),
   selectedCoach: text("selected_coach"),
   userRole: text("user_role"),
+  contactMethod: text("contact_method"),
+  contactValue: text("contact_value"),
   pr5k: text("pr_5k"),
   pr10k: text("pr_10k"),
   prHalf: text("pr_half"),

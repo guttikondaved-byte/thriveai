@@ -5,6 +5,7 @@
  * Thrive API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AthleteProfileInputContactMethod } from './athleteProfileInputContactMethod';
 import type { AthleteProfileInputFitnessLevel } from './athleteProfileInputFitnessLevel';
 import type { AthleteProfileInputSelectedCoach } from './athleteProfileInputSelectedCoach';
 import type { AthleteProfileInputUserRole } from './athleteProfileInputUserRole';
@@ -24,4 +25,6 @@ export interface AthleteProfileInput {
   prHalf?: string;
   prMarathon?: string;
   healthNotes?: string;
+  contactMethod?: AthleteProfileInputContactMethod;
+  contactValue?: string;
 }

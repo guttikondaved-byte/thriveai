@@ -2,13 +2,16 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useUpdateAthleteProfile, getGetAthleteProfileQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, ChevronLeft, Check, Upload, Zap, Users, User } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, Upload, Zap, Users, User, Mail, Phone } from "lucide-react";
 
 type Role = "athlete" | "coach";
 type FitnessLevel = "beginner" | "intermediate" | "advanced" | "elite";
 type CoachExp = "new" | "developing" | "experienced" | "veteran";
+type ContactMethod = "email" | "phone";
 
 interface FormData {
+  contactMethod: ContactMethod | null;
+  contactValue: string;
   role: Role | null;
   name: string;
   age: string;
@@ -22,8 +25,10 @@ interface FormData {
   dataSource: "gpx" | "manual" | null;
 }
 
-const ATHLETE_STEPS = ["Your Role", "About You", "Connect Data"];
-const COACH_STEPS   = ["Your Role", "Your Profile", "Get Started"];
+// Step indices for each role
+// 0 = Contact, 1 = Role, 2 = About You / Coach Profile, 3 = Connect / Get Started
+const ATHLETE_STEPS = ["Contact", "Your Role", "About You", "Connect Data"];
+const COACH_STEPS   = ["Contact", "Your Role", "Your Profile", "Get Started"];
 
 const FITNESS_LEVELS: { value: FitnessLevel; label: string; desc: string }[] = [
   { value: "beginner",     label: "Beginner",     desc: "Running < 6 months" },
@@ -94,7 +99,7 @@ function StepIndicator({ step, steps }: { step: number; steps: string[] }) {
             </span>
           </div>
           {i < steps.length - 1 && (
-            <div className={`w-8 sm:w-16 h-px ${i < step ? "bg-cyan-500" : "bg-slate-700"}`} />
+            <div className={`w-8 sm:w-14 h-px ${i < step ? "bg-cyan-500" : "bg-slate-700"}`} />
           )}
         </div>
       ))}
@@ -107,9 +112,19 @@ const inputCls = (error?: string) =>
     error ? "border-red-500" : "border-slate-700 focus:border-cyan-500"
   }`;
 
+function isValidEmail(v: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+
+function isValidPhone(v: string) {
+  return /^\+?[\d\s\-().]{7,15}$/.test(v);
+}
+
 export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormData>({
+    contactMethod: null,
+    contactValue: "",
     role: null,
     name: "", age: "",
     fitnessLevel: "intermediate",
@@ -133,12 +148,29 @@ export default function Onboarding() {
     setErrors(e => ({ ...e, [key]: undefined }));
   }
 
+  // Step 0: Contact method
   function validateStep0() {
+    const e: typeof errors = {};
+    if (!form.contactMethod) { e.contactMethod = "Please choose a contact method"; }
+    else if (!form.contactValue.trim()) {
+      e.contactValue = form.contactMethod === "email" ? "Email is required" : "Phone number is required";
+    } else if (form.contactMethod === "email" && !isValidEmail(form.contactValue)) {
+      e.contactValue = "Enter a valid email address";
+    } else if (form.contactMethod === "phone" && !isValidPhone(form.contactValue)) {
+      e.contactValue = "Enter a valid phone number";
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  // Step 1: Role selection
+  function validateStep1() {
     if (!form.role) { setErrors({ role: "Please select a role to continue" }); return false; }
     return true;
   }
 
-  function validateStep1Athlete() {
+  // Step 2: About you (athlete)
+  function validateStep2Athlete() {
     const e: typeof errors = {};
     if (!form.name.trim()) e.name = "Name is required";
     if (!form.age) e.age = "Age is required";
@@ -150,7 +182,8 @@ export default function Onboarding() {
     return Object.keys(e).length === 0;
   }
 
-  function validateStep1Coach() {
+  // Step 2: Coach profile
+  function validateStep2Coach() {
     const e: typeof errors = {};
     if (!form.name.trim()) e.name = "Name is required";
     if (!form.teamName.trim()) e.teamName = "Team name is required";
@@ -163,9 +196,10 @@ export default function Onboarding() {
 
   function next() {
     if (step === 0 && !validateStep0()) return;
-    if (step === 1) {
-      if (form.role === "athlete" && !validateStep1Athlete()) return;
-      if (form.role === "coach"   && !validateStep1Coach())   return;
+    if (step === 1 && !validateStep1()) return;
+    if (step === 2) {
+      if (form.role === "athlete" && !validateStep2Athlete()) return;
+      if (form.role === "coach"   && !validateStep2Coach())   return;
     }
     setStep(s => s + 1);
   }
@@ -177,6 +211,8 @@ export default function Onboarding() {
         name: form.name.trim() || (isCoach ? "Coach" : "Athlete"),
         ...(form.age ? { age: parseInt(form.age) } : {}),
         userRole: form.role!,
+        contactMethod: form.contactMethod!,
+        contactValue: form.contactValue,
         ...(isCoach
           ? {
               primaryGoal: form.coachFocus || "Coaching",
@@ -209,12 +245,87 @@ export default function Onboarding() {
 
         <StepIndicator step={step} steps={steps} />
 
-        {/* ── Step 0: Role Selection ── */}
+        {/* ── Step 0: Contact Method ── */}
         {step === 0 && (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-1">How should we contact you?</h1>
+              <p className="text-slate-400">Choose one — you can update this later in your profile.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {([
+                {
+                  id: "email" as ContactMethod,
+                  Icon: Mail,
+                  emoji: "📧",
+                  label: "Email",
+                  desc: "Get training summaries, alerts, and updates by email.",
+                  placeholder: "you@example.com",
+                  inputType: "email",
+                },
+                {
+                  id: "phone" as ContactMethod,
+                  Icon: Phone,
+                  emoji: "📱",
+                  label: "Phone number",
+                  desc: "Receive quick notifications and reminders via text.",
+                  placeholder: "+1 (555) 000-0000",
+                  inputType: "tel",
+                },
+              ] as const).map(opt => {
+                const selected = form.contactMethod === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => { set("contactMethod", opt.id); }}
+                    className={`relative text-left rounded-2xl border-2 p-6 transition-all duration-200
+                      ${selected
+                        ? "border-cyan-500 bg-cyan-500/10 shadow-xl shadow-cyan-500/15 scale-[1.02]"
+                        : "border-slate-700/60 bg-slate-800/30 hover:border-slate-500 hover:scale-[1.01]"}`}
+                  >
+                    {selected && (
+                      <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-cyan-500 flex items-center justify-center">
+                        <Check size={13} className="text-slate-900" />
+                      </div>
+                    )}
+                    <div className="text-4xl mb-4">{opt.emoji}</div>
+                    <h2 className="text-xl font-bold text-white mb-1">{opt.label}</h2>
+                    <p className="text-slate-400 text-sm leading-relaxed">{opt.desc}</p>
+                  </button>
+                );
+              })}
+            </div>
+            {errors.contactMethod && <p className="text-red-400 text-xs -mt-4">{errors.contactMethod}</p>}
+
+            {/* Input appears once a method is chosen */}
+            {form.contactMethod && (
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-slate-300">
+                  {form.contactMethod === "email" ? "Email address" : "Phone number"}
+                  <span className="text-red-400 ml-0.5">*</span>
+                </label>
+                <input
+                  type={form.contactMethod === "email" ? "email" : "tel"}
+                  value={form.contactValue}
+                  onChange={e => set("contactValue", e.target.value)}
+                  placeholder={form.contactMethod === "email" ? "you@example.com" : "+1 (555) 000-0000"}
+                  className={inputCls(errors.contactValue)}
+                  autoFocus
+                />
+                {errors.contactValue && <p className="text-red-400 text-xs">{errors.contactValue}</p>}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Step 1: Role Selection ── */}
+        {step === 1 && (
           <div>
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-white mb-1">Welcome to Thrive</h1>
-              <p className="text-slate-400">First, tell us how you'll be using the platform.</p>
+              <p className="text-slate-400">Tell us how you'll be using the platform.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
@@ -271,8 +382,8 @@ export default function Onboarding() {
           </div>
         )}
 
-        {/* ── Step 1 (Athlete): About You ── */}
-        {step === 1 && form.role === "athlete" && (
+        {/* ── Step 2 (Athlete): About You ── */}
+        {step === 2 && form.role === "athlete" && (
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-white mb-1">Tell us about yourself</h1>
@@ -354,8 +465,8 @@ export default function Onboarding() {
           </div>
         )}
 
-        {/* ── Step 1 (Coach): Your Profile ── */}
-        {step === 1 && form.role === "coach" && (
+        {/* ── Step 2 (Coach): Your Profile ── */}
+        {step === 2 && form.role === "coach" && (
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold text-white mb-1">Tell us about your coaching</h1>
@@ -434,8 +545,8 @@ export default function Onboarding() {
           </div>
         )}
 
-        {/* ── Step 2 (Athlete): Connect Data ── */}
-        {step === 2 && form.role === "athlete" && (
+        {/* ── Step 3 (Athlete): Connect Data ── */}
+        {step === 3 && form.role === "athlete" && (
           <div>
             <div className="mb-7">
               <h1 className="text-3xl font-bold text-white mb-1">How will you import runs?</h1>
@@ -488,8 +599,8 @@ export default function Onboarding() {
           </div>
         )}
 
-        {/* ── Step 2 (Coach): Get Started ── */}
-        {step === 2 && form.role === "coach" && (
+        {/* ── Step 3 (Coach): Get Started ── */}
+        {step === 3 && form.role === "coach" && (
           <div>
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-white mb-1">You're all set, Coach!</h1>
@@ -507,52 +618,49 @@ export default function Onboarding() {
                   <span className="text-2xl shrink-0">{item.icon}</span>
                   <div>
                     <p className="text-sm font-semibold text-white mb-0.5">{item.title}</p>
-                    <p className="text-xs text-slate-400 leading-relaxed">{item.desc}</p>
+                    <p className="text-sm text-slate-400 leading-relaxed">{item.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            {form.teamName && (
-              <div className="rounded-xl bg-cyan-500/10 border border-cyan-500/30 px-5 py-3 text-sm text-cyan-300 text-center">
-                Ready to set up <span className="font-semibold">{form.teamName}</span> 🏆
-              </div>
-            )}
+            <div className="rounded-xl bg-cyan-500/10 border border-cyan-500/30 px-5 py-4">
+              <p className="text-sm text-cyan-300 font-medium mb-1">Your invite code is ready</p>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Once you're in the portal, go to Athlete Roster to create your team and get an invite code to share with your athletes.
+              </p>
+            </div>
           </div>
         )}
 
-        {/* ── Nav Buttons ── */}
+        {/* ── Navigation ── */}
         <div className="flex items-center justify-between mt-10">
-          <button
-            onClick={() => setStep(s => s - 1)}
-            className={`flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-slate-800
-              ${step === 0 ? "invisible" : ""}`}
-          >
-            <ChevronLeft size={16} /> Back
-          </button>
+          {step > 0 ? (
+            <button onClick={() => setStep(s => s - 1)}
+              className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors">
+              <ChevronLeft size={16} /> Back
+            </button>
+          ) : <div />}
 
           {isLastStep ? (
             <button
               onClick={finish}
               disabled={updateProfile.isPending}
-              className="flex items-center gap-2 px-8 py-3 rounded-xl font-semibold text-sm bg-cyan-500 hover:bg-cyan-400 text-slate-900 shadow-lg shadow-cyan-500/25 hover:scale-105 transition-all disabled:opacity-60 disabled:scale-100"
+              className="flex items-center gap-2 px-8 py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold rounded-xl transition-all disabled:opacity-60"
             >
-              {updateProfile.isPending ? "Setting up…" : (
-                <>
-                  <Check size={16} />
-                  {form.role === "coach" ? "Open Coach Portal" : "Open Dashboard"}
-                </>
-              )}
+              {updateProfile.isPending ? "Saving…" : "Let's go"}
+              {!updateProfile.isPending && <Check size={16} />}
             </button>
           ) : (
             <button
               onClick={next}
-              className="flex items-center gap-2 px-8 py-3 rounded-xl font-semibold text-sm bg-cyan-500 hover:bg-cyan-400 text-slate-900 shadow-lg shadow-cyan-500/25 hover:scale-105 transition-all"
+              className="flex items-center gap-2 px-8 py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold rounded-xl transition-all"
             >
               Continue <ChevronRight size={16} />
             </button>
           )}
         </div>
+
       </div>
     </div>
   );

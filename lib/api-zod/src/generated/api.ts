@@ -35,6 +35,8 @@ export const GetAthleteProfileResponse = zod.object({
   "prHalf": zod.string().nullish(),
   "prMarathon": zod.string().nullish(),
   "healthNotes": zod.string().nullish(),
+  "contactMethod": zod.union([zod.literal('email'),zod.literal('phone'),zod.literal(null)]).nullish(),
+  "contactValue": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -56,7 +58,9 @@ export const UpdateAthleteProfileBody = zod.object({
   "pr10k": zod.string().optional(),
   "prHalf": zod.string().optional(),
   "prMarathon": zod.string().optional(),
-  "healthNotes": zod.string().optional()
+  "healthNotes": zod.string().optional(),
+  "contactMethod": zod.enum(['email', 'phone']).optional(),
+  "contactValue": zod.string().optional()
 })
 
 export const UpdateAthleteProfileResponse = zod.object({
@@ -75,6 +79,8 @@ export const UpdateAthleteProfileResponse = zod.object({
   "prHalf": zod.string().nullish(),
   "prMarathon": zod.string().nullish(),
   "healthNotes": zod.string().nullish(),
+  "contactMethod": zod.union([zod.literal('email'),zod.literal('phone'),zod.literal(null)]).nullish(),
+  "contactValue": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 

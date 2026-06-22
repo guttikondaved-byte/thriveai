@@ -43,6 +43,17 @@ export const AthleteProfileUserRole = {
   coach: 'coach',
 } as const;
 
+/**
+ * @nullable
+ */
+export type AthleteProfileContactMethod = typeof AthleteProfileContactMethod[keyof typeof AthleteProfileContactMethod] | null;
+
+
+export const AthleteProfileContactMethod = {
+  email: 'email',
+  phone: 'phone',
+} as const;
+
 export interface AthleteProfile {
   id: number;
   name: string;
@@ -70,6 +81,10 @@ export interface AthleteProfile {
   prMarathon?: string | null;
   /** @nullable */
   healthNotes?: string | null;
+  /** @nullable */
+  contactMethod?: AthleteProfileContactMethod;
+  /** @nullable */
+  contactValue?: string | null;
   createdAt: string;
 }
 
@@ -101,6 +116,14 @@ export const AthleteProfileInputUserRole = {
   coach: 'coach',
 } as const;
 
+export type AthleteProfileInputContactMethod = typeof AthleteProfileInputContactMethod[keyof typeof AthleteProfileInputContactMethod];
+
+
+export const AthleteProfileInputContactMethod = {
+  email: 'email',
+  phone: 'phone',
+} as const;
+
 export interface AthleteProfileInput {
   name?: string;
   age?: number;
@@ -116,6 +139,8 @@ export interface AthleteProfileInput {
   prHalf?: string;
   prMarathon?: string;
   healthNotes?: string;
+  contactMethod?: AthleteProfileInputContactMethod;
+  contactValue?: string;
 }
 
 export type InjuryStatus = typeof InjuryStatus[keyof typeof InjuryStatus];

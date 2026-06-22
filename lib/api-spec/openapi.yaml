@@ -796,6 +796,11 @@ components:
           type: ["string", "null"]
         healthNotes:
           type: ["string", "null"]
+        contactMethod:
+          type: ["string", "null"]
+          enum: [email, phone, null]
+        contactValue:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -839,6 +844,11 @@ components:
         prMarathon:
           type: string
         healthNotes:
+          type: string
+        contactMethod:
+          type: string
+          enum: [email, phone]
+        contactValue:
           type: string
 
     Injury:
