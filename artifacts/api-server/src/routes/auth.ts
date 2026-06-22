@@ -359,4 +359,51 @@ router.post("/mobile-auth/logout", async (req: Request, res: Response) => {
   res.json(LogoutMobileSessionResponse.parse({ success: true }));
 });
 
+// ── Delete account ──────────────────────────────────────────────────────────
+
+router.delete("/account", async (req: Request, res: Response): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const userId = req.user.id;
+
+  try {
+    // Import child tables inline to keep imports clean
+    const {
+      activitiesTable,
+      injuryAlertsTable,
+      notificationsTable,
+      stravaTokensTable,
+      trainingPlansTable,
+      sessionsTable,
+    } = await import("@workspace/db");
+
+    const { eq: eqOp } = await import("drizzle-orm");
+
+    // Delete all user-owned rows in dependency order
+    await db.delete(activitiesTable).where(eqOp(activitiesTable.userId, userId));
+    await db.delete(injuryAlertsTable).where(eqOp(injuryAlertsTable.userId, userId));
+    await db.delete(notificationsTable).where(eqOp(notificationsTable.userId, userId));
+    await db.delete(stravaTokensTable).where(eqOp(stravaTokensTable.userId, userId));
+    await db.delete(trainingPlansTable).where(eqOp(trainingPlansTable.userId, userId));
+
+    // Clear session before deleting from sessions table
+    const sid = getSessionId(req);
+    if (sid) await deleteSession(sid);
+    await db.delete(sessionsTable).where(eqOp(sessionsTable.userId, userId));
+
+    // Finally delete the user row
+    await db.delete(usersTable).where(eqOp(usersTable.id, userId));
+
+    // Clear the session cookie
+    res.clearCookie(SESSION_COOKIE, { path: "/" });
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "Account deletion failed");
+    res.status(500).json({ error: "Account deletion failed" });
+  }
+});
+
 export default router;

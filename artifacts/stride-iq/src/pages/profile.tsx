@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { HelpCircle, X } from "lucide-react";
+import { HelpCircle, X, TriangleAlert, Trash2 } from "lucide-react";
 
 const schema = z.object({
   name: z.string().min(1, "Required"),
@@ -146,12 +146,85 @@ function FieldLabel({ label, guideKey, onHelp }: { label: string; guideKey: Guid
   );
 }
 
+function DeleteAccountModal({ onClose }: { onClose: () => void }) {
+  const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const ready = confirm === "DELETE";
+
+  async function handleDelete() {
+    if (!ready) return;
+    setLoading(true);
+    setErr("");
+    try {
+      const res = await fetch("/api/account", { method: "DELETE", credentials: "include" });
+      if (!res.ok) throw new Error("Deletion failed — please try again.");
+      window.location.href = "/";
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-md bg-[#0f172a] border border-red-500/30 rounded-2xl shadow-2xl p-6">
+        <div className="flex items-start gap-3 mb-5">
+          <div className="shrink-0 w-10 h-10 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center">
+            <TriangleAlert className="w-5 h-5 text-red-400" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-white">Delete account</h2>
+            <p className="text-sm text-slate-400 mt-0.5">This permanently deletes your account, all runs, plans, and alerts. This cannot be undone.</p>
+          </div>
+        </div>
+
+        <div className="mb-5">
+          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
+            Type <span className="text-red-400 font-bold font-mono">DELETE</span> to confirm
+          </label>
+          <input
+            className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder-slate-600 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition"
+            placeholder="DELETE"
+            value={confirm}
+            onChange={e => setConfirm(e.target.value)}
+            autoFocus
+          />
+        </div>
+
+        {err && (
+          <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2.5">
+            <span className="text-red-400 text-sm">⚠️</span>
+            <p className="text-red-300 text-xs">{err}</p>
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:text-white text-sm font-medium transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={!ready || loading}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Trash2 size={14} />
+            {loading ? "Deleting…" : "Delete my account"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Profile() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { data: profile, isLoading } = useGetAthleteProfile();
   const updateProfile = useUpdateAthleteProfile();
   const [activeGuide, setActiveGuide] = useState<GuideKey>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -209,6 +282,7 @@ export default function Profile() {
   return (
     <>
       {activeGuide && <HelpModal guideKey={activeGuide} onClose={() => setActiveGuide(null)} />}
+      {showDeleteModal && <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />}
 
       <div className="p-8">
         <div className="mb-8">
@@ -216,7 +290,7 @@ export default function Profile() {
           <p className="text-sm text-muted-foreground mt-1">Your training profile and physiological metrics</p>
         </div>
 
-        <div className="max-w-xl">
+        <div className="max-w-xl space-y-6">
           <div className="bg-card border border-border rounded-lg p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
@@ -296,6 +370,23 @@ export default function Profile() {
                 </div>
               </form>
             </Form>
+          </div>
+
+          {/* Danger Zone */}
+          <div className="rounded-xl border border-red-500/25 bg-red-500/5 p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <TriangleAlert className="w-4 h-4 text-red-400" />
+              <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wider">Danger Zone</h2>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">Once you delete your account, all your runs, training plans, alerts, and data are permanently gone. There is no undo.</p>
+            <button
+              type="button"
+              onClick={() => setShowDeleteModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-red-500/40 text-red-400 hover:bg-red-500/10 hover:border-red-500/60 text-sm font-semibold transition-all"
+            >
+              <Trash2 size={14} />
+              Delete account
+            </button>
           </div>
         </div>
       </div>
