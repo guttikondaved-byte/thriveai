@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Zap, User, Users } from "lucide-react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ClerkProvider, SignIn, SignUp, useUser, useClerk } from "@clerk/react";
@@ -113,8 +114,116 @@ function SignInPage() {
 }
 
 function SignUpPage() {
+  const [, navigate] = useLocation();
+
+  const [role, setRole] = useState<"athlete" | "coach" | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlRole = params.get("role");
+    if (urlRole === "athlete" || urlRole === "coach") {
+      sessionStorage.setItem("thrive_pending_role", urlRole);
+      return urlRole;
+    }
+    const stored = sessionStorage.getItem("thrive_pending_role");
+    if (stored === "athlete" || stored === "coach") return stored;
+    return null;
+  });
+
+  function handleSelectRole(r: "athlete" | "coach") {
+    sessionStorage.setItem("thrive_pending_role", r);
+    setRole(r);
+  }
+
+  function clearRole() {
+    sessionStorage.removeItem("thrive_pending_role");
+    setRole(null);
+  }
+
+  if (!role) {
+    return (
+      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <div className="flex justify-center mb-8">
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/25"
+              style={{ background: "linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)" }}
+            >
+              <Zap className="w-7 h-7 text-white" strokeWidth={2.5} fill="white" />
+            </div>
+          </div>
+
+          <h1 className="text-2xl font-bold text-white text-center mb-2">I'm joining as a…</h1>
+          <p className="text-slate-400 text-sm text-center mb-8">Choose your role to get started. You can update this later.</p>
+
+          <div className="space-y-3 mb-6">
+            <button
+              onClick={() => handleSelectRole("athlete")}
+              className="w-full text-left rounded-2xl border border-cyan-500/40 p-5 transition-all group hover:border-cyan-400/70 hover:shadow-lg hover:shadow-cyan-500/10"
+              style={{ background: "linear-gradient(135deg, rgba(6,182,212,0.08) 0%, rgba(6,182,212,0.03) 100%)" }}
+            >
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: "linear-gradient(135deg, rgba(6,182,212,0.25) 0%, rgba(59,130,246,0.15) 100%)", border: "1px solid rgba(6,182,212,0.4)" }}
+                >
+                  <User className="w-5 h-5 text-cyan-300" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-white group-hover:text-cyan-200 transition-colors">Student Athlete</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Personal training log · AI coach · Injury alerts · Plans</p>
+                </div>
+                <svg className="w-4 h-4 text-cyan-500/60 group-hover:text-cyan-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+              </div>
+            </button>
+
+            <button
+              onClick={() => handleSelectRole("coach")}
+              className="w-full text-left rounded-2xl border border-violet-500/40 p-5 transition-all group hover:border-violet-400/70 hover:shadow-lg hover:shadow-violet-500/10"
+              style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(139,92,246,0.03) 100%)" }}
+            >
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.25) 0%, rgba(99,102,241,0.15) 100%)", border: "1px solid rgba(139,92,246,0.4)" }}
+                >
+                  <Users className="w-5 h-5 text-violet-300" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-white group-hover:text-violet-200 transition-colors">Coach</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Team roster · Workload monitoring · Risk dashboard · Alerts</p>
+                </div>
+                <svg className="w-4 h-4 text-violet-500/60 group-hover:text-violet-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+              </div>
+            </button>
+          </div>
+
+          <p className="text-center text-sm text-slate-500">
+            Already have an account?{" "}
+            <button onClick={() => navigate("/sign-in")} className="text-cyan-400 hover:text-cyan-300 transition-colors">
+              Log in
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const roleLabel = role === "athlete" ? "Student Athlete" : "Coach";
+  const roleColor = role === "athlete" ? "text-cyan-300 border-cyan-500/30 bg-cyan-500/10" : "text-violet-300 border-violet-500/30 bg-violet-500/10";
+
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center px-4 gap-5">
+      <div className="flex items-center gap-3">
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold ${roleColor}`}>
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
+          {roleLabel}
+        </div>
+        <button
+          onClick={clearRole}
+          className="text-xs text-slate-500 hover:text-slate-300 transition-colors underline underline-offset-2"
+        >
+          Change
+        </button>
+      </div>
       <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
     </div>
   );

@@ -131,19 +131,24 @@ function isValidPhone(v: string) {
 
 export default function Onboarding() {
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState<FormData>({
-    contactMethod: null,
-    contactValue: "",
-    role: null,
-    name: "", age: "",
-    fitnessLevel: "intermediate",
-    primaryGoal: "",
-    weeklyMileageGoal: "",
-    teamName: "",
-    coachingExp: null,
-    athleteCount: "",
-    coachFocus: "",
-    dataSource: null,
+  const [form, setForm] = useState<FormData>(() => {
+    const stored = sessionStorage.getItem("thrive_pending_role");
+    const pendingRole = stored === "athlete" || stored === "coach" ? stored : null;
+    if (pendingRole) sessionStorage.removeItem("thrive_pending_role");
+    return {
+      contactMethod: null,
+      contactValue: "",
+      role: pendingRole,
+      name: "", age: "",
+      fitnessLevel: "intermediate",
+      primaryGoal: "",
+      weeklyMileageGoal: "",
+      teamName: "",
+      coachingExp: null,
+      athleteCount: "",
+      coachFocus: "",
+      dataSource: null,
+    };
   });
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [, navigate] = useLocation();

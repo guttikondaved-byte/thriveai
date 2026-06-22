@@ -171,7 +171,7 @@ function Landing() {
       <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Get started — I am a…</p>
 
       <div className="space-y-3 mb-6">
-        <button onClick={() => navigate("/sign-up")}
+        <button onClick={() => navigate("/sign-up?role=athlete")}
           className="w-full text-left rounded-2xl border border-cyan-500/40 p-5 transition-all group hover:border-cyan-400/70 hover:shadow-lg hover:shadow-cyan-500/10"
           style={{ background: "linear-gradient(135deg, rgba(6,182,212,0.08) 0%, rgba(6,182,212,0.03) 100%)" }}>
           <div className="flex items-center gap-4">
@@ -187,7 +187,7 @@ function Landing() {
           </div>
         </button>
 
-        <button onClick={() => navigate("/sign-up")}
+        <button onClick={() => navigate("/sign-up?role=coach")}
           className="w-full text-left rounded-2xl border border-violet-500/40 p-5 transition-all group hover:border-violet-400/70 hover:shadow-lg hover:shadow-violet-500/10"
           style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(139,92,246,0.03) 100%)" }}>
           <div className="flex items-center gap-4">
@@ -219,7 +219,7 @@ export default function Login() {
     <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center px-4 py-12">
       <div className="fixed top-4 right-5 z-50 flex items-center gap-2">
         <button onClick={() => navigate("/sign-up")}
-          className="text-xs font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg border border-slate-700/60 hover:border-slate-500 bg-slate-900/70 backdrop-blur-sm transition-all">
+          className="text-xs font-semibold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg border border-slate-700/60 hover:border-slate-500 bg-slate-900/70 backdrop-blur-sm transition-all" >
           Sign up
         </button>
         <button onClick={() => navigate("/sign-in")}
