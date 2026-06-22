@@ -10,6 +10,7 @@ import injuriesRouter from "./injuries";
 import authRouter from "./auth";
 import teamsRouter from "./teams";
 import notificationsRouter from "./notifications";
+import stravaRouter from "./strava";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(openaiRouter);
 router.use(injuriesRouter);
 router.use(teamsRouter);
 router.use(notificationsRouter);
+router.use(stravaRouter);
 
 export default router;

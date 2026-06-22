@@ -1,9 +1,12 @@
-import { pgTable, text, serial, integer, numeric, timestamp, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, numeric, timestamp, date, bigint } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./auth";
 
 export const activitiesTable = pgTable("activities", {
   id: serial("id").primaryKey(),
+  userId: text("user_id").references(() => usersTable.id),
+  stravaActivityId: bigint("strava_activity_id", { mode: "number" }),
   type: text("type").notNull(),
   distanceKm: numeric("distance_km", { precision: 8, scale: 2 }),
   durationMinutes: integer("duration_minutes"),

@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useListActivities, useCreateActivity, getListActivitiesQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { Plus, X, Upload } from "lucide-react";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
+import { Plus, X, Upload, Zap, CheckCircle2, RefreshCw, Unlink } from "lucide-react";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -43,6 +43,41 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+function useStravaStatus() {
+  return useQuery({
+    queryKey: ["strava-status"],
+    queryFn: async () => {
+      const r = await fetch("/api/strava/status");
+      if (!r.ok) throw new Error("failed");
+      return r.json() as Promise<{ connected: boolean; stravaAthleteId: number | null }>;
+    },
+    staleTime: 60_000,
+  });
+}
+
+function useStravaSync() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const r = await fetch("/api/strava/sync", { method: "POST" });
+      if (!r.ok) throw new Error("sync failed");
+      return r.json() as Promise<{ synced: number }>;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: getListActivitiesQueryKey() }),
+  });
+}
+
+function useStravaDisconnect() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const r = await fetch("/api/strava/disconnect", { method: "DELETE" });
+      if (!r.ok) throw new Error("failed");
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["strava-status"] }),
+  });
+}
+
 export default function Activities() {
   const [showForm, setShowForm] = useState(false);
   const [showGpx, setShowGpx] = useState(false);
@@ -50,6 +85,24 @@ export default function Activities() {
   const { toast } = useToast();
   const { data: activities, isLoading } = useListActivities({ limit: 50 });
   const createActivity = useCreateActivity();
+  const stravaStatus = useStravaStatus();
+  const stravaSync = useStravaSync();
+  const stravaDisconnect = useStravaDisconnect();
+
+  // Show toast when redirected back from Strava OAuth
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const stravaParam = params.get("strava");
+    if (stravaParam === "connected") {
+      toast({ title: "Strava connected!", description: "Your runs will sync automatically." });
+      stravaStatus.refetch();
+      window.history.replaceState({}, "", "/activities");
+    } else if (stravaParam === "error") {
+      toast({ title: "Strava connection failed", description: "Please try again.", variant: "destructive" });
+      window.history.replaceState({}, "", "/activities");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -133,6 +186,58 @@ export default function Activities() {
           </Button>
         </div>
       </div>
+
+      {/* Strava connection banner */}
+      {stravaStatus.data?.connected ? (
+        <div className="flex items-center justify-between bg-[#FC4C02]/10 border border-[#FC4C02]/30 rounded-xl px-5 py-3.5 mb-6">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 size={18} className="text-[#FC4C02] shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-white">Strava connected</p>
+              <p className="text-xs text-slate-400">New runs sync automatically via webhook.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => stravaSync.mutate(undefined, {
+                onSuccess: (d) => toast({ title: `Synced ${d.synced} activities from Strava` }),
+                onError: () => toast({ title: "Sync failed", variant: "destructive" }),
+              })}
+              disabled={stravaSync.isPending}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={12} className={stravaSync.isPending ? "animate-spin" : ""} />
+              {stravaSync.isPending ? "Syncing…" : "Sync now"}
+            </button>
+            <button
+              onClick={() => stravaDisconnect.mutate(undefined, {
+                onSuccess: () => toast({ title: "Strava disconnected" }),
+              })}
+              disabled={stravaDisconnect.isPending}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition-colors disabled:opacity-50"
+            >
+              <Unlink size={12} />
+              Disconnect
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between bg-slate-800/50 border border-slate-700/60 rounded-xl px-5 py-3.5 mb-6">
+          <div className="flex items-center gap-3">
+            <Zap size={18} className="text-[#FC4C02] shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-white">Connect Strava</p>
+              <p className="text-xs text-slate-400">Sync runs automatically — every new Strava activity appears here in real time.</p>
+            </div>
+          </div>
+          <a
+            href="/api/strava/connect"
+            className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg bg-[#FC4C02] hover:bg-[#e34400] text-white transition-colors shrink-0"
+          >
+            Connect Strava
+          </a>
+        </div>
+      )}
 
       {showGpx && (
         <GpxImport

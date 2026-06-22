@@ -8,3 +8,4 @@ export * from "./messages";
 export * from "./injuries";
 export * from "./teams";
 export * from "./notifications";
+export * from "./strava";
