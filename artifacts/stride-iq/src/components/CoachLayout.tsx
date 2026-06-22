@@ -22,7 +22,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex h-screen bg-[#0a0f1e] text-white overflow-hidden">
       <aside className="w-60 flex-shrink-0 flex flex-col bg-[#0d1529] border-r border-slate-800">
-        <div className="px-5 py-5 border-b border-slate-800 flex items-center justify-between">
+        <div className="px-5 py-5 border-b border-slate-800 flex items-center">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-cyan-500 flex items-center justify-center text-sm font-bold text-slate-900">T</div>
             <div>
@@ -30,7 +30,6 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
               <div className="text-[10px] text-cyan-400 font-medium uppercase tracking-widest">Coach Portal</div>
             </div>
           </div>
-          <NotificationBell />
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
@@ -78,6 +77,9 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
       </aside>
 
       <main className="flex-1 overflow-y-auto">
+        <header className="sticky top-0 z-20 h-14 border-b border-slate-800 bg-[#0a0f1e]/80 backdrop-blur flex items-center justify-end px-6">
+          <NotificationBell />
+        </header>
         {children}
       </main>
     </div>

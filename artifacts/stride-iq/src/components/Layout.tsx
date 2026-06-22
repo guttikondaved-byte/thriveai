@@ -26,12 +26,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen bg-background text-foreground">
       {/* Sidebar */}
       <aside className="w-60 shrink-0 border-r border-border flex flex-col" data-testid="sidebar">
-        <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+        <div className="px-6 py-5 border-b border-border flex items-center">
           <div className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-primary" strokeWidth={2.5} />
             <span className="text-lg font-semibold tracking-tight text-foreground">Thrive</span>
           </div>
-          <NotificationBell />
         </div>
         <nav className="flex-1 py-4 px-3 space-y-0.5">
           {navItems.map(({ href, label, icon: Icon }) => {
@@ -81,6 +80,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <main className="flex-1 overflow-auto" data-testid="main-content">
+        <header className="sticky top-0 z-20 h-14 border-b border-border bg-background/80 backdrop-blur flex items-center justify-end px-6">
+          <NotificationBell />
+        </header>
         {children}
       </main>
     </div>
