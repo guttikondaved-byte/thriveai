@@ -375,6 +375,12 @@ router.post("/mobile-auth/logout", async (req: Request, res: Response) => {
 
 // ── Delete account ──────────────────────────────────────────────────────────
 
+/** A Clerk Backend API "user not found" (404) — i.e. the identity is already gone. */
+function isClerkNotFound(err: unknown): boolean {
+  const e = err as { status?: unknown; statusCode?: unknown } | null;
+  return !!e && (e.status === 404 || e.statusCode === 404);
+}
+
 router.delete("/account", async (req: Request, res: Response): Promise<void> => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
@@ -382,6 +388,29 @@ router.delete("/account", async (req: Request, res: Response): Promise<void> => 
   }
 
   const userId = req.user.id;
+
+  // Delete the Clerk identity FIRST, as a hard precondition. The client keeps a valid
+  // Clerk session for a moment after this request and immediately refetches authed
+  // endpoints (profile, notifications). If we deleted the DB row first, those in-flight
+  // requests would miss the authMiddleware fast path and JIT-reprovision the user:
+  // clerkClient.users.getUser() would still succeed and re-insert the row, resurrecting
+  // the email. Deleting the Clerk user first makes that getUser() 404 so provisioning
+  // aborts. We must NOT proceed to the DB delete unless this succeeds, or the surviving
+  // session would simply resurrect the account.
+  try {
+    await clerkClient.users.deleteUser(userId);
+  } catch (err) {
+    // 404 = the Clerk user is already gone (a retry after a partial failure, or deleted
+    // from the dashboard) — that satisfies our goal, so continue. Any other error means
+    // the identity may still be live; abort so we don't half-delete, and let the client
+    // retry rather than leaving an account that resurrects itself.
+    if (!isClerkNotFound(err)) {
+      req.log.error({ err }, "Failed to delete Clerk user; aborting account deletion");
+      res.status(502).json({ error: "Could not delete account. Please try again." });
+      return;
+    }
+    req.log.warn({ userId }, "Clerk user already absent during account deletion; continuing");
+  }
 
   try {
     // Run as a single transaction so a partial failure never orphans the account.
@@ -423,17 +452,6 @@ router.delete("/account", async (req: Request, res: Response): Promise<void> => 
     // Clear the active session (sessions table stores data as JSONB with no direct userId column)
     const sid = getSessionId(req);
     if (sid) await deleteSession(sid);
-
-    // Delete the Clerk user so the account is truly gone. Without this, the Clerk
-    // session survives local deletion and the user gets JIT-reprovisioned (no role)
-    // on the next request, trapping them in onboarding instead of the landing page.
-    try {
-      await clerkClient.users.deleteUser(userId);
-    } catch (err) {
-      // Clerk deletion is best-effort: the local account is already gone, and the
-      // client signs out regardless, so a Clerk failure shouldn't 500 the request.
-      req.log.error({ err }, "Failed to delete Clerk user after account deletion");
-    }
 
     res.clearCookie(SESSION_COOKIE, { path: "/" });
     res.json({ success: true });
