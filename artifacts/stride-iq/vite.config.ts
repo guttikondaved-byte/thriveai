@@ -46,6 +46,22 @@ export default defineConfig({
     strictPort: true,
     host: "0.0.0.0",
     allowedHosts: true,
+    // Proxy API requests to the local api-server during development so
+    // the frontend can call `/api/*` without needing CORS or a separate origin.
+    proxy: {
+      // Forward all /api requests to the API server running on :8080
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+      // Clerk proxy path (if used) should also be proxied to the API server
+      "/api/__clerk": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
     fs: {
       strict: true,
     },

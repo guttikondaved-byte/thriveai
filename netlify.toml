@@ -1,0 +1,24 @@
+[build]
+  command = "pnpm install && pnpm --filter ./artifacts/stride-iq run build"
+  publish = "artifacts/stride-iq/dist/public"
+
+#[[redirects]]
+#  If your API will be deployed on Render (or any other host), set the
+#  API_HOST environment variable in your Netlify site settings to the API
+#  root (for example: https://thriveai-api.onrender.com) and uncomment
+#  the block below to proxy `/api/*` requests through Netlify to your API.
+#  This keeps browser requests same-origin and avoids CORS.
+
+#[[redirects]]
+#  from = "/api/*"
+#  to = ":splat"
+#  status = 200
+#  force = false
+#  conditions = { Host = "${API_HOST}" }
+
+### Alternative (edit and set the `to` value directly):
+## [[redirects]]
+##   from = "/api/*"
+##   to = "https://thriveai-api.onrender.com/api/:splat"
+##   status = 200
+##   force = false

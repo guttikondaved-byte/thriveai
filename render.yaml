@@ -1,0 +1,55 @@
+# Render infrastructure manifest (example)
+#
+# This file defines three resources for Render:
+#  - a managed Postgres database
+#  - a Node web service that runs the API server
+#  - a static site for the frontend (built by Vite)
+#
+# NOTE: You must set secret environment variables in the Render dashboard
+# or using the Render CLI. Values below are intentionally left empty.
+
+services:
+  - type: web
+    name: thriveai-api
+    env: node
+    region: oregon
+    branch: main
+    plan: starter
+  buildCommand: pnpm approve-builds --all || true && pnpm install && pnpm --filter ./artifacts/api-server run build
+    startCommand: node --enable-source-maps ./artifacts/api-server/dist/index.mjs
+    # Set required env vars in the Render dashboard (DATABASE_URL will be set by the database resource below)
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: ""
+      - key: CLERK_PUBLISHABLE_KEY
+        value: ""
+        # mark as secret in the dashboard
+      - key: CLERK_SECRET_KEY
+        value: ""
+      - key: STRAVA_CLIENT_ID
+        value: ""
+      - key: STRAVA_CLIENT_SECRET
+        value: ""
+      - key: OPENAI_API_KEY
+        value: ""
+
+  - type: static
+    name: thriveai-frontend
+    region: oregon
+    branch: main
+    plan: starter
+    # Build the frontend and publish the build output
+  buildCommand: pnpm approve-builds --all || true && pnpm install && pnpm --filter ./artifacts/stride-iq run build
+    staticPublishPath: ./artifacts/stride-iq/dist/public
+    envVars:
+      - key: VITE_CLERK_PUBLISHABLE_KEY
+        value: ""
+      - key: VITE_CLERK_PROXY_URL
+        value: ""
+
+databases:
+  - name: thriveai-db
+    plan: starter
+    databaseName: thrive
