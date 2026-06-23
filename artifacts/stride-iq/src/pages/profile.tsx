@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useClerk } from "@clerk/react";
 import { HelpCircle, X, TriangleAlert, Trash2 } from "lucide-react";
 
 const schema = z.object({
@@ -146,16 +147,27 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const ready = confirm;
+  const { signOut } = useClerk();
 
   async function handleDelete() {
     if (!ready) return;
     setLoading(true);
     setErr("");
+    let deleted = false;
     try {
       const res = await fetch("/api/account", { method: "DELETE", credentials: "include" });
       if (!res.ok) throw new Error("Deletion failed — please try again.");
-      window.location.href = "/";
+      deleted = true;
+      // Sign out of Clerk so the now-deleted session can't reprovision an empty
+      // user and trap them in onboarding; this lands them on the landing page.
+      await signOut({ redirectUrl: "/" });
     } catch (e: unknown) {
+      // The account is already gone, so never leave the user stuck on the modal:
+      // if sign-out fails, force a full reload to the signed-out landing page.
+      if (deleted) {
+        window.location.href = "/";
+        return;
+      }
       setErr(e instanceof Error ? e.message : "Something went wrong");
       setLoading(false);
     }

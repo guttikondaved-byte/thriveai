@@ -1,5 +1,6 @@
 import * as oidc from "openid-client";
 import { Router, type IRouter, type Request, type Response } from "express";
+import { clerkClient } from "@clerk/express";
 import bcrypt from "bcryptjs";
 import {
   GetCurrentAuthUserResponse,
@@ -422,6 +423,17 @@ router.delete("/account", async (req: Request, res: Response): Promise<void> => 
     // Clear the active session (sessions table stores data as JSONB with no direct userId column)
     const sid = getSessionId(req);
     if (sid) await deleteSession(sid);
+
+    // Delete the Clerk user so the account is truly gone. Without this, the Clerk
+    // session survives local deletion and the user gets JIT-reprovisioned (no role)
+    // on the next request, trapping them in onboarding instead of the landing page.
+    try {
+      await clerkClient.users.deleteUser(userId);
+    } catch (err) {
+      // Clerk deletion is best-effort: the local account is already gone, and the
+      // client signs out regardless, so a Clerk failure shouldn't 500 the request.
+      req.log.error({ err }, "Failed to delete Clerk user after account deletion");
+    }
 
     res.clearCookie(SESSION_COOKIE, { path: "/" });
     res.json({ success: true });
