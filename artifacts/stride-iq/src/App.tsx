@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Zap, User, Users, ArrowLeft } from "lucide-react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
-import { ClerkProvider, SignIn, SignUp, useUser, useClerk } from "@clerk/react";
+import { ClerkProvider, SignIn, SignUp, useUser, useClerk, useAuth } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { shadcn } from "@clerk/themes";
 import { Toaster } from "@/components/ui/toaster";
@@ -24,7 +24,7 @@ import CoachPlans from "@/pages/coach-plans";
 import Team from "@/pages/team";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
-import { useGetAthleteProfile } from "@workspace/api-client-react";
+import { useGetAthleteProfile, setAuthTokenGetter } from "@workspace/api-client-react";
 
 const queryClient = new QueryClient();
 
@@ -326,6 +326,21 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
+/**
+ * Registers Clerk's active session token as a Bearer header on every API
+ * request. Without this, the first burst of requests after sign-in can arrive
+ * at the server before the __session cookie is fully propagated, causing 401s.
+ * getToken() always returns a current (auto-refreshed) JWT, so this is safe.
+ */
+function ClerkAuthTokenProvider() {
+  const { getToken } = useAuth();
+  useEffect(() => {
+    setAuthTokenGetter(() => getToken());
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+  return null;
+}
+
 function HomeContent() {
   const { isLoaded, isSignedIn } = useUser();
 
@@ -334,6 +349,7 @@ function HomeContent() {
 
   return (
     <>
+      <ClerkAuthTokenProvider />
       <ClerkQueryClientCacheInvalidator />
       <AppContent />
     </>

@@ -29,8 +29,10 @@ router.get("/athlete/profile", async (req, res): Promise<void> => {
   }
   res.set("Cache-Control", "no-store");
   const profile = await getOrCreateProfile(req.user.id);
+  const validFitnessLevels = ["beginner", "intermediate", "advanced", "elite"];
   res.json(GetAthleteProfileResponse.parse({
     ...profile,
+    fitnessLevel: validFitnessLevels.includes(profile.fitnessLevel) ? profile.fitnessLevel : "intermediate",
     weeklyMileageGoal: profile.weeklyMileageGoal ? Number(profile.weeklyMileageGoal) : null,
     hrv: profile.hrv ? Number(profile.hrv) : null,
     createdAt: profile.createdAt.toISOString(),
