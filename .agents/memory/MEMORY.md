@@ -3,3 +3,4 @@
 - [esbuild nullish-coalescing pitfall](esbuild-nullish.md) — esbuild rejects `x ?? y || z` without parens; always write `(x ?? y) || z`.
 - [DESIGN subagent refactor verification](design-subagent-refactor-verification.md) — after an emoji→icon UI refresh, check for missing module-scope icon imports + data-array key casing mismatches; tsc misses them (halts on TS6306).
 - [Thrive JIT migration race](thrive-jit-migration-race.md) — login fires many parallel requests; pre-Clerk→Clerk user migration must use advisory lock + recheck or it 401-loops on users_email_unique.
+- [Thrive profile PATCH mapping](thrive-profile-patch-mapping.md) — athlete_profile PATCH maps fields one-by-one; unmapped field → empty .set() → "No values to set" 500. Per-user routes must scope by req.user.id, not first row.

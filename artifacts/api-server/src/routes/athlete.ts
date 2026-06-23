@@ -65,6 +65,27 @@ router.patch("/athlete/profile", async (req, res): Promise<void> => {
   if (parsed.data.userRole !== undefined) updateData.userRole = parsed.data.userRole;
   if (parsed.data.country !== undefined) updateData.country = parsed.data.country;
   if (parsed.data.state !== undefined) updateData.state = parsed.data.state;
+  if (parsed.data.pr5k !== undefined) updateData.pr5k = parsed.data.pr5k;
+  if (parsed.data.pr10k !== undefined) updateData.pr10k = parsed.data.pr10k;
+  if (parsed.data.prHalf !== undefined) updateData.prHalf = parsed.data.prHalf;
+  if (parsed.data.prMarathon !== undefined) updateData.prMarathon = parsed.data.prMarathon;
+  if (parsed.data.healthNotes !== undefined) updateData.healthNotes = parsed.data.healthNotes;
+  if (parsed.data.contactMethod !== undefined) updateData.contactMethod = parsed.data.contactMethod;
+  if (parsed.data.contactValue !== undefined) updateData.contactValue = parsed.data.contactValue;
+
+  // If nothing recognized was sent, return the current profile instead of letting
+  // drizzle throw "No values to set" on an empty .set() (which 500s every save).
+  if (Object.keys(updateData).length === 0) {
+    const validFitnessLevels = ["beginner", "intermediate", "advanced", "elite"];
+    res.json(UpdateAthleteProfileResponse.parse({
+      ...existing,
+      fitnessLevel: validFitnessLevels.includes(existing.fitnessLevel) ? existing.fitnessLevel : "intermediate",
+      weeklyMileageGoal: existing.weeklyMileageGoal ? Number(existing.weeklyMileageGoal) : null,
+      hrv: existing.hrv ? Number(existing.hrv) : null,
+      createdAt: existing.createdAt.toISOString(),
+    }));
+    return;
+  }
 
   const [updated] = await db
     .update(athleteProfileTable)
