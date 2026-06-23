@@ -218,6 +218,21 @@ export default function Onboarding() {
     // Wait for the profile to actually refetch (not just mark stale) before
     // navigating — otherwise AppContent sees the old role and redirects back.
     await qc.refetchQueries({ queryKey: getGetAthleteProfileQueryKey() });
+    // Coaches get a team auto-created from the name they entered during onboarding,
+    // so they land on the dashboard with a ready-to-share invite code instead of an
+    // empty state. The role was just persisted above, so the server's coach check passes.
+    if (isCoach && form.teamName.trim()) {
+      try {
+        await fetch("/api/teams", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: form.teamName.trim() }),
+        });
+      } catch {
+        // Non-fatal — the coach can still create a team from the Team page.
+      }
+    }
     // If athlete chose Strava, kick off OAuth before landing on dashboard
     if (form.dataSource === "strava") {
       window.open("/api/strava/connect", "_blank", "noopener,noreferrer");

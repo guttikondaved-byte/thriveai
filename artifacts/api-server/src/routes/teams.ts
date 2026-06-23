@@ -29,6 +29,25 @@ router.post("/teams", async (req, res): Promise<void> => {
     return;
   }
 
+  // A coach has exactly one team. Make creation idempotent: if they already have a
+  // team, return it instead of inserting a duplicate. This protects against double
+  // submits, onboarding auto-create racing with a manual create, and re-onboarding.
+  const [existingTeam] = await db.select().from(teamsTable)
+    .where(eq(teamsTable.coachUserId, req.user.id))
+    .orderBy(desc(teamsTable.createdAt))
+    .limit(1);
+  if (existingTeam) {
+    const members = await db.select().from(teamMembershipsTable).where(eq(teamMembershipsTable.teamId, existingTeam.id));
+    res.status(200).json({
+      id: existingTeam.id,
+      name: existingTeam.name,
+      inviteCode: existingTeam.inviteCode,
+      memberCount: members.length,
+      createdAt: existingTeam.createdAt.toISOString(),
+    });
+    return;
+  }
+
   let inviteCode = generateInviteCode();
   let attempts = 0;
   while (attempts < 5) {
