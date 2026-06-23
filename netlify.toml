@@ -16,9 +16,9 @@
 #  force = false
 #  conditions = { Host = "${API_HOST}" }
 
-### Alternative (edit and set the `to` value directly):
-## [[redirects]]
-##   from = "/api/*"
-##   to = "https://thriveai-api.onrender.com/api/:splat"
-##   status = 200
-##   force = false
+### Proxy API requests to the Render API so PATCH and other methods are forwarded.
+[[redirects]]
+  from = "/api/*"
+  to = "https://thriveai.onrender.com/api/:splat"
+  status = 200
+  force = true
