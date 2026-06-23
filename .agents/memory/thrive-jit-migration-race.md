@@ -37,3 +37,24 @@ importable at the workspace root in the code-execution sandbox — use `executeS
 Reparented child tables: athlete_profile, teams(coach_user_id),
 team_memberships(athlete_user_id), notifications, strava_tokens, activities,
 injury_alerts, training_plans, conversations. (`injuries` has no user_id column.)
+
+# Detecting a Postgres constraint violation through drizzle's wrapped error
+
+**drizzle-orm 0.45 `DrizzleQueryError.message` contains only the failed SQL + params
+— NOT the constraint name or pg code.** Those live on the `.cause` chain (the raw pg
+error: `.code === "23505"`, `.constraint === "users_email_unique"`).
+
+**Symptom:** a `try/catch` that branches on `insertErr.message.includes("users_email_unique")`
+silently never matches → the intended recovery path (e.g. email→Clerk migration) is
+skipped, the error re-throws, `req.user` is never set, and the route returns a 401 that
+looks like an auth bug but is really an unhandled DB conflict. (Hit on coach signup when
+a leftover legacy UUID row held the new user's email.)
+
+**Fix:** detect by walking the `.cause` chain checking message substring **and** pg
+`code`/`constraint` fields (see `isEmailUniqueViolation` in authMiddleware). Also add a
+post-catch fallback `SELECT ... WHERE id = clerkUserId` so a concurrent request that
+already provisioned the row doesn't leave this request with a spurious 401.
+
+**How to apply:** never match Postgres constraint/code logic against a drizzle error's
+`.message`; inspect the cause chain. Applies to any `onConflictDoUpdate(target: id)` that
+can still collide on a *different* unique column (here `email`).

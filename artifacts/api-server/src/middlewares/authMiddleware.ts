@@ -20,6 +20,31 @@ declare global {
 }
 
 /**
+ * Detect a Postgres unique-violation on the users.email constraint.
+ *
+ * drizzle's DrizzleQueryError only puts the failed SQL + params in `.message`;
+ * the actual Postgres error (constraint name, error code 23505) lives on the
+ * `.cause` chain. We must walk that chain — checking `.message` alone misses it
+ * and the email-migration recovery path silently never runs.
+ */
+function isEmailUniqueViolation(err: unknown): boolean {
+  let cur: unknown = err;
+  for (let depth = 0; cur != null && depth < 6; depth++) {
+    if (typeof cur === "object") {
+      const e = cur as { message?: unknown; code?: unknown; constraint?: unknown; cause?: unknown };
+      if (typeof e.message === "string" && e.message.includes("users_email_unique")) return true;
+      if (e.code === "23505" && e.constraint === "users_email_unique") return true;
+      if (typeof e.constraint === "string" && e.constraint === "users_email_unique") return true;
+      cur = e.cause;
+    } else {
+      if (typeof cur === "string" && cur.includes("users_email_unique")) return true;
+      break;
+    }
+  }
+  return false;
+}
+
+/**
  * Migrate an old account (UUID id) to a Clerk user ID.
  * Strategy: create new user row with Clerk ID, reparent all child rows,
  * then delete the old row. This avoids FK chicken-and-egg problems.
@@ -125,9 +150,7 @@ export async function authMiddleware(
         })
         .returning();
     } catch (insertErr: unknown) {
-      const msg = insertErr instanceof Error ? insertErr.message : String(insertErr);
-
-      if (msg.includes("users_email_unique") && email) {
+      if (isEmailUniqueViolation(insertErr) && email) {
         // A pre-Clerk account with this email exists under a different ID.
         // Find the old account and migrate it to the Clerk user ID.
         const [oldUser] = await db
@@ -148,6 +171,18 @@ export async function authMiddleware(
       } else {
         throw insertErr;
       }
+    }
+
+    // Onboarding fires several requests at once; a concurrent request may have
+    // completed the insert/migration while this one was still in the catch path.
+    // Re-read by Clerk ID so we don't return a spurious 401 for a row that now
+    // exists.
+    if (!newUser) {
+      [newUser] = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.id, clerkUserId))
+        .limit(1);
     }
 
     if (newUser) {
