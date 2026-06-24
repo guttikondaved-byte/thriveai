@@ -30,7 +30,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <aside className="w-60 shrink-0 border-r border-border flex flex-col" data-testid="sidebar">
         <div className="px-6 py-5 border-b border-border flex items-center">
           <div className="flex items-center gap-2">
-            <img src={`${window.location.origin}${basePath || ''}/logo.svg`} alt="Thrive" className="w-28 h-auto" />
+            <img src={`${window.location.origin}${basePath || ''}/logo-mark.svg`} alt="Thrive" className="w-10 h-10" />
           </div>
         </div>
         <nav className="flex-1 py-4 px-3 space-y-0.5">
@@ -54,9 +54,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         <div className="px-4 py-4 border-t border-border space-y-3">
-          <div className="flex items-center gap-3">
-            {user?.imageUrl ? (
-              <img src={user.imageUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+          <div className="flex items-center gap-2">
+            <img src={`${window.location.origin}${basePath || ''}/logo-mark.svg`} alt="Thrive" className="w-10 h-auto" />
+          </div>
             ) : (
               <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center text-xs font-bold text-primary">
                 {initials}
