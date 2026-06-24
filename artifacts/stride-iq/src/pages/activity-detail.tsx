@@ -1,4 +1,5 @@
 import { useParams, Link } from "wouter";
+import BackButton from "@/components/BackButton";
 import { useGetActivity } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import {
@@ -76,6 +77,7 @@ export default function ActivityDetail() {
   if (isLoading) {
     return (
       <div className="p-8 max-w-5xl mx-auto">
+        <BackButton href="/activities" />
         <div className="h-5 w-32 bg-card border border-border rounded animate-pulse mb-6" />
         <div className="h-24 bg-card border border-border rounded-xl animate-pulse mb-4" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -88,9 +90,7 @@ export default function ActivityDetail() {
   if (isError || !activity) {
     return (
       <div className="p-8 max-w-5xl mx-auto">
-        <Link href="/activities" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-4 transition-colors" data-testid="link-back-to-activities">
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to activities
-        </Link>
+        <BackButton href="/activities" />
         <div className="bg-card border border-border rounded-xl py-16 text-center">
           <p className="text-sm text-muted-foreground">Activity not found.</p>
         </div>
@@ -118,9 +118,7 @@ export default function ActivityDetail() {
 
   return (
     <div className="p-8 max-w-5xl mx-auto" data-testid={`activity-detail-${activity.id}`}>
-      <Link href="/activities" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-4 transition-colors" data-testid="link-back-to-activities">
-        <ArrowLeft className="w-3.5 h-3.5" /> Back to activities
-      </Link>
+  <BackButton href="/activities" />
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-6">

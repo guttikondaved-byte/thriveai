@@ -1,6 +1,7 @@
 import { useGetTrainingPlan } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
 import { ArrowLeft, CheckCircle2, Circle } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import { format } from "date-fns";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -49,10 +50,7 @@ export default function PlanDetail() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <Link href="/plans" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-4 transition-colors" data-testid="link-back-to-plans">
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to Plans
-        </Link>
+        <BackButton href="/plans" />
         <h1 className="text-2xl font-semibold text-foreground" data-testid="plan-detail-title">{plan.name}</h1>
         <p className="text-sm text-muted-foreground mt-1">{plan.goal}</p>
         <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
