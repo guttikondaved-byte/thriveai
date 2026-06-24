@@ -112,11 +112,20 @@ export async function authMiddleware(
   }
 
   // Fast path: user already provisioned under this Clerk ID
-  const [existingUser] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, clerkUserId))
-    .limit(1);
+  let existingUser: typeof usersTable.$inferSelect | undefined;
+  try {
+    [existingUser] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, clerkUserId))
+      .limit(1);
+  } catch (err) {
+    const cause = (err as { cause?: unknown })?.cause;
+    console.error("[authMiddleware] fast-path DB error:", err);
+    console.error("[authMiddleware] cause:", cause);
+    res.status(500).json({ error: "Database error" });
+    return;
+  }
 
   if (existingUser) {
     req.user = {
