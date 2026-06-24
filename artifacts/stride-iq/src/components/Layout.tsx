@@ -14,6 +14,8 @@ const navItems = [
   { href: "/profile", label: "Profile", icon: User },
 ];
 
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user } = useUser();
@@ -54,8 +56,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
         <div className="px-4 py-4 border-t border-border space-y-3">
           <div className="flex items-center gap-2">
-            <img src={`${window.location.origin}${basePath || ''}/logo-mark.svg`} alt="Thrive" className="w-10 h-auto" />
-          </div>
+            {user?.imageUrl ? (
+              <img src={user.imageUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover border border-border" />
             ) : (
               <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center text-xs font-bold text-primary">
                 {initials}
