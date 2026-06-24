@@ -1,55 +1,46 @@
-# Render infrastructure manifest (example)
+# Render Blueprint for the ThriveAI API + Postgres.
 #
-# This file defines three resources for Render:
-#  - a managed Postgres database
-#  - a Node web service that runs the API server
-#  - a static site for the frontend (built by Vite)
+# Frontend (artifacts/stride-iq) is deployed on Netlify, not Render — see
+# netlify.toml for that side. Netlify proxies /api/* to the web service below.
 #
-# NOTE: You must set secret environment variables in the Render dashboard
-# or using the Render CLI. Values below are intentionally left empty.
+# Secrets (DATABASE_URL, CLERK_*, etc.) are set in the Render dashboard.
+# When the manifest leaves a value blank, populate it there.
 
 services:
   - type: web
-    name: thriveai-api
+    name: thriveai
     env: node
     region: oregon
     branch: main
     plan: starter
-  buildCommand: pnpm approve-builds --all || true && pnpm install && pnpm --filter ./artifacts/api-server run build
+    buildCommand: |
+      export PATH=/opt/render/project/.tools/bin:$PATH &&
+      npm install -g --prefix /opt/render/project/.tools pnpm@10 &&
+      pnpm install --frozen-lockfile &&
+      pnpm --filter @workspace/api-server run build
     startCommand: node --enable-source-maps ./artifacts/api-server/dist/index.mjs
-    # Set required env vars in the Render dashboard (DATABASE_URL will be set by the database resource below)
     envVars:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        value: ""
+        fromDatabase:
+          name: thriveai-db
+          property: connectionString
       - key: CLERK_PUBLISHABLE_KEY
-        value: ""
-        # mark as secret in the dashboard
+        sync: false
       - key: CLERK_SECRET_KEY
-        value: ""
+        sync: false
+      - key: GLM_API_KEY
+        sync: false
       - key: STRAVA_CLIENT_ID
-        value: ""
+        sync: false
       - key: STRAVA_CLIENT_SECRET
-        value: ""
+        sync: false
       - key: OPENAI_API_KEY
-        value: ""
-
-  - type: static
-    name: thriveai-frontend
-    region: oregon
-    branch: main
-    plan: starter
-    # Build the frontend and publish the build output
-  buildCommand: pnpm approve-builds --all || true && pnpm install && pnpm --filter ./artifacts/stride-iq run build
-    staticPublishPath: ./artifacts/stride-iq/dist/public
-    envVars:
-      - key: VITE_CLERK_PUBLISHABLE_KEY
-        value: ""
-      - key: VITE_CLERK_PROXY_URL
-        value: ""
+        sync: false
 
 databases:
   - name: thriveai-db
-    plan: starter
-    databaseName: thrive
+    plan: basic-256mb
+    databaseName: thriveai_api
+    region: oregon
