@@ -15,7 +15,6 @@ const navItems = [
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
   const [location] = useLocation();
   const { user } = useUser();
   const { signOut } = useClerk();

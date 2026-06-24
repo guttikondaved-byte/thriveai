@@ -8,12 +8,12 @@ const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const SESSION_COLORS: Record<string, string> = {
   easy_run: "text-[#10b981] bg-[#10b981]/10 border-[#10b981]/20", // Emerald
-  tempo_run: "text-[#3b82f6] bg-[#3b82f6]/10 border-[#3b82f6]/20", // Blue
-  interval: "text-[#8b5cf6] bg-[#8b5cf6]/10 border-[#8b5cf6]/20", // Violet
+  tempo_run: "text-[#A2AE98] bg-[#A2AE98]/10 border-[#A2AE98]/20",
+  interval: "text-[#F2D2CF] bg-[#F2D2CF]/10 border-[#F2D2CF]/20",
   long_run: "text-[#f59e0b] bg-[#f59e0b]/10 border-[#f59e0b]/20", // Amber
   race: "text-[#ef4444] bg-[#ef4444]/10 border-[#ef4444]/20", // Red
-  cross_training: "text-[#06b6d4] bg-[#06b6d4]/10 border-[#06b6d4]/20", // Cyan
-  rest: "text-slate-400 bg-slate-800 border-slate-700",
+  cross_training: "text-primary bg-primary/10 border-primary/20",
+  rest: "text-slate-400 bg-secondary border-border",
 };
 
 const SESSION_LABELS: Record<string, string> = {

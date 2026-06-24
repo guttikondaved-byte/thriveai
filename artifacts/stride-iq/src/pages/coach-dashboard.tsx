@@ -98,7 +98,7 @@ export default function CoachDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-5 h-5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -108,7 +108,7 @@ export default function CoachDashboard() {
       <div className="p-6 max-w-2xl mx-auto">
         <p className={`text-xs font-semibold uppercase tracking-[0.15em] ${focus.accentText}`}>{greeting}{displayName ? `, Coach ${displayName}` : ""}</p>
         <h1 className="text-2xl font-bold text-white mb-2 mt-1">{focus.headline}</h1>
-        <div className="bg-[#0d1529] border border-slate-800 rounded-xl p-8 text-center mt-6">
+        <div className="bg-[#06070E] border border-border rounded-xl p-8 text-center mt-6">
           <div className={`w-12 h-12 rounded-xl ${focus.accentBg} border ${focus.accentBorder} flex items-center justify-center mx-auto mb-3 ${focus.accentText}`}>
             <focus.icon className="w-6 h-6" />
           </div>
@@ -146,7 +146,7 @@ export default function CoachDashboard() {
                 {focus.focusAreas.map(area => (
                   <span
                     key={area}
-                    className={`text-[11px] font-medium px-2.5 py-1 rounded-full border ${focus.accentBorder} ${focus.accentText} bg-slate-900/30`}
+                    className={`text-[11px] font-medium px-2.5 py-1 rounded-full border ${focus.accentBorder} ${focus.accentText} bg-[#06070E]/40`}
                   >
                     {area}
                   </span>
@@ -168,19 +168,19 @@ export default function CoachDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <StatCard label={`Total ${focus.athleteNoun}`} value={members.length} sub="On your team" icon={Users} accent={`${focus.accentBg} ${focus.accentText}`} />
         <StatCard label={focus.distanceLabel} value={avgMiles.toFixed(1)} sub="avg mi this week" icon={Activity} accent={`${focus.accentBg} ${focus.accentText}`} />
-        <StatCard label="Avg HRV" value={avgHrv != null ? avgHrv.toFixed(1) : "—"} sub={avgHrv != null ? "across team" : "no data yet"} icon={TrendingUp} accent="bg-violet-500/10 text-violet-400" />
+        <StatCard label="Avg HRV" value={avgHrv != null ? avgHrv.toFixed(1) : "—"} sub={avgHrv != null ? "across team" : "no data yet"} icon={TrendingUp} accent="bg-[#F2D2CF]/10 text-[#F2D2CF]" />
       </div>
 
       <div className="mb-6">
-        <div className="bg-[#0d1529] border border-slate-800 rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div className="bg-[#06070E] border border-border rounded-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
             <h2 className="font-semibold text-white text-sm">Athlete Roster</h2>
             <span className="text-slate-500 text-xs">{members.length} athlete{members.length !== 1 ? "s" : ""}</span>
           </div>
 
           {members.length === 0 ? (
             <div className="px-5 py-10 text-center text-sm text-slate-500">
-              No athletes yet. Share your invite code <span className="font-mono text-cyan-400">{team.inviteCode}</span> from the Team page.
+              No athletes yet. Share your invite code <span className="font-mono text-primary">{team.inviteCode}</span> from the Team page.
             </div>
           ) : (
             <div className="divide-y divide-slate-800/60">

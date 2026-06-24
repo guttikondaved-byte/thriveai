@@ -1,7 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120">
-  <rect width="400" height="120" fill="none" />
-  <g transform="translate(20,20)">
-    <!-- Wordmark: 'thrive' -->
-    <text x="0" y="72" font-family="Inter, system-ui, Arial, sans-serif" font-weight="700" font-size="72" fill="#2A504C">thrive</text>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="18" fill="#2A504C"/>
+  <path d="M30 72 Q30 28 55 28" stroke="#F5F5F5" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+  <path d="M38 72 Q38 38 55 38" stroke="#A2AE98" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+  <path d="M46 72 Q46 48 55 48" stroke="#F2D2CF" stroke-width="3.5" stroke-linecap="round" fill="none"/>
 </svg>

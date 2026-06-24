@@ -57,7 +57,7 @@ export default function GpxImport({ onImport, onClose }: Props) {
   };
 
   return (
-    <div className="bg-[#0d1529] border border-slate-700 rounded-xl p-6 mb-6">
+    <div className="bg-[#06070E] border border-border rounded-xl p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-sm font-semibold text-white">Import GPX File</h2>
@@ -75,9 +75,9 @@ export default function GpxImport({ onImport, onClose }: Props) {
           onDrop={onDrop}
           onClick={() => inputRef.current?.click()}
           className={`border-2 border-dashed rounded-lg py-10 flex flex-col items-center gap-3 cursor-pointer transition-colors
-            ${dragging ? "border-cyan-500 bg-cyan-500/5" : "border-slate-700 hover:border-slate-500 hover:bg-slate-800/40"}`}
+            ${dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-[#0e1a19]/40"}`}
         >
-          <Upload size={28} className={dragging ? "text-cyan-400" : "text-slate-500"} />
+          <Upload size={28} className={dragging ? "text-primary" : "text-muted-foreground"} />
           <div className="text-center">
             <p className="text-sm text-slate-300 font-medium">Drop your .gpx file here</p>
             <p className="text-xs text-slate-500 mt-1">or click to browse</p>
@@ -125,7 +125,7 @@ export default function GpxImport({ onImport, onClose }: Props) {
           <div className="flex gap-3 pt-1">
             <Button
               onClick={() => onImport(parsed)}
-              className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold"
+              className="bg-primary hover:bg-primary/80 text-[#F5F5F5] font-semibold"
             >
               Save Activity
             </Button>
@@ -141,7 +141,7 @@ export default function GpxImport({ onImport, onClose }: Props) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-slate-800/60 rounded-lg px-3 py-2.5">
+    <div className="bg-[#0e1a19]/60 rounded-lg px-3 py-2.5">
       <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-0.5">{label}</p>
       <p className="text-sm font-semibold text-white">{value}</p>
     </div>

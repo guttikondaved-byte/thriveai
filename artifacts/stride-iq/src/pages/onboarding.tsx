@@ -74,7 +74,7 @@ const DATA_SOURCES = [
     subtitle: "Works with every GPS watch",
     desc: "Export a .gpx file from Garmin Connect, Apple Health, Coros, Polar, or any GPS watch.",
     badge: "Free",
-    badgeColor: "bg-transparent text-cyan-400 border-cyan-500/30",
+    badgeColor: "bg-transparent text-primary border-primary/30",
   },
   {
     id: "manual" as const,
@@ -114,12 +114,11 @@ function StepIndicator({ step, steps }: { step: number; steps: string[] }) {
 }
 
 const inputCls = (error?: string) =>
-  `w-full bg-slate-800/60 border rounded-lg px-4 py-2.5 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition ${
-    error ? "border-red-500" : "border-slate-700 focus:border-cyan-500"
+  `w-full bg-[#0e1a19]/80 border rounded-lg px-4 py-2.5 text-white placeholder-[#A2AE98]/40 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition ${
+    error ? "border-red-500" : "border-border focus:border-primary"
   }`;
 
 export default function Onboarding() {
-  const basePath = import.meta.env.BASE_URL || "";
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormData>(() => {
     const stored = sessionStorage.getItem("thrive_pending_role");
@@ -246,15 +245,12 @@ export default function Onboarding() {
   const isLastStep = step === steps.length - 1;
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-[#06070E] flex flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-2xl">
 
         {/* Logo */}
         <div className="flex items-center gap-2 mb-10">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center">
-              <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-6 h-6" alt="logo" />
-            </div>
-          <span className="text-lg font-bold text-white tracking-wide">Thrive</span>
+          <img src="/logo.svg" alt="Thrive" className="h-8 w-auto" />
         </div>
 
         <StepIndicator step={step} steps={steps} />
@@ -290,16 +286,16 @@ export default function Onboarding() {
                     onClick={() => { set("role", role.id); setErrors({}); }}
                     className={`relative text-left rounded-xl border p-6 transition-all duration-200
                       ${selected
-                        ? "border-cyan-500 bg-cyan-500/5 shadow-sm scale-[1.01]"
-                        : "border-slate-800 bg-slate-900/50 hover:border-slate-700 hover:bg-slate-800"}`}
+                        ? "border-primary bg-primary/5 shadow-sm scale-[1.01]"
+                        : "border-border bg-[#0e1a19]/50 hover:border-primary/40 hover:bg-[#0e1a19]"}`}
                   >
                     {selected && (
-                      <div className="absolute top-4 right-4 w-5 h-5 rounded-full bg-cyan-500 flex items-center justify-center">
-                        <Check size={12} className="text-slate-900" />
+                      <div className="absolute top-4 right-4 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                        <Check size={12} className="text-[#F5F5F5]" />
                       </div>
                     )}
                     <div className="flex items-center gap-4 mb-4">
-                      <div className="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-[#0e1a19] border border-border flex items-center justify-center shrink-0">
                         <role.Icon className="w-5 h-5 text-slate-400" />
                       </div>
                       <h2 className="text-lg font-medium text-white">{role.label}</h2>
@@ -308,7 +304,7 @@ export default function Onboarding() {
                     <ul className="space-y-1.5">
                       {role.features.map(f => (
                         <li key={f} className="flex items-center gap-2 text-sm text-slate-300">
-                          <svg className="w-3.5 h-3.5 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3.5 h-3.5 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
                           {f}
@@ -391,10 +387,10 @@ export default function Onboarding() {
                   <button key={fl.value} onClick={() => set("fitnessLevel", fl.value)}
                     className={`text-left p-3 rounded-xl border-2 transition-all
                       ${form.fitnessLevel === fl.value
-                        ? "border-cyan-500 bg-cyan-500/10"
-                        : "border-slate-700/60 hover:border-slate-500 bg-slate-800/40"}`}
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50 bg-[#0e1a19]/40"}`}
                   >
-                    <p className={`text-sm font-semibold ${form.fitnessLevel === fl.value ? "text-cyan-400" : "text-white"}`}>{fl.label}</p>
+                    <p className={`text-sm font-semibold ${form.fitnessLevel === fl.value ? "text-primary" : "text-white"}`}>{fl.label}</p>
                     <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">{fl.desc}</p>
                   </button>
                 ))}
@@ -408,8 +404,8 @@ export default function Onboarding() {
                   <button key={g} onClick={() => set("primaryGoal", g)}
                     className={`text-sm px-3 py-1.5 rounded-full border transition-all
                       ${form.primaryGoal === g
-                        ? "border-cyan-500 bg-cyan-500/15 text-cyan-300"
-                        : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"}`}
+                        ? "border-primary bg-primary/15 text-primary"
+                        : "border-border text-muted-foreground hover:border-primary/50 hover:text-slate-200"}`}
                   >
                     {g}
                   </button>
@@ -496,10 +492,10 @@ export default function Onboarding() {
                   <button key={exp.value} onClick={() => set("coachingExp", exp.value)}
                     className={`text-left p-3 rounded-xl border-2 transition-all
                       ${form.coachingExp === exp.value
-                        ? "border-cyan-500 bg-cyan-500/10"
-                        : "border-slate-700/60 hover:border-slate-500 bg-slate-800/40"}`}
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50 bg-[#0e1a19]/40"}`}
                   >
-                    <p className={`text-sm font-semibold ${form.coachingExp === exp.value ? "text-cyan-400" : "text-white"}`}>{exp.label}</p>
+                    <p className={`text-sm font-semibold ${form.coachingExp === exp.value ? "text-primary" : "text-white"}`}>{exp.label}</p>
                     <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">{exp.desc}</p>
                   </button>
                 ))}
@@ -514,8 +510,8 @@ export default function Onboarding() {
                   <button key={f} onClick={() => set("coachFocus", form.coachFocus === f ? "" : f)}
                     className={`text-sm px-3 py-1.5 rounded-full border transition-all
                       ${form.coachFocus === f
-                        ? "border-cyan-500 bg-cyan-500/15 text-cyan-300"
-                        : "border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200"}`}
+                        ? "border-primary bg-primary/15 text-primary"
+                        : "border-border text-muted-foreground hover:border-primary/50 hover:text-slate-200"}`}
                   >
                     {f}
                   </button>
@@ -541,8 +537,8 @@ export default function Onboarding() {
                   <button key={src.id} onClick={() => set("dataSource", src.id)}
                     className={`w-full text-left rounded-xl border-2 p-5 transition-all
                       ${selected
-                        ? "border-cyan-500 bg-cyan-500/10"
-                        : "border-slate-700/60 bg-slate-800/30 hover:border-slate-500"}`}
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-[#0e1a19]/30 hover:border-primary/50"}`}
                   >
                     <div className="flex items-start gap-4">
                       <src.Icon className="w-6 h-6 text-slate-300 shrink-0 mt-0.5" />
@@ -555,8 +551,8 @@ export default function Onboarding() {
                         <p className="text-sm text-slate-400 leading-relaxed">{src.desc}</p>
                       </div>
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all
-                        ${selected ? "border-cyan-500 bg-cyan-500" : "border-slate-600"}`}>
-                        {selected && <Check size={11} className="text-slate-900" />}
+                        ${selected ? "border-primary bg-primary" : "border-slate-600"}`}>
+                        {selected && <Check size={11} className="text-[#F5F5F5]" />}
                       </div>
                     </div>
                   </button>
@@ -585,7 +581,7 @@ export default function Onboarding() {
                 { Icon: Bot, title: "AveraAI Assistant", desc: "Ask AveraAI for advice on periodisation, athlete management, and recovery decisions." },
                 { Icon: TrendingUp, title: "Load Analytics", desc: "Track team-wide training load trends week by week to keep everyone healthy." },
               ].map(({ Icon, title, desc }) => (
-                <div key={title} className="flex gap-4 rounded-xl bg-slate-800/40 border border-slate-700/50 p-4">
+                <div key={title} className="flex gap-4 rounded-xl bg-[#0e1a19]/40 border border-border p-4">
                   <Icon className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-semibold text-white mb-0.5">{title}</p>
@@ -595,8 +591,8 @@ export default function Onboarding() {
               ))}
             </div>
 
-            <div className="rounded-xl bg-cyan-500/10 border border-cyan-500/30 px-5 py-4">
-              <p className="text-sm text-cyan-300 font-medium mb-1">Your invite code is ready</p>
+            <div className="rounded-xl bg-[#F2D2CF]/10 border border-[#F2D2CF]/30 px-5 py-4">
+              <p className="text-sm text-[#F2D2CF] font-medium mb-1">Your invite code is ready</p>
               <p className="text-xs text-slate-400 leading-relaxed">
                 Once you're in the portal, go to Athlete Roster to create your team and get an invite code to share with your athletes.
               </p>
@@ -620,7 +616,7 @@ export default function Onboarding() {
               className={`flex items-center gap-2 px-8 py-3 font-bold rounded-xl transition-all disabled:opacity-60 ${
                 form.dataSource === "strava"
                   ? "bg-[#FC4C02] hover:bg-[#e34400] text-white"
-                  : "bg-cyan-500 hover:bg-cyan-400 text-slate-900"
+                  : "bg-primary hover:bg-primary/80 text-[#F5F5F5]"
               }`}
             >
               {updateProfile.isPending
@@ -633,7 +629,7 @@ export default function Onboarding() {
           ) : (
             <button
               onClick={next}
-              className="flex items-center gap-2 px-8 py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold rounded-xl transition-all"
+              className="flex items-center gap-2 px-8 py-3 bg-primary hover:bg-primary/80 text-[#F5F5F5] font-bold rounded-xl transition-all"
             >
               Continue <ChevronRight size={16} />
             </button>
