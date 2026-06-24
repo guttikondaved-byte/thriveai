@@ -1,5 +1,15 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Activity, Calendar, AlertTriangle, Bot, User, HeartPulse, Users, LogOut } from "lucide-react";
+import {
+  LayoutDashboard,
+  Activity,
+  Calendar,
+  AlertTriangle,
+  Bot,
+  User,
+  HeartPulse,
+  Users,
+  LogOut,
+} from "lucide-react";
 import { useUser, useClerk } from "@clerk/react";
 import NotificationBell from "./NotificationBell";
 
@@ -22,21 +32,30 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { signOut } = useClerk();
 
   const initials = user
-    ? `${user.firstName?.charAt(0) ?? ""}${user.lastName?.charAt(0) ?? ""}`.toUpperCase() || "A"
+    ? `${user.firstName?.charAt(0) ?? ""}${user.lastName?.charAt(0) ?? ""}`.toUpperCase() ||
+      "A"
     : "A";
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       {/* Sidebar */}
-      <aside className="w-60 shrink-0 border-r border-border flex flex-col" data-testid="sidebar">
+      <aside
+        className="w-60 shrink-0 border-r border-border flex flex-col"
+        data-testid="sidebar"
+      >
         <div className="px-6 py-5 border-b border-border flex items-center">
           <div className="flex items-center gap-2">
-            <img src={`${window.location.origin}${basePath || ''}/logo-mark.svg`} alt="Thrive" className="w-10 h-10" />
+            <img
+              src={`${window.location.origin}${basePath || ""}/logo-mark.svg`}
+              alt="Thrive"
+              className="w-10 h-10"
+            />
           </div>
         </div>
         <nav className="flex-1 py-4 px-3 space-y-0.5">
           {navItems.map(({ href, label, icon: Icon }) => {
-            const active = href === "/" ? location === "/" : location.startsWith(href);
+            const active =
+              href === "/" ? location === "/" : location.startsWith(href);
             return (
               <Link
                 key={href}
@@ -48,7 +67,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                 }`}
               >
-                <Icon className={`w-4 h-4 shrink-0 ${active ? "opacity-100" : "opacity-70"}`} />
+                <Icon
+                  className={`w-4 h-4 shrink-0 ${active ? "opacity-100" : "opacity-70"}`}
+                />
                 {label}
               </Link>
             );
@@ -57,7 +78,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="px-4 py-4 border-t border-border space-y-3">
           <div className="flex items-center gap-2">
             {user?.imageUrl ? (
-              <img src={user.imageUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover border border-border" />
+              <img
+                src={user.imageUrl}
+                alt="avatar"
+                className="w-8 h-8 rounded-full object-cover border border-border"
+              />
             ) : (
               <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center text-xs font-bold text-primary">
                 {initials}
@@ -67,7 +92,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <p className="text-xs font-semibold text-foreground truncate">
                 {user?.firstName ?? "Athlete"}
               </p>
-              <p className="text-[10px] text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress ?? ""}</p>
+              <p className="text-[10px] text-muted-foreground truncate">
+                {user?.primaryEmailAddress?.emailAddress ?? ""}
+              </p>
             </div>
           </div>
           <button
@@ -80,7 +107,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Main content */}
+      {/* Main content test */}
       <main className="flex-1 overflow-auto" data-testid="main-content">
         <header className="sticky top-0 z-20 h-14 border-b border-border bg-background/80 backdrop-blur flex items-center justify-end px-6">
           <NotificationBell />
