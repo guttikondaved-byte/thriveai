@@ -17,15 +17,11 @@ const router: IRouter = Router();
 // ── OAuth: redirect user to Strava ─────────────────────────────────────────
 
 function getCallbackUrl(): string {
-  // In development prefer the dev domain so it matches the redirect URI
-  // registered in the Strava app (which points to the janeway.replit.dev URL).
-  // In production prefer the published domain from REPLIT_DOMAINS.
-  const isDev = process.env.NODE_ENV !== "production";
-  const domain = isDev
-    ? (process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(",")[0]?.trim() || "localhost")
-    : (process.env.REPLIT_DOMAINS?.split(",")[0]?.trim() || process.env.REPLIT_DEV_DOMAIN || "localhost");
-  const proto = domain === "localhost" ? "http" : "https";
-  return `${proto}://${domain}/api/strava/callback`;
+  // APP_PUBLIC_URL is the user-facing origin (Netlify in production, vite
+  // dev server locally). Strava redirects the browser to this URL, which
+  // hits Netlify's /api/* proxy and forwards to the api-server.
+  const base = process.env.APP_PUBLIC_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
+  return `${base}/api/strava/callback`;
 }
 
 router.get("/strava/connect", (req, res): void => {

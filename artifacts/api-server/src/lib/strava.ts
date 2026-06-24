@@ -221,9 +221,13 @@ export async function syncStravaActivity(
 }
 
 export function getWebhookCallbackUrl(): string {
-  const domains = process.env.REPLIT_DOMAINS;
-  const primary = domains ? domains.split(",")[0]!.trim() : process.env.REPLIT_DEV_DOMAIN;
-  return `https://${primary}/api/strava/webhook`;
+  // Strava POSTs activity events to this URL. Must be publicly reachable
+  // (Netlify in prod proxies /api/strava/webhook → api-server).
+  const base = process.env.APP_PUBLIC_URL?.replace(/\/$/, "");
+  if (!base) {
+    throw new Error("APP_PUBLIC_URL must be set to register a Strava webhook");
+  }
+  return `${base}/api/strava/webhook`;
 }
 
 export async function registerStravaWebhook(): Promise<{ id: number } | { error: string }> {
