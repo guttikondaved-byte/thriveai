@@ -14,6 +14,7 @@ import {
   GetTrainingPlanResponse,
   DeleteTrainingPlanParams,
 } from "@workspace/api-zod";
+import { z } from "zod";
 import OpenAI from "openai";
 import { logger } from "../lib/logger";
 
@@ -43,6 +44,28 @@ function serializeSession(s: typeof planSessionsTable.$inferSelect) {
     distanceKm: s.distanceKm ? Number(s.distanceKm) : null,
   };
 }
+
+const UpdateTrainingPlanBody = z.object({
+  name: z.string().optional(),
+  goal: z.string().optional(),
+  startDate: z.preprocess((arg) => {
+    if (typeof arg === "string") return new Date(arg);
+    return arg;
+  }, z.date()).optional(),
+  endDate: z.preprocess((arg) => {
+    if (typeof arg === "string") return new Date(arg);
+    return arg;
+  }, z.date()).optional(),
+  weeklyMileage: z.number().nullable().optional(),
+  status: z.enum(["active", "completed", "paused"]).optional(),
+});
+
+const UpdatePlanSessionBody = z.object({
+  completed: z.boolean().optional(),
+  description: z.string().optional(),
+  distanceKm: z.number().nullable().optional(),
+  durationMinutes: z.number().nullable().optional(),
+});
 
 type SessionInsert = typeof planSessionsTable.$inferInsert;
 
@@ -103,7 +126,7 @@ function buildFallbackSessions(
 
   const sessions: SessionInsert[] = [];
   for (let w = 1; w <= Math.min(totalWeeks, 12); w++) {
-    const progressFactor = 1 + Math.floor((w - 1) / 4) * 0.08; // +8% every 4 weeks
+    const progressFactor = 1 + Math.min(0.4, (w - 1) * 0.05); // +5% every week, capped at +40%
     for (const t of template) {
       sessions.push({
         planId,
@@ -192,7 +215,7 @@ Design the 2-week training block now.`;
   const sessions: SessionInsert[] = [];
   for (let w = 1; w <= Math.min(totalWeeks, 12); w++) {
     const sourceWeek = ((w - 1) % 2) + 1; // 1,2,1,2,...
-    const progressFactor = 1 + Math.floor((w - 1) / 4) * 0.08; // +8% every 4 weeks
+    const progressFactor = 1 + Math.min(0.4, (w - 1) * 0.05); // +5% every week, capped at +40%
     const weekTemplate = template.filter((s) => s.weekNumber === sourceWeek);
     for (const s of weekTemplate) {
       sessions.push({
@@ -293,6 +316,110 @@ router.post("/plans", async (req: Request, res): Promise<void> => {
       }
     })
     .catch((err) => logger.error({ err, planId: plan.id }, "Background AI plan generation failed"));
+});
+
+router.patch("/plans/:id", async (req: Request, res): Promise<void> => {
+  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const params = GetTrainingPlanParams.safeParse({ id: parseInt(raw, 10) });
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const parsed = UpdateTrainingPlanBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const userId = req.user!.id;
+  const [plan] = await db
+    .select()
+    .from(trainingPlansTable)
+    .where(and(eq(trainingPlansTable.id, params.data.id), eq(trainingPlansTable.userId, userId)));
+  if (!plan) {
+    res.status(404).json({ error: "Training plan not found" });
+    return;
+  }
+
+  const updateData: Record<string, unknown> = {};
+  if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
+  if (parsed.data.goal !== undefined) updateData.goal = parsed.data.goal;
+  if (parsed.data.startDate !== undefined) updateData.startDate = parsed.data.startDate.toISOString().split("T")[0];
+  if (parsed.data.endDate !== undefined) updateData.endDate = parsed.data.endDate.toISOString().split("T")[0];
+  if (parsed.data.weeklyMileage !== undefined) updateData.weeklyMileage = parsed.data.weeklyMileage === null ? null : String(parsed.data.weeklyMileage);
+  if (parsed.data.status !== undefined) updateData.status = parsed.data.status;
+
+  if (Object.keys(updateData).length === 0) {
+    res.json(GetTrainingPlanResponse.parse({ ...serializePlan(plan), sessions: [] }));
+    return;
+  }
+
+  const [updated] = await db
+    .update(trainingPlansTable)
+    .set(updateData)
+    .where(eq(trainingPlansTable.id, params.data.id))
+    .returning();
+
+  res.json(GetTrainingPlanResponse.parse({ ...serializePlan(updated), sessions: [] }));
+});
+
+router.patch("/plans/:planId/sessions/:sessionId", async (req: Request, res): Promise<void> => {
+  const planIdRaw = Array.isArray(req.params.planId) ? req.params.planId[0] : req.params.planId;
+  const sessionIdRaw = Array.isArray(req.params.sessionId) ? req.params.sessionId[0] : req.params.sessionId;
+  const planId = parseInt(planIdRaw, 10);
+  const sessionId = parseInt(sessionIdRaw, 10);
+  if (Number.isNaN(planId) || Number.isNaN(sessionId)) {
+    res.status(400).json({ error: "Invalid plan or session id" });
+    return;
+  }
+
+  const parsed = UpdatePlanSessionBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const userId = req.user!.id;
+  const [plan] = await db
+    .select()
+    .from(trainingPlansTable)
+    .where(and(eq(trainingPlansTable.id, planId), eq(trainingPlansTable.userId, userId)));
+
+  if (!plan) {
+    res.status(404).json({ error: "Training plan not found" });
+    return;
+  }
+
+  const updateData: Record<string, unknown> = {};
+  if (parsed.data.completed !== undefined) updateData.completed = parsed.data.completed;
+  if (parsed.data.description !== undefined) updateData.description = parsed.data.description;
+  if (parsed.data.distanceKm !== undefined) updateData.distanceKm = parsed.data.distanceKm === null ? null : String(parsed.data.distanceKm);
+  if (parsed.data.durationMinutes !== undefined) updateData.durationMinutes = parsed.data.durationMinutes;
+
+  if (Object.keys(updateData).length === 0) {
+    const [session] = await db.select().from(planSessionsTable).where(eq(planSessionsTable.id, sessionId)).limit(1);
+    if (!session) {
+      res.status(404).json({ error: "Plan session not found" });
+      return;
+    }
+
+    res.json(serializeSession(session));
+    return;
+  }
+
+  const [updatedSession] = await db
+    .update(planSessionsTable)
+    .set(updateData)
+    .where(and(eq(planSessionsTable.id, sessionId), eq(planSessionsTable.planId, planId)))
+    .returning();
+
+  if (!updatedSession) {
+    res.status(404).json({ error: "Plan session not found" });
+    return;
+  }
+
+  res.json(serializeSession(updatedSession));
 });
 
 router.get("/plans/:id", async (req: Request, res): Promise<void> => {

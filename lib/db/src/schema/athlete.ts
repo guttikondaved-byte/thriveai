@@ -24,6 +24,9 @@ export const athleteProfileTable = pgTable("athlete_profile", {
   prHalf: text("pr_half"),
   prMarathon: text("pr_marathon"),
   healthNotes: text("health_notes"),
+  injuryRiskScore: numeric("injury_risk_score", { precision: 5, scale: 0 }),
+  injuryRiskLevel: text("injury_risk_level"),
+  injuryRiskUpdatedAt: timestamp("injury_risk_updated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

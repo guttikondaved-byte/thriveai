@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, desc } from "drizzle-orm";
 import { db, injuriesTable, athleteProfileTable } from "@workspace/db";
+import { recalculateInjuryRisk } from "../lib/injuryRisk";
 import {
   ListInjuriesResponse,
   CreateInjuryBody,
@@ -81,6 +82,7 @@ router.post("/injuries", async (req, res): Promise<void> => {
       notes: d.notes ?? null,
     })
     .returning();
+  await recalculateInjuryRisk(req.user.id).catch(() => undefined);
   res.status(201).json(serializeInjury(row));
 });
 
@@ -107,6 +109,7 @@ router.patch("/injuries/:id", async (req, res): Promise<void> => {
     .where(and(eq(injuriesTable.id, idParam.data.id), eq(injuriesTable.profileId, profileId)))
     .returning();
   if (!row) { res.status(404).json({ error: "Not found" }); return; }
+  await recalculateInjuryRisk(req.user.id).catch(() => undefined);
   res.json(serializeInjury(row));
 });
 
@@ -121,6 +124,7 @@ router.delete("/injuries/:id", async (req, res): Promise<void> => {
     .where(and(eq(injuriesTable.id, idParam.data.id), eq(injuriesTable.profileId, profileId)))
     .returning();
   if (!row) { res.status(404).json({ error: "Not found" }); return; }
+  await recalculateInjuryRisk(req.user.id).catch(() => undefined);
   res.sendStatus(204);
 });
 

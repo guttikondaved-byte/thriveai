@@ -184,6 +184,29 @@ paths:
                 $ref: "#/components/schemas/TrainingPlanDetail"
         "404":
           description: Not found
+    patch:
+      operationId: updateTrainingPlan
+      tags: [plans]
+      summary: Update a training plan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingPlanUpdate"
+      responses:
+        "200":
+          description: Updated training plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingPlanDetail"
     delete:
       operationId: deleteTrainingPlan
       tags: [plans]
@@ -197,6 +220,36 @@ paths:
       responses:
         "204":
           description: Deleted
+
+  /plans/{planId}/sessions/{sessionId}:
+    patch:
+      operationId: updatePlanSession
+      tags: [plans]
+      summary: Update a plan session
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanSessionUpdate"
+      responses:
+        "200":
+          description: Updated plan session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanSession"
 
   /alerts:
     get:
@@ -800,6 +853,14 @@ components:
           type: ["string", "null"]
         healthNotes:
           type: ["string", "null"]
+        injuryRiskScore:
+          type: ["number", "null"]
+        injuryRiskLevel:
+          type: ["string", "null"]
+          enum: [low, medium, high, critical, null]
+        injuryRiskUpdatedAt:
+          type: ["string", "null"]
+          format: date-time
         contactMethod:
           type: ["string", "null"]
           enum: [email, phone, null]
@@ -1183,9 +1244,35 @@ components:
           type: number
       required:
         - name
-        - goal
-        - startDate
-        - endDate
+    TrainingPlanUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        goal:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        weeklyMileage:
+          type: ["number", "null"]
+        status:
+          type: string
+          enum: [active, completed, paused]
+    PlanSessionUpdate:
+      type: object
+      properties:
+        completed:
+          type: boolean
+        description:
+          type: string
+        distanceKm:
+          type: ["number", "null"]
+        durationMinutes:
+          type: ["integer", "null"]
 
     InjuryAlert:
       type: object
@@ -1239,6 +1326,11 @@ components:
         trainingLoad:
           type: string
           enum: [low, moderate, high, very_high]
+        injuryRiskScore:
+          type: ["number", "null"]
+        injuryRiskLevel:
+          type: ["string", "null"]
+          enum: [low, medium, high, critical, null]
       required:
         - weeklyDistanceKm
         - weeklyRuns

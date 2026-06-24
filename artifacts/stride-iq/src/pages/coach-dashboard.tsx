@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { TrendingUp, Users, Activity, ChevronRight } from "lucide-react";
+import { TrendingUp, Users, Activity, Copy, Link as LinkIcon } from "lucide-react";
 import { useGetAthleteProfile, useGetCurrentAuthUser } from "@workspace/api-client-react";
-import AthleteProfileModal from "../components/AthleteProfileModal";
+import { useToast } from "@/hooks/use-toast";
 import { getFocusConfig } from "@/lib/coachingFocus";
 
 function greetingFor(date: Date): string {
@@ -61,14 +61,41 @@ export default function CoachDashboard() {
   const [team, setTeam] = useState<TeamInfo | null>(null);
   const [members, setMembers] = useState<RosterMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const { data: authData } = useGetCurrentAuthUser();
   const { data: profile } = useGetAthleteProfile();
+  const { toast } = useToast();
   const focus = getFocusConfig(profile?.primaryGoal);
   const authName = [authData?.user?.firstName, authData?.user?.lastName].filter(Boolean).join(" ");
   const profileName = profile?.name && profile.name.toLowerCase() !== "athlete" ? profile.name : "";
   const displayName = profileName || authName;
   const greeting = greetingFor(new Date());
+
+  function copyCode() {
+    if (!team) return;
+    navigator.clipboard.writeText(team.inviteCode);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  }
+
+  function regenerateCode() {
+    if (!team) return;
+    setRegenerating(true);
+    fetch("/api/teams/code", { method: "PATCH", credentials: "include" })
+      .then(async r => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
+      .then(data => {
+        setTeam(prev => prev ? { ...prev, inviteCode: data.inviteCode } : prev);
+        toast({ title: "New code generated", description: "Old code is now invalid." });
+      })
+      .catch(() => {
+        toast({ title: "Failed to regenerate code", variant: "destructive" });
+      })
+      .finally(() => setRegenerating(false));
+  }
 
   useEffect(() => {
     fetch("/api/teams/my", { credentials: "include" })
@@ -127,6 +154,40 @@ export default function CoachDashboard() {
         <p className="text-slate-500 text-sm mt-0.5">{team.name} · {members.length} {focus.athleteNoun}</p>
       </div>
 
+      {team && (
+        <div className="mb-8 bg-card border border-border rounded-xl p-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <LinkIcon className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Team invite code</p>
+              <p className="text-xs text-muted-foreground">Share this code with athletes so they can join your roster.</p>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-[1.5fr_auto]">
+            <div className="bg-secondary/50 border border-border rounded-xl px-5 py-4 font-mono text-xl font-semibold text-primary tracking-[0.2em] text-center">
+              {team.inviteCode}
+            </div>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={copyCode}
+                className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+              >
+                {copied ? "Copied" : "Copy code"}
+              </button>
+              <button
+                onClick={regenerateCode}
+                disabled={regenerating}
+                className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                {regenerating ? "Regenerating…" : "Regenerate code"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Discipline-tuned focus banner */}
       <div className={`mb-8 rounded-xl border ${focus.accentBorder} ${focus.accentBg} p-5`}>
         <div className="flex items-start gap-4">
@@ -171,63 +232,6 @@ export default function CoachDashboard() {
         <StatCard label="Avg HRV" value={avgHrv != null ? avgHrv.toFixed(1) : "—"} sub={avgHrv != null ? "across team" : "no data yet"} icon={TrendingUp} accent="bg-[#F2D2CF]/10 text-[#F2D2CF]" />
       </div>
 
-      <div className="mb-6">
-        <div className="bg-[#06070E] border border-border rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <h2 className="font-semibold text-white text-sm">Athlete Roster</h2>
-            <span className="text-slate-500 text-xs">{members.length} athlete{members.length !== 1 ? "s" : ""}</span>
-          </div>
-
-          {members.length === 0 ? (
-            <div className="px-5 py-10 text-center text-sm text-slate-500">
-              No athletes yet. Share your invite code <span className="font-mono text-primary">{team.inviteCode}</span> from the Team page.
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-800/60">
-              {members.map((athlete) => {
-                const cfg = athlete.riskLevel ? RISK_CONFIG[athlete.riskLevel] : null;
-                const badge = cfg ?? READY;
-                return (
-                  <button
-                    key={athlete.userId}
-                    onClick={() => setSelectedUserId(athlete.userId)}
-                    className={`w-full flex items-center gap-4 px-5 py-3.5 text-left hover:bg-slate-800/30 transition-colors ${cfg?.row ?? ""}`}
-                  >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
-                      {athlete.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-white truncate">{athlete.name}</div>
-                      <div className="text-xs text-slate-500 truncate">{athlete.primaryGoal ?? (athlete.fitnessLevel ? `${athlete.fitnessLevel} runner` : "Athlete")}</div>
-                    </div>
-                    <div className="text-right hidden sm:block">
-                      <div className="text-xs text-slate-300 font-medium">{athlete.weeklyDistanceKm.toFixed(1)} mi</div>
-                      <div className="text-[10px] text-slate-600">this week</div>
-                    </div>
-                    <div className="text-right hidden md:block">
-                      <div className="text-xs text-slate-300 font-medium">{athlete.restingHeartRate != null ? `HR ${athlete.restingHeartRate}` : "HR —"}</div>
-                      <div className="text-[10px] text-slate-600">{athlete.hrv != null ? `HRV ${athlete.hrv.toFixed(0)}` : "HRV —"}</div>
-                    </div>
-                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium flex-shrink-0 ${badge.badge}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
-                      {badge.label}
-                    </div>
-                    <ChevronRight size={14} className="text-slate-600 flex-shrink-0" />
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {selectedUserId && (
-        <AthleteProfileModal
-          teamId={team.id}
-          userId={selectedUserId}
-          onClose={() => setSelectedUserId(null)}
-        />
-      )}
     </div>
   );
 }

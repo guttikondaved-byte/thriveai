@@ -18,6 +18,7 @@ import Alerts from "@/pages/alerts";
 import History from "@/pages/history";
 import Coach from "@/pages/coach";
 import Profile from "@/pages/profile";
+import CoachProfile from "@/pages/coach-profile";
 import Onboarding from "@/pages/onboarding";
 import CoachDashboard from "@/pages/coach-dashboard";
 import CoachPlans from "@/pages/coach-plans";

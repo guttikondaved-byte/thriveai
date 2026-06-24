@@ -8,6 +8,7 @@ import {
   GetActivityResponse,
   ListActivitiesQueryParams,
 } from "@workspace/api-zod";
+import { recalculateInjuryRisk } from "../lib/injuryRisk";
 
 const router: IRouter = Router();
 
@@ -72,6 +73,7 @@ router.post("/activities", async (req: Request, res): Promise<void> => {
   if (parsed.data.notes !== undefined) insertData.notes = parsed.data.notes;
 
   const [activity] = await db.insert(activitiesTable).values(insertData as Parameters<typeof db.insert>[0] extends { values: (v: infer V) => unknown } ? V : never).returning();
+  await recalculateInjuryRisk(userId).catch(() => undefined);
   res.status(201).json(GetActivityResponse.parse(serializeActivity(activity)));
 });
 

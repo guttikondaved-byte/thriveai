@@ -1,8 +1,7 @@
 import { Router, type Request, type IRouter } from "express";
-import { gte, and } from "drizzle-orm";
-import { db, activitiesTable, injuryAlertsTable, trainingPlansTable } from "@workspace/db";
+import { gte, and, eq } from "drizzle-orm";
+import { db, activitiesTable, injuryAlertsTable, trainingPlansTable, athleteProfileTable } from "@workspace/db";
 import { GetDashboardSummaryResponse } from "@workspace/api-zod";
-import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -12,11 +11,14 @@ router.get("/dashboard/summary", async (req: Request, res): Promise<void> => {
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   const oneWeekAgoStr = oneWeekAgo.toISOString().split("T")[0];
 
-  const [allActivities, allAlerts, allPlans] = await Promise.all([
+  const [allActivities, allAlerts, allPlans, profileRows] = await Promise.all([
     db.select().from(activitiesTable).where(and(eq(activitiesTable.userId, userId), gte(activitiesTable.activityDate, oneWeekAgoStr))),
     db.select().from(injuryAlertsTable).where(and(eq(injuryAlertsTable.userId, userId), eq(injuryAlertsTable.acknowledged, false))),
     db.select().from(trainingPlansTable).where(and(eq(trainingPlansTable.userId, userId), eq(trainingPlansTable.status, "active"))).limit(1),
+    db.select().from(athleteProfileTable).where(eq(athleteProfileTable.userId, userId)).limit(1),
   ]);
+
+  const profile = profileRows[0] ?? null;
 
   const recentActivities = await db
     .select()
@@ -55,6 +57,8 @@ router.get("/dashboard/summary", async (req: Request, res): Promise<void> => {
     })),
     hrvTrend: null,
     trainingLoad,
+    injuryRiskScore: profile?.injuryRiskScore ? Number(profile.injuryRiskScore) : null,
+    injuryRiskLevel: profile?.injuryRiskLevel ?? null,
   }));
 });
 

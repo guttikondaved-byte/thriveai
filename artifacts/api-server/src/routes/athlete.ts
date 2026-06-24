@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, athleteProfileTable } from "@workspace/db";
+import { recalculateInjuryRisk } from "../lib/injuryRisk";
 import { GetAthleteProfileResponse, UpdateAthleteProfileBody, UpdateAthleteProfileResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -92,6 +93,8 @@ router.patch("/athlete/profile", async (req, res): Promise<void> => {
     .set(updateData)
     .where(eq(athleteProfileTable.id, existing.id))
     .returning();
+
+  await recalculateInjuryRisk(req.user.id).catch(() => undefined);
 
   res.json(UpdateAthleteProfileResponse.parse({
     ...updated,

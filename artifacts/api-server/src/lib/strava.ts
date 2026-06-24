@@ -1,6 +1,7 @@
 import { db, stravaTokensTable, activitiesTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { logger } from "./logger";
+import { recalculateInjuryRisk } from "./injuryRisk";
 
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
@@ -217,6 +218,7 @@ export async function syncStravaActivity(
     ...(bestEfforts ? { bestEfforts } : {}),
   });
 
+  await recalculateInjuryRisk(userId).catch(() => undefined);
   logger.info({ userId, stravaActivityId }, "Synced Strava activity");
 }
 

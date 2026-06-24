@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, teamsTable, teamMembershipsTable, usersTable, athleteProfileTable, notificationsTable, stravaTokensTable, activitiesTable, injuryAlertsTable } from "@workspace/db";
+import { db, teamsTable, teamMembershipsTable, usersTable, athleteProfileTable, notificationsTable, stravaTokensTable, activitiesTable, injuryAlertsTable, coachProfileTable } from "@workspace/db";
 import { eq, and, inArray, desc, gte } from "drizzle-orm";
 import crypto from "crypto";
 
@@ -9,12 +9,123 @@ function generateInviteCode(): string {
   return crypto.randomBytes(4).toString("hex").toUpperCase();
 }
 
+// ===== COACH PROFILE ROUTES =====
+
+// GET /coach/profile — get coach's profile info
+router.get("/coach/profile", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const [profile] = await db.select({ userRole: athleteProfileTable.userRole })
+    .from(athleteProfileTable)
+    .where(eq(athleteProfileTable.userId, req.user.id))
+    .limit(1);
+  
+  if (profile?.userRole !== "coach") {
+    res.status(403).json({ error: "Only coaches can access this endpoint" });
+    return;
+  }
+
+  const [coachProfile] = await db.select().from(coachProfileTable)
+    .where(eq(coachProfileTable.userId, req.user.id))
+    .limit(1);
+
+  const [user] = await db.select().from(usersTable)
+    .where(eq(usersTable.id, req.user.id))
+    .limit(1);
+
+  // Get stats
+  const teams = await db.select().from(teamsTable)
+    .where(eq(teamsTable.coachUserId, req.user.id));
+
+  let totalAthletes = 0;
+  if (teams.length > 0) {
+    const teamIds = teams.map(t => t.id);
+    const members = await db.select()
+      .from(teamMembershipsTable)
+      .where(inArray(teamMembershipsTable.teamId, teamIds));
+    totalAthletes = members.length;
+  }
+
+  res.json({
+    userId: req.user.id,
+    email: user?.email ?? null,
+    firstName: user?.firstName ?? null,
+    lastName: user?.lastName ?? null,
+    profileImageUrl: user?.profileImageUrl ?? null,
+    bio: coachProfile?.bio ?? null,
+    certifications: coachProfile?.certifications ? JSON.parse(coachProfile.certifications) : [],
+    experience: coachProfile?.experience ?? null,
+    specialties: coachProfile?.specialties ? JSON.parse(coachProfile.specialties) : [],
+    teamsManaged: teams.length,
+    athletesCached: totalAthletes,
+  });
+});
+
+// POST /coach/profile — create or update coach profile
+router.post("/coach/profile", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const [profile] = await db.select({ userRole: athleteProfileTable.userRole })
+    .from(athleteProfileTable)
+    .where(eq(athleteProfileTable.userId, req.user.id))
+    .limit(1);
+  
+  if (profile?.userRole !== "coach") {
+    res.status(403).json({ error: "Only coaches can access this endpoint" });
+    return;
+  }
+
+  const { bio, certifications, experience, specialties } = req.body;
+
+  const existing = await db.select().from(coachProfileTable)
+    .where(eq(coachProfileTable.userId, req.user.id))
+    .limit(1);
+
+  let result;
+  if (existing.length > 0) {
+    [result] = await db.update(coachProfileTable)
+      .set({
+        bio,
+        certifications: certifications ? JSON.stringify(certifications) : null,
+        experience,
+        specialties: specialties ? JSON.stringify(specialties) : null,
+      })
+      .where(eq(coachProfileTable.userId, req.user.id))
+      .returning();
+  } else {
+    [result] = await db.insert(coachProfileTable).values({
+      userId: req.user.id,
+      bio,
+      certifications: certifications ? JSON.stringify(certifications) : null,
+      experience,
+      specialties: specialties ? JSON.stringify(specialties) : null,
+    }).returning();
+  }
+
+  res.json({
+    userId: result.userId,
+    bio: result.bio,
+    certifications: result.certifications ? JSON.parse(result.certifications) : [],
+    experience: result.experience,
+    specialties: result.specialties ? JSON.parse(result.specialties) : [],
+  });
+});
+
+// ===== TEAM ROUTES =====
+
+// POST /teams — create a new team for coach
 router.post("/teams", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  const { name } = req.body;
+  const { name, category } = req.body;
   if (!name || typeof name !== "string") {
     res.status(400).json({ error: "Team name is required" });
     return;
@@ -29,25 +140,6 @@ router.post("/teams", async (req, res): Promise<void> => {
     return;
   }
 
-  // A coach has exactly one team. Make creation idempotent: if they already have a
-  // team, return it instead of inserting a duplicate. This protects against double
-  // submits, onboarding auto-create racing with a manual create, and re-onboarding.
-  const [existingTeam] = await db.select().from(teamsTable)
-    .where(eq(teamsTable.coachUserId, req.user.id))
-    .orderBy(desc(teamsTable.createdAt))
-    .limit(1);
-  if (existingTeam) {
-    const members = await db.select().from(teamMembershipsTable).where(eq(teamMembershipsTable.teamId, existingTeam.id));
-    res.status(200).json({
-      id: existingTeam.id,
-      name: existingTeam.name,
-      inviteCode: existingTeam.inviteCode,
-      memberCount: members.length,
-      createdAt: existingTeam.createdAt.toISOString(),
-    });
-    return;
-  }
-
   let inviteCode = generateInviteCode();
   let attempts = 0;
   while (attempts < 5) {
@@ -59,6 +151,7 @@ router.post("/teams", async (req, res): Promise<void> => {
 
   const [team] = await db.insert(teamsTable).values({
     name,
+    category: category ?? "General Running",
     coachUserId: req.user.id,
     inviteCode,
   }).returning();
@@ -66,36 +159,85 @@ router.post("/teams", async (req, res): Promise<void> => {
   res.status(201).json({
     id: team.id,
     name: team.name,
+    category: team.category,
     inviteCode: team.inviteCode,
     memberCount: 0,
     createdAt: team.createdAt.toISOString(),
   });
 });
 
+// GET /coach/teams — list all teams managed by this coach
+router.get("/coach/teams", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const [profile] = await db.select({ userRole: athleteProfileTable.userRole })
+    .from(athleteProfileTable)
+    .where(eq(athleteProfileTable.userId, req.user.id))
+    .limit(1);
+  
+  if (profile?.userRole !== "coach") {
+    res.status(403).json({ error: "Only coaches can access this endpoint" });
+    return;
+  }
+
+  const teams = await db.select().from(teamsTable)
+    .where(eq(teamsTable.coachUserId, req.user.id))
+    .orderBy(desc(teamsTable.createdAt));
+
+  const result = [];
+  for (const team of teams) {
+    const members = await db.select().from(teamMembershipsTable)
+      .where(eq(teamMembershipsTable.teamId, team.id));
+    result.push({
+      id: team.id,
+      name: team.name,
+      category: team.category,
+      inviteCode: team.inviteCode,
+      memberCount: members.length,
+      createdAt: team.createdAt.toISOString(),
+    });
+  }
+
+  res.json(result);
+});
+
+// GET /teams/my — get user's current team (backward compatibility)
 router.get("/teams/my", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
-  const coachTeam = await db.select().from(teamsTable).where(eq(teamsTable.coachUserId, req.user.id)).orderBy(desc(teamsTable.createdAt)).limit(1);
+  // Check if user is a coach
+  const coachTeam = await db.select().from(teamsTable)
+    .where(eq(teamsTable.coachUserId, req.user.id))
+    .orderBy(desc(teamsTable.createdAt))
+    .limit(1);
+  
   if (coachTeam.length > 0) {
     const t = coachTeam[0];
-    const members = await db.select().from(teamMembershipsTable).where(eq(teamMembershipsTable.teamId, t.id));
-    res.json({ team: { id: t.id, name: t.name, inviteCode: t.inviteCode, memberCount: members.length, createdAt: t.createdAt.toISOString() } });
+    const members = await db.select().from(teamMembershipsTable)
+      .where(eq(teamMembershipsTable.teamId, t.id));
+    res.json({ team: { id: t.id, name: t.name, category: t.category, inviteCode: t.inviteCode, memberCount: members.length, createdAt: t.createdAt.toISOString() } });
     return;
   }
 
+  // Check if user is an athlete member
   const membership = await db.select({ teamId: teamMembershipsTable.teamId })
     .from(teamMembershipsTable)
     .where(eq(teamMembershipsTable.athleteUserId, req.user.id))
     .limit(1);
 
   if (membership.length > 0) {
-    const [t] = await db.select().from(teamsTable).where(eq(teamsTable.id, membership[0].teamId));
+    const [t] = await db.select().from(teamsTable)
+      .where(eq(teamsTable.id, membership[0].teamId));
     if (t) {
-      const members = await db.select().from(teamMembershipsTable).where(eq(teamMembershipsTable.teamId, t.id));
-      res.json({ team: { id: t.id, name: t.name, inviteCode: t.inviteCode, memberCount: members.length, createdAt: t.createdAt.toISOString() } });
+      const members = await db.select().from(teamMembershipsTable)
+        .where(eq(teamMembershipsTable.teamId, t.id));
+      res.json({ team: { id: t.id, name: t.name, category: t.category, inviteCode: t.inviteCode, memberCount: members.length, createdAt: t.createdAt.toISOString() } });
       return;
     }
   }
@@ -103,17 +245,75 @@ router.get("/teams/my", async (req, res): Promise<void> => {
   res.json({ team: null });
 });
 
+// PATCH /teams/:teamId — update team (name, category)
+router.patch("/teams/:teamId", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const teamId = Number(req.params.teamId);
+  if (isNaN(teamId)) {
+    res.status(400).json({ error: "Invalid team id" });
+    return;
+  }
+
+  const [team] = await db.select().from(teamsTable)
+    .where(eq(teamsTable.id, teamId))
+    .limit(1);
+
+  if (!team || team.coachUserId !== req.user.id) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const { name, category } = req.body;
+  const updates: Partial<typeof teamsTable.$inferInsert> = {};
+  
+  if (name) updates.name = name;
+  if (category) updates.category = category;
+
+  const [updated] = await db.update(teamsTable)
+    .set(updates)
+    .where(eq(teamsTable.id, teamId))
+    .returning();
+
+  const members = await db.select().from(teamMembershipsTable)
+    .where(eq(teamMembershipsTable.teamId, teamId));
+
+  res.json({
+    id: updated.id,
+    name: updated.name,
+    category: updated.category,
+    inviteCode: updated.inviteCode,
+    memberCount: members.length,
+    createdAt: updated.createdAt.toISOString(),
+  });
+});
+
+// GET /teams/invite/:inviteCode — verify invite code exists
 router.get("/teams/invite/:inviteCode", async (req, res): Promise<void> => {
   const { inviteCode } = req.params;
-  const [team] = await db.select().from(teamsTable).where(eq(teamsTable.inviteCode, inviteCode)).limit(1);
+  const [team] = await db.select().from(teamsTable)
+    .where(eq(teamsTable.inviteCode, inviteCode.toUpperCase()))
+    .limit(1);
   if (!team) {
     res.status(404).json({ error: "Invite code not found" });
     return;
   }
-  const members = await db.select().from(teamMembershipsTable).where(eq(teamMembershipsTable.teamId, team.id));
-  res.json({ id: team.id, name: team.name, inviteCode: team.inviteCode, memberCount: members.length, createdAt: team.createdAt.toISOString() });
+  const members = await db.select().from(teamMembershipsTable)
+    .where(eq(teamMembershipsTable.teamId, team.id));
+  res.json({ 
+    id: team.id, 
+    name: team.name, 
+    category: team.category,
+    inviteCode: team.inviteCode, 
+    memberCount: members.length, 
+    createdAt: team.createdAt.toISOString() 
+  });
 });
 
+// POST /teams/join — athlete joins team via invite code
 router.post("/teams/join", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
@@ -125,7 +325,9 @@ router.post("/teams/join", async (req, res): Promise<void> => {
     return;
   }
 
-  const [team] = await db.select().from(teamsTable).where(eq(teamsTable.inviteCode, inviteCode.toUpperCase())).limit(1);
+  const [team] = await db.select().from(teamsTable)
+    .where(eq(teamsTable.inviteCode, inviteCode.toUpperCase()))
+    .limit(1);
   if (!team) {
     res.status(404).json({ error: "Invite code not found" });
     return;
@@ -150,10 +352,19 @@ router.post("/teams/join", async (req, res): Promise<void> => {
     });
   }
 
-  const members = await db.select().from(teamMembershipsTable).where(eq(teamMembershipsTable.teamId, team.id));
-  res.json({ id: team.id, name: team.name, inviteCode: team.inviteCode, memberCount: members.length, createdAt: team.createdAt.toISOString() });
+  const members = await db.select().from(teamMembershipsTable)
+    .where(eq(teamMembershipsTable.teamId, team.id));
+  res.json({ 
+    id: team.id, 
+    name: team.name, 
+    category: team.category,
+    inviteCode: team.inviteCode, 
+    memberCount: members.length, 
+    createdAt: team.createdAt.toISOString() 
+  });
 });
 
+// GET /teams/:teamId/members — get roster with stats
 router.get("/teams/:teamId/members", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
@@ -284,7 +495,7 @@ router.get("/teams/:teamId/strava-status", async (req, res): Promise<void> => {
   })));
 });
 
-// GET /teams/:teamId/members/:userId/profile — coach views a single athlete's full profile
+// GET /teams/:teamId/members/:userId/profile — coach views athlete's full profile
 router.get("/teams/:teamId/members/:userId/profile", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
@@ -376,20 +587,25 @@ router.get("/teams/:teamId/members/:userId/profile", async (req, res): Promise<v
   });
 });
 
-// PATCH /teams/code — coach regenerates their team's invite code
-router.patch("/teams/code", async (req, res): Promise<void> => {
+// PATCH /teams/:teamId/code — regenerate invite code for a team
+router.patch("/teams/:teamId/code", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
+  const teamId = Number(req.params.teamId);
+  if (isNaN(teamId)) {
+    res.status(400).json({ error: "Invalid team id" });
+    return;
+  }
+
   const [team] = await db.select().from(teamsTable)
-    .where(eq(teamsTable.coachUserId, req.user.id))
-    .orderBy(desc(teamsTable.createdAt))
+    .where(and(eq(teamsTable.id, teamId), eq(teamsTable.coachUserId, req.user.id)))
     .limit(1);
 
   if (!team) {
-    res.status(404).json({ error: "No team found for this coach" });
+    res.status(404).json({ error: "Team not found" });
     return;
   }
 
@@ -406,34 +622,39 @@ router.patch("/teams/code", async (req, res): Promise<void> => {
 
   const [updated] = await db.update(teamsTable)
     .set({ inviteCode: newCode })
-    .where(eq(teamsTable.id, team.id))
+    .where(eq(teamsTable.id, teamId))
     .returning();
 
   res.json({ inviteCode: updated.inviteCode });
 });
 
-// DELETE /teams — coach deletes their team (removes all memberships first)
-router.delete("/teams", async (req, res): Promise<void> => {
+// DELETE /teams/:teamId — delete a specific team
+router.delete("/teams/:teamId", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
+  const teamId = Number(req.params.teamId);
+  if (isNaN(teamId)) {
+    res.status(400).json({ error: "Invalid team id" });
+    return;
+  }
+
   const [team] = await db.select().from(teamsTable)
-    .where(eq(teamsTable.coachUserId, req.user.id))
-    .orderBy(desc(teamsTable.createdAt))
+    .where(eq(teamsTable.id, teamId))
     .limit(1);
 
-  if (!team) {
-    res.status(404).json({ error: "No team found for this coach" });
+  if (!team || team.coachUserId !== req.user.id) {
+    res.status(403).json({ error: "Forbidden" });
     return;
   }
 
   await db.delete(teamMembershipsTable)
-    .where(eq(teamMembershipsTable.teamId, team.id));
+    .where(eq(teamMembershipsTable.teamId, teamId));
 
   await db.delete(teamsTable)
-    .where(eq(teamsTable.id, team.id));
+    .where(eq(teamsTable.id, teamId));
 
   res.status(204).end();
 });
