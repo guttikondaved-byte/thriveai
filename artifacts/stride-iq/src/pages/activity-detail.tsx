@@ -17,12 +17,12 @@ const ACTIVITY_LABELS: Record<string, string> = {
 
 const ACTIVITY_COLORS: Record<string, string> = {
   easy_run: "text-[#10b981] bg-[#10b981]/10 border-[#10b981]/20",
-  tempo_run: "text-[#3b82f6] bg-[#3b82f6]/10 border-[#3b82f6]/20",
-  interval: "text-[#8b5cf6] bg-[#8b5cf6]/10 border-[#8b5cf6]/20",
+  tempo_run: "text-[#A2AE98] bg-[#A2AE98]/10 border-[#A2AE98]/20",
+  interval: "text-[#F2D2CF] bg-[#F2D2CF]/10 border-[#F2D2CF]/20",
   long_run: "text-[#f59e0b] bg-[#f59e0b]/10 border-[#f59e0b]/20",
   race: "text-[#ef4444] bg-[#ef4444]/10 border-[#ef4444]/20",
-  cross_training: "text-[#06b6d4] bg-[#06b6d4]/10 border-[#06b6d4]/20",
-  rest: "text-slate-400 bg-slate-800 border-slate-700",
+  cross_training: "text-primary bg-primary/10 border-primary/20",
+  rest: "text-slate-400 bg-secondary border-border",
 };
 
 const M_PER_MILE = 1609.344;
@@ -148,14 +148,14 @@ export default function ActivityDetail() {
             <span className="text-[11px] font-medium uppercase tracking-wide">Route</span>
           </div>
           <svg viewBox={`0 0 ${mapW} ${mapH}`} className="w-full h-auto" preserveAspectRatio="xMidYMid meet" data-testid="route-map">
-            <path d={routePath} fill="none" stroke="#06b6d4" strokeWidth={3} strokeLinejoin="round" strokeLinecap="round" />
+            <path d={routePath} fill="none" stroke="#357A74" strokeWidth={3} strokeLinejoin="round" strokeLinecap="round" />
             {(() => {
               const start = parsePoint(polyPoints[0]!);
               const end = parsePoint(polyPoints[polyPoints.length - 1]!);
               return (
                 <>
-                  <circle cx={start.x} cy={start.y} r={5} fill="#10b981" stroke="#0b1220" strokeWidth={2} />
-                  <circle cx={end.x} cy={end.y} r={5} fill="#ef4444" stroke="#0b1220" strokeWidth={2} />
+                  <circle cx={start.x} cy={start.y} r={5} fill="#10b981" stroke="#06070E" strokeWidth={2} />
+                  <circle cx={end.x} cy={end.y} r={5} fill="#ef4444" stroke="#06070E" strokeWidth={2} />
                 </>
               );
             })()}

@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
-import { Plus, X, Trash2, Calendar, ChevronDown, ChevronUp, Loader2, Check } from "lucide-react";
+import { Plus, X, Trash2, Calendar, ChevronDown, ChevronUp, Bot, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-
-const basePath = import.meta.env.BASE_URL || "";
 
 interface Athlete {
   userId: string;
@@ -194,7 +192,7 @@ export default function CoachPlans() {
   if (loading) {
     return (
       <div className="p-8 space-y-4">
-        {[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-white/5 border border-slate-800 rounded-xl animate-pulse" />)}
+        {[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-white/5 border border-border rounded-xl animate-pulse" />)}
       </div>
     );
   }
@@ -208,14 +206,14 @@ export default function CoachPlans() {
           <h1 className="text-2xl font-bold text-white">Training Plans</h1>
           <p className="text-sm text-slate-400 mt-0.5">Manage training plans for each athlete</p>
         </div>
-    <Button
+        <Button
           onClick={averaFlow === "idle" || averaFlow === "error" ? buildWithAvera : undefined}
           disabled={averaFlow === "loading" || averaFlow === "applying"}
-          className="gap-2 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 disabled:opacity-60"
+          className="gap-2 bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 disabled:opacity-60"
         >
           {(averaFlow === "loading" || averaFlow === "applying")
             ? <Loader2 className="w-4 h-4 animate-spin" />
-      : <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-4 h-4" alt="Avera" />}
+            : <Bot className="w-4 h-4" />}
           {averaFlow === "loading" ? "Avera is thinking…"
             : averaFlow === "applying" ? "Adding plan…"
             : "Build plan with Avera"}
@@ -223,11 +221,11 @@ export default function CoachPlans() {
       </div>
 
       {showAveraPanel && (
-        <div className="mb-6 rounded-xl border border-cyan-500/30 bg-cyan-500/5 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3 border-b border-cyan-500/15">
+        <div className="mb-6 rounded-xl border border-primary/30 bg-primary/5 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-primary/15">
             <div className="flex items-center gap-2">
-              <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-4 h-4" alt="Avera" />
-              <span className="text-sm font-semibold text-cyan-400">AveraAI Plan Builder</span>
+              <Bot className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold text-primary">AveraAI Plan Builder</span>
             </div>
             <button
               onClick={() => { setAveraFlow("idle"); setAveraProposal(null); setAveraError(""); }}
@@ -239,7 +237,7 @@ export default function CoachPlans() {
 
           {averaFlow === "loading" && (
             <div className="px-5 py-8 flex items-center justify-center gap-3 text-slate-400 text-sm">
-              <Loader2 className="w-5 h-5 animate-spin text-cyan-400" />
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
               Avera is reviewing your team and designing a personalised plan…
             </div>
           )}
@@ -249,7 +247,7 @@ export default function CoachPlans() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-base font-semibold text-white">{averaProposal.name}</p>
-                  <p className="text-sm text-cyan-300 mt-0.5">for {averaProposal.athleteName}</p>
+                  <p className="text-sm text-primary mt-0.5">for {averaProposal.athleteName}</p>
                   <p className="text-sm text-slate-400 mt-1">{averaProposal.goal}</p>
                 </div>
                 <div className="text-right shrink-0">
@@ -263,7 +261,7 @@ export default function CoachPlans() {
               </div>
 
               {averaProposal.rationale && (
-                <p className="text-xs text-slate-400 italic border-l-2 border-cyan-500/30 pl-3 leading-relaxed">
+                <p className="text-xs text-slate-400 italic border-l-2 border-primary/30 pl-3 leading-relaxed">
                   "{averaProposal.rationale}"
                 </p>
               )}
@@ -277,7 +275,7 @@ export default function CoachPlans() {
                     long_run: "Long", cross_training: "Cross", rest: "Rest", race: "Race",
                   };
                   return (
-                    <div key={type} className="bg-[#0a0f1e] rounded-lg px-3 py-2 text-center">
+                    <div key={type} className="bg-[#06070E] rounded-lg px-3 py-2 text-center">
                       <p className="text-sm font-semibold text-white">{count}</p>
                       <p className="text-[10px] text-slate-500 mt-0.5">{labels[type]}</p>
                     </div>
@@ -295,7 +293,7 @@ export default function CoachPlans() {
                     onClick={applyAveraPlan}
                     disabled={averaFlow === "applying"}
                     size="sm"
-                    className="bg-cyan-600 hover:bg-cyan-500 text-white gap-2"
+                    className="bg-primary hover:bg-primary/80 text-[#F5F5F5] gap-2"
                   >
                     {averaFlow === "applying" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                     Add to Training Plan
@@ -317,7 +315,7 @@ export default function CoachPlans() {
               <p className="text-sm text-red-400">{averaError}</p>
               <button
                 onClick={buildWithAvera}
-                className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
               >
                 Try again
               </button>
@@ -327,7 +325,7 @@ export default function CoachPlans() {
       )}
 
       {athletes.length === 0 ? (
-        <div className="bg-white/5 border border-slate-800 rounded-xl p-12 text-center">
+        <div className="bg-primary/5 border border-border rounded-xl p-12 text-center">
           <Calendar className="w-8 h-8 text-slate-600 mx-auto mb-3" />
           <p className="text-slate-400 text-sm">No athletes on your team yet.</p>
           <p className="text-slate-600 text-xs mt-1">Add athletes from the Team page first.</p>
@@ -340,7 +338,7 @@ export default function CoachPlans() {
             const isCreating = showFormFor === athlete.userId;
 
             return (
-              <div key={athlete.userId} className="bg-[#0d1529] border border-slate-800 rounded-xl overflow-hidden">
+              <div key={athlete.userId} className="bg-[#06070E] border border-border rounded-xl overflow-hidden">
                 <button
                   onClick={() => {
                     setExpandedAthleteId(isExpanded ? null : athlete.userId);
@@ -349,7 +347,7 @@ export default function CoachPlans() {
                   className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/5 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/20 flex items-center justify-center text-sm font-bold text-cyan-400">
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20 flex items-center justify-center text-sm font-bold text-primary">
                       {athlete.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="text-left">
@@ -366,7 +364,7 @@ export default function CoachPlans() {
                 </button>
 
                 {isExpanded && (
-                  <div className="border-t border-slate-800 px-5 py-4 space-y-3">
+                  <div className="border-t border-border px-5 py-4 space-y-3">
                     {athletePlans.length === 0 && !isCreating && (
                       <p className="text-xs text-slate-500 py-2">No training plans yet for this athlete.</p>
                     )}
@@ -379,7 +377,7 @@ export default function CoachPlans() {
                       const progress = Math.min(100, Math.round((elapsed / totalDays) * 100));
 
                       return (
-                        <div key={plan.id} className="bg-[#0a0f1e] border border-slate-800 rounded-lg p-4">
+                        <div key={plan.id} className="bg-[#06070E] border border-border rounded-lg p-4">
                           <div className="flex items-start justify-between gap-3 mb-2">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-0.5">
@@ -407,8 +405,8 @@ export default function CoachPlans() {
                               <div className="flex justify-between text-xs text-slate-500 mb-1">
                                 <span>Progress</span><span>{progress}%</span>
                               </div>
-                              <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div className="h-full bg-cyan-500 rounded-full" style={{ width: `${progress}%` }} />
+                              <div className="h-1 bg-secondary rounded-full overflow-hidden">
+                                <div className="h-full bg-primary rounded-full" style={{ width: `${progress}%` }} />
                               </div>
                             </div>
                           )}
@@ -417,9 +415,9 @@ export default function CoachPlans() {
                     })}
 
                     {isCreating ? (
-                      <div className="bg-[#0a0f1e] border border-cyan-500/20 rounded-lg p-4 space-y-3">
+                      <div className="bg-[#06070E] border border-primary/20 rounded-lg p-4 space-y-3">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">New Plan for {athlete.name}</p>
+                          <p className="text-xs font-semibold text-primary uppercase tracking-wider">New Plan for {athlete.name}</p>
                           <button onClick={() => setShowFormFor(null)} className="text-slate-500 hover:text-slate-300">
                             <X className="w-4 h-4" />
                           </button>
@@ -431,7 +429,7 @@ export default function CoachPlans() {
                               value={form.name}
                               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                               placeholder="8-Week 5K Build"
-                              className="bg-[#0d1529] border-slate-700 text-white text-sm placeholder:text-slate-600"
+                              className="bg-[#06070E] border-border text-white text-sm placeholder:text-muted-foreground"
                             />
                           </div>
                           <div className="col-span-2">
@@ -440,7 +438,7 @@ export default function CoachPlans() {
                               value={form.goal}
                               onChange={e => setForm(f => ({ ...f, goal: e.target.value }))}
                               placeholder="Sub-25 min 5K"
-                              className="bg-[#0d1529] border-slate-700 text-white text-sm placeholder:text-slate-600"
+                              className="bg-[#06070E] border-border text-white text-sm placeholder:text-muted-foreground"
                             />
                           </div>
                           <div>
@@ -449,7 +447,7 @@ export default function CoachPlans() {
                               type="date"
                               value={form.startDate}
                               onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
-                              className="bg-[#0d1529] border-slate-700 text-white text-sm"
+                              className="bg-[#06070E] border-border text-white text-sm placeholder:text-muted-foreground"
                             />
                           </div>
                           <div>
@@ -458,7 +456,7 @@ export default function CoachPlans() {
                               type="date"
                               value={form.endDate}
                               onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
-                              className="bg-[#0d1529] border-slate-700 text-white text-sm"
+                              className="bg-[#06070E] border-border text-white text-sm placeholder:text-muted-foreground"
                             />
                           </div>
                           <div>
@@ -469,7 +467,7 @@ export default function CoachPlans() {
                               value={form.weeklyMileage}
                               onChange={e => setForm(f => ({ ...f, weeklyMileage: e.target.value }))}
                               placeholder="30"
-                              className="bg-[#0d1529] border-slate-700 text-white text-sm placeholder:text-slate-600"
+                              className="bg-[#06070E] border-border text-white text-sm placeholder:text-slate-600"
                             />
                           </div>
                         </div>
@@ -478,7 +476,7 @@ export default function CoachPlans() {
                             onClick={() => createPlan(athlete.userId)}
                             disabled={submitting}
                             size="sm"
-                            className="bg-cyan-600 hover:bg-cyan-500 text-white"
+                            className="bg-primary hover:bg-primary/80 text-[#F5F5F5]"
                           >
                             {submitting ? "Creating..." : "Create Plan"}
                           </Button>
@@ -490,7 +488,7 @@ export default function CoachPlans() {
                           setShowFormFor(athlete.userId);
                           setForm({ name: "", goal: "", startDate: format(new Date(), "yyyy-MM-dd"), endDate: "", weeklyMileage: "" });
                         }}
-                        className="flex items-center gap-2 text-xs text-cyan-400 hover:text-cyan-300 transition-colors py-1"
+                        className="flex items-center gap-2 text-xs text-primary hover:text-primary/80 transition-colors py-1"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         Create plan for {athlete.name}

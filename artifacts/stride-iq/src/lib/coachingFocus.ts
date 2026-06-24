@@ -47,9 +47,9 @@ const DEFAULT_FOCUS: FocusConfig = {
   keySessionTypes: ["Easy run", "Tempo", "Long run", "Recovery"],
   distanceLabel: "Weekly Miles",
   icon: Layers,
-  accentText: "text-cyan-400",
-  accentBg: "bg-cyan-500/10",
-  accentBorder: "border-cyan-500/20",
+  accentText: "text-primary",
+  accentBg: "bg-primary/10",
+  accentBorder: "border-primary/20",
 };
 
 const FOCUS_MAP: Record<string, FocusConfig> = {

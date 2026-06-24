@@ -34,18 +34,18 @@ function AssistantMarkdown({ content }: { content: string }) {
           strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
           em: ({ children }) => <em className="italic">{children}</em>,
           a: ({ children, href }) => (
-            <a href={href} target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline underline-offset-2 hover:text-cyan-300">
+            <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2 hover:text-primary/80">
               {children}
             </a>
           ),
           code: ({ children }) => (
-            <code className="rounded bg-white/10 px-1.5 py-0.5 text-[0.85em] font-mono text-cyan-200">{children}</code>
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-[0.85em] font-mono text-[#F5F5F5]">{children}</code>
           ),
           pre: ({ children }) => (
             <pre className="overflow-x-auto rounded-lg bg-black/30 border border-white/10 p-3 text-xs font-mono">{children}</pre>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-2 border-cyan-500/40 pl-3 italic text-slate-300">{children}</blockquote>
+            <blockquote className="border-l-2 border-primary/40 pl-3 italic text-slate-300">{children}</blockquote>
           ),
           hr: () => <hr className="border-white/10" />,
           table: ({ children }) => (
@@ -62,7 +62,6 @@ function AssistantMarkdown({ content }: { content: string }) {
 }
 
 export default function CoachAI() {
-  const basePath = import.meta.env.BASE_URL || "";
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [input, setInput] = useState("");
   const [streamMessages, setStreamMessages] = useState<StreamMessage[]>([]);
@@ -225,12 +224,12 @@ export default function CoachAI() {
   }
 
   return (
-    <div className="flex h-screen bg-[#0a0f1e]" data-testid="coach-page">
+    <div className="flex h-screen bg-[#06070E]" data-testid="coach-page">
       {/* Conversation sidebar */}
-      <div className="w-56 border-r border-white/10 flex flex-col shrink-0 bg-[#0d1426]">
+      <div className="w-56 border-r border-white/10 flex flex-col shrink-0 bg-[#06070E]">
         <div className="p-4 border-b border-white/10">
           <div className="flex items-center gap-2 mb-3">
-            <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-4 h-4" alt="Avera" />
+            <Bot className="w-4 h-4 text-primary" />
             <span className="text-sm font-semibold text-white">AveraAI</span>
             <span className="text-xs text-slate-400">Coach Advisor</span>
           </div>
@@ -238,7 +237,7 @@ export default function CoachAI() {
             onClick={startNewConversation}
             disabled={createConv.isPending}
             size="sm"
-            className="w-full gap-1.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 hover:text-cyan-200"
+            className="w-full gap-1.5 bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20"
             data-testid="button-new-conversation"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -260,7 +259,7 @@ export default function CoachAI() {
                   data-testid={`conversation-${conv.id}`}
                   className={`w-full text-left px-3 py-2 pr-8 text-xs rounded transition-colors ${
                     selectedId === conv.id
-                      ? "bg-cyan-500/15 text-cyan-300"
+                      ? "bg-primary/15 text-primary"
                       : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
                   }`}
                 >
@@ -284,8 +283,8 @@ export default function CoachAI() {
       <div className="flex-1 flex flex-col">
         {!selectedId ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8">
-            <div className="w-14 h-14 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-5">
-              <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-7 h-7" alt="Avera" />
+            <div className="w-14 h-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mb-5">
+              <Bot className="w-7 h-7 text-primary" />
             </div>
             <h2 className="text-xl font-semibold text-white mb-2">AveraAI — Coaching Advisor</h2>
             <p className="text-sm text-slate-400 text-center max-w-sm mb-6">
@@ -294,7 +293,7 @@ export default function CoachAI() {
             <Button
               onClick={startNewConversation}
               data-testid="button-start-chat"
-              className="gap-2 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20"
+              className="gap-2 bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20"
             >
               <Plus className="w-4 h-4" />
               Start a conversation
@@ -337,7 +336,7 @@ export default function CoachAI() {
             </div>
 
             {/* Input */}
-            <div className="border-t border-white/10 p-4 bg-[#0d1426]">
+            <div className="border-t border-white/10 p-4 bg-[#06070E]">
               <div className="flex gap-2">
                 <Input
                   value={input}
@@ -346,14 +345,14 @@ export default function CoachAI() {
                   placeholder="Ask AveraAI about your team or athletes..."
                   disabled={isStreaming}
                   data-testid="input-message"
-                  className="flex-1 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus-visible:ring-cyan-500/50"
+                  className="flex-1 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus-visible:ring-primary/50"
                 />
                 <Button
                   onClick={sendMessage}
                   disabled={!input.trim() || isStreaming}
                   data-testid="button-send-message"
                   size="icon"
-                  className="bg-cyan-600 hover:bg-cyan-500 text-white"
+                  className="bg-primary hover:bg-primary/80 text-[#F5F5F5]"
                 >
                   <Send className="w-4 h-4" />
                 </Button>

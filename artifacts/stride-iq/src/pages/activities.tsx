@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-const basePath = import.meta.env.BASE_URL || "";
 import { Link } from "wouter";
 import { useListActivities, useCreateActivity, getListActivitiesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, X, Upload, CheckCircle2, RefreshCw, Unlink } from "lucide-react";
+import { Plus, X, Upload, Activity, RefreshCw, Unlink } from "lucide-react";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,12 +24,12 @@ const ACTIVITY_LABELS: Record<string, string> = {
 
 const ACTIVITY_COLORS: Record<string, string> = {
   easy_run: "text-[#10b981] bg-[#10b981]/10 border-[#10b981]/20", // Emerald
-  tempo_run: "text-[#3b82f6] bg-[#3b82f6]/10 border-[#3b82f6]/20", // Blue
-  interval: "text-[#8b5cf6] bg-[#8b5cf6]/10 border-[#8b5cf6]/20", // Violet
+  tempo_run: "text-[#A2AE98] bg-[#A2AE98]/10 border-[#A2AE98]/20",
+  interval: "text-[#F2D2CF] bg-[#F2D2CF]/10 border-[#F2D2CF]/20",
   long_run: "text-[#f59e0b] bg-[#f59e0b]/10 border-[#f59e0b]/20", // Amber
   race: "text-[#ef4444] bg-[#ef4444]/10 border-[#ef4444]/20", // Red
-  cross_training: "text-[#06b6d4] bg-[#06b6d4]/10 border-[#06b6d4]/20", // Cyan
-  rest: "text-slate-400 bg-slate-800 border-slate-700",
+  cross_training: "text-primary bg-primary/10 border-primary/20",
+  rest: "text-slate-400 bg-secondary border-border",
 };
 
 const schema = z.object({
@@ -173,7 +172,7 @@ export default function Activities() {
           <Button
             variant="outline"
             onClick={() => { setShowGpx(!showGpx); setShowForm(false); }}
-            className="gap-2 border-slate-700 text-slate-300 hover:text-white hover:border-cyan-500"
+            className="gap-2 border-border text-muted-foreground hover:text-foreground hover:border-primary"
           >
             <Upload className="w-4 h-4" />
             Import GPX
@@ -190,10 +189,10 @@ export default function Activities() {
       </div>
 
       {/* Strava connection banner */}
-  {stravaStatus.data?.connected ? (
+      {stravaStatus.data?.connected ? (
         <div className="flex items-center justify-between bg-[#FC4C02]/10 border border-[#FC4C02]/30 rounded-xl px-5 py-3.5 mb-6">
-            <div className="flex items-center gap-3">
-            <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-4 h-4 shrink-0" alt="Strava" />
+          <div className="flex items-center gap-3">
+            <CheckCircle2 size={18} className="text-[#FC4C02] shrink-0" />
             <div>
               <p className="text-sm font-semibold text-white">Strava connected</p>
               <p className="text-xs text-slate-400">New runs sync automatically via webhook.</p>
@@ -206,7 +205,7 @@ export default function Activities() {
                 onError: () => toast({ title: "Sync failed", variant: "destructive" }),
               })}
               disabled={stravaSync.isPending}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground border border-border transition-colors disabled:opacity-50"
             >
               <RefreshCw size={12} className={stravaSync.isPending ? "animate-spin" : ""} />
               {stravaSync.isPending ? "Syncing…" : "Sync now"}
@@ -216,20 +215,20 @@ export default function Activities() {
                 onSuccess: () => toast({ title: "Strava disconnected" }),
               })}
               disabled={stravaDisconnect.isPending}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-secondary hover:bg-secondary/80 text-muted-foreground border border-border transition-colors disabled:opacity-50"
             >
               <Unlink size={12} />
               Disconnect
             </button>
           </div>
         </div>
-        ) : (
-        <div className="flex items-center justify-between bg-slate-800/50 border border-slate-700/60 rounded-xl px-5 py-3.5 mb-6">
+      ) : (
+        <div className="flex items-center justify-between bg-secondary border border-border rounded-xl px-5 py-3.5 mb-6">
           <div className="flex items-center gap-3">
-            <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-4 h-4 shrink-0" alt="Strava" />
+            <Activity size={18} className="text-[#FC4C02] shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-white">Connect Strava</p>
-              <p className="text-xs text-slate-400">Sync runs automatically — every new Strava activity appears here in real time.</p>
+              <p className="text-sm font-semibold text-foreground">Connect Strava for automatic run syncing</p>
+              <p className="text-xs text-muted-foreground">Every run will appear in Thrive automatically. No imports needed.</p>
             </div>
           </div>
           <a

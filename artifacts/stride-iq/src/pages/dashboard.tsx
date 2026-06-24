@@ -21,7 +21,7 @@ const ACTIVITY_LABELS: Record<string, string> = {
 };
 
 const LOAD_COLORS: Record<string, string> = {
-  low: "text-[#3b82f6]", // Blue
+  low: "text-primary",
   moderate: "text-[#10b981]", // Emerald
   high: "text-[#f59e0b]", // Amber
   very_high: "text-[#ef4444]", // Red
@@ -61,13 +61,13 @@ function StravaBanner() {
   if (dismissed || stravaStatus.isLoading || stravaStatus.data?.connected) return null;
 
   return (
-    <div className={`mb-6 flex items-center gap-4 rounded-xl border px-5 py-4 ${autoPrompt ? "border-[#FC4C02]/30 bg-[#FC4C02]/5" : "border-slate-800 bg-slate-900"}`}>
+    <div className={`mb-6 flex items-center gap-4 rounded-xl border px-5 py-4 ${autoPrompt ? "border-[#FC4C02]/30 bg-[#FC4C02]/5" : "border-border bg-secondary"}`}>
       <Activity className="w-6 h-6 shrink-0 text-[#FC4C02]" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-white">
           {autoPrompt ? "One more step — connect Strava" : "Connect Strava for automatic run syncing"}
         </p>
-        <p className="text-xs text-slate-400 mt-0.5">Every run will appear in Thrive automatically. No imports needed.</p>
+        <p className="text-xs text-muted-foreground mt-0.5">Every run will appear in Thrive automatically. No imports needed.</p>
       </div>
       <a
         href="/api/strava/connect"
@@ -77,7 +77,7 @@ function StravaBanner() {
       >
         Connect Strava
       </a>
-      <button onClick={() => setDismissed(true)} className="shrink-0 text-slate-500 hover:text-slate-300 transition-colors" aria-label="Dismiss">
+      <button onClick={() => setDismissed(true)} className="shrink-0 text-muted-foreground hover:text-foreground transition-colors" aria-label="Dismiss">
         <X size={15} />
       </button>
     </div>
@@ -136,7 +136,7 @@ export default function Dashboard() {
             <div className="mt-3 h-1.5 bg-secondary rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${
-                  data.trainingLoad === "low" ? "bg-[#3b82f6]" :
+                  data.trainingLoad === "low" ? "bg-primary" :
                   data.trainingLoad === "moderate" ? "bg-[#10b981]" :
                   data.trainingLoad === "high" ? "bg-[#f59e0b]" :
                   "bg-[#ef4444]"

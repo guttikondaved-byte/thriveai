@@ -68,60 +68,60 @@
 }
 
 :root {
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
-  --opaque-button-border-intensity: -8;
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
+  --button-outline: rgba(255,255,255, .10);
+  --badge-outline: rgba(255,255,255, .05);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(255,255,255, .04);
+  --elevate-2: rgba(255,255,255, .09);
 
-  /* Thrive brand: dark background with royal blue primary and teal secondary */
-  --background: 220 30% 6%;   /* deep navy */
-  --foreground: 210 40% 98%;  /* near white */
+  /* #06070E — near-black */
+  --background: 237 40% 4%;
+  --foreground: 0 0% 96%;
 
-  --border: 215 18% 12%;
-  --input: 215 18% 12%;
-  --ring: 217 86% 44%;       /* bright ring for focus (royal-ish) */
+  --border: 174 10% 13%;
+  --input:  174 10% 13%;
+  --ring:   174 31% 38%;
 
-  --card: 220 30% 8%;
-  --card-foreground: 210 40% 98%;
-  --card-border: 215 18% 12%;
+  --card:             237 40% 6%;
+  --card-foreground:  0 0% 96%;
+  --card-border:      174 10% 13%;
 
-  --popover: 220 30% 8%;
-  --popover-foreground: 210 40% 98%;
-  --popover-border: 215 18% 12%;
+  --popover:            237 40% 6%;
+  --popover-foreground: 0 0% 96%;
+  --popover-border:     174 10% 13%;
 
-  /* Primary: Thrive Royal Blue */
-  --primary: 217 100% 42%;    /* ~#0057D9 */
-  --primary-foreground: 222 47% 98%;
+  /* Primary = readable teal derived from #2A504C */
+  --primary:            174 31% 38%;
+  --primary-foreground: 0 0% 96%;
 
-  /* Secondary: Thrive Teal */
-  --secondary: 171 100% 40%;  /* ~#00BFA6 */
-  --secondary-foreground: 222 47% 98%;
+  --secondary:            174 10% 10%;
+  --secondary-foreground: 0 0% 96%;
 
-  --muted: 215 12% 30%;
-  --muted-foreground: 215 12% 58%;
+  --muted:            174 10% 10%;
+  --muted-foreground: 93 12% 55%;
 
-  --accent: 38 100% 56%;      /* gold accent ~#FFB020 */
-  --accent-foreground: 220 30% 6%;
+  /* Accent = Almond Silk #F2D2CF */
+  --accent:            5 57% 88%;
+  --accent-foreground: 237 40% 6%;
 
-  --destructive: 350 80% 50%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive:            350 80% 50%;
+  --destructive-foreground: 0 0% 96%;
 
-  /* Vibrant data colors (respect brand) */
-  --chart-1: 217 100% 42%; /* primary */
-  --chart-2: 171 100% 40%; /* secondary */
-  --chart-3: 39 100% 50%;
-  --chart-4: 280 85% 65%;
-  --chart-5: 340 85% 60%;
+  /* Chart — earth-tone palette */
+  --chart-1: 174 31% 38%;
+  --chart-2: 93 12% 64%;
+  --chart-3: 5 57% 78%;
+  --chart-4: 174 20% 28%;
+  --chart-5: 93 8% 45%;
 
-  --sidebar: 220 30% 8%;
-  --sidebar-foreground: 210 40% 98%;
-  --sidebar-border: 215 18% 12%;
-  --sidebar-primary: 217 100% 42%;
-  --sidebar-primary-foreground: 222 47% 98%;
-  --sidebar-accent: 171 100% 40%;
-  --sidebar-accent-foreground: 222 47% 98%;
-  --sidebar-ring: 217 100% 42%;
+  --sidebar:                    237 40% 5%;
+  --sidebar-foreground:         0 0% 96%;
+  --sidebar-border:             174 10% 11%;
+  --sidebar-primary:            174 31% 38%;
+  --sidebar-primary-foreground: 0 0% 96%;
+  --sidebar-accent:             174 10% 10%;
+  --sidebar-accent-foreground:  0 0% 96%;
+  --sidebar-ring:               174 31% 38%;
 
   --radius: 0.75rem;
 
@@ -136,56 +136,55 @@
 }
 
 .dark {
-  /* Same as root because we are defaulting to dark mode */
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
   --opaque-button-border-intensity: 9;
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  --background: 222 47% 4%;
-  --foreground: 210 40% 98%;
-  --border: 217 33% 15%;
-  --input: 217 33% 15%;
-  --ring: 189 94% 43%;
+  --background: 237 40% 4%;
+  --foreground: 0 0% 96%;
+  --border: 174 10% 13%;
+  --input:  174 10% 13%;
+  --ring:   174 31% 38%;
 
-  --card: 222 47% 6%;
-  --card-foreground: 210 40% 98%;
-  --card-border: 217 33% 15%;
+  --card:             237 40% 6%;
+  --card-foreground:  0 0% 96%;
+  --card-border:      174 10% 13%;
 
-  --popover: 222 47% 6%;
-  --popover-foreground: 210 40% 98%;
-  --popover-border: 217 33% 15%;
+  --popover:            237 40% 6%;
+  --popover-foreground: 0 0% 96%;
+  --popover-border:     174 10% 13%;
 
-  --primary: 189 94% 43%;
-  --primary-foreground: 222 47% 4%;
+  --primary:            174 31% 38%;
+  --primary-foreground: 0 0% 96%;
 
-  --secondary: 217 33% 12%;
-  --secondary-foreground: 210 40% 98%;
+  --secondary:            174 10% 10%;
+  --secondary-foreground: 0 0% 96%;
 
-  --muted: 217 33% 12%;
-  --muted-foreground: 215 20.2% 65.1%;
+  --muted:            174 10% 10%;
+  --muted-foreground: 93 12% 55%;
 
-  --accent: 189 94% 15%;
-  --accent-foreground: 189 94% 60%;
+  --accent:            5 57% 88%;
+  --accent-foreground: 237 40% 6%;
 
-  --destructive: 350 80% 50%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive:            350 80% 50%;
+  --destructive-foreground: 0 0% 96%;
 
-  --chart-1: 189 94% 43%;
-  --chart-2: 150 84% 45%;
-  --chart-3: 39 100% 50%;
-  --chart-4: 280 85% 65%;
-  --chart-5: 340 85% 60%;
+  --chart-1: 174 31% 38%;
+  --chart-2: 93 12% 64%;
+  --chart-3: 5 57% 78%;
+  --chart-4: 174 20% 28%;
+  --chart-5: 93 8% 45%;
 
-  --sidebar: 222 47% 5%;
-  --sidebar-foreground: 210 40% 98%;
-  --sidebar-border: 217 33% 12%;
-  --sidebar-primary: 189 94% 43%;
-  --sidebar-primary-foreground: 222 47% 4%;
-  --sidebar-accent: 217 33% 12%;
-  --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-ring: 189 94% 43%;
+  --sidebar:                    237 40% 5%;
+  --sidebar-foreground:         0 0% 96%;
+  --sidebar-border:             174 10% 11%;
+  --sidebar-primary:            174 31% 38%;
+  --sidebar-primary-foreground: 0 0% 96%;
+  --sidebar-accent:             174 10% 10%;
+  --sidebar-accent-foreground:  0 0% 96%;
+  --sidebar-ring:               174 31% 38%;
 }
 
 @layer base {
@@ -196,17 +195,3 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
-
-/* Utility aliases: map existing cyan/violet utilities to Thrive brand colors */
-.text-cyan-300 { color: hsl(var(--primary)); }
-.bg-cyan-500\/10 { background-color: color-mix(in srgb, hsl(var(--primary)) 10%, transparent); }
-.border-cyan-500\/25 { border-color: color-mix(in srgb, hsl(var(--primary)) 25%, transparent); }
-.bg-cyan-500\/5 { background-color: color-mix(in srgb, hsl(var(--primary)) 5%, transparent); }
-.text-cyan-400 { color: hsl(var(--primary)); }
-.bg-cyan-500 { background-color: hsl(var(--primary)); }
-.border-cyan-500\/30 { border-color: color-mix(in srgb, hsl(var(--primary)) 30%, transparent); }
-
-.text-violet-300 { color: hsl(var(--secondary)); }
-.bg-violet-500\/10 { background-color: color-mix(in srgb, hsl(var(--secondary)) 10%, transparent); }
-.border-violet-500\/30 { border-color: color-mix(in srgb, hsl(var(--secondary)) 30%, transparent); }
-

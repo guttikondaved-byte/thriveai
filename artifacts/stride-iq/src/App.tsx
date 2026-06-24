@@ -55,27 +55,25 @@ const clerkAppearance = {
   options: {
     logoPlacement: "inside" as const,
     logoLinkUrl: basePath || "/",
-    // Use compact mark for small logo placements
-    logoImageUrl: `${window.location.origin}${basePath}/logo-mark.svg`,
+    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
     socialButtonsPlacement: "top" as const,
     socialButtonsVariant: "blockButton" as const,
   },
   variables: {
-  // Thrive brand tokens (from supplied palette)
-  colorPrimary: "#2A504C", // dark slate green
-  colorForeground: "#0B1220",
-  colorMutedForeground: "#9AA6B3",
-  colorDanger: "#EF4444",
-  colorBackground: "#06070E",
-  colorInput: "#2A504C",
-  colorInputForeground: "#F5F5F5",
-  colorNeutral: "#334155",
-  fontFamily: "Inter, sans-serif",
-  borderRadius: "0.75rem",
+    colorPrimary: "#2A504C",
+    colorForeground: "#f8fafc",
+    colorMutedForeground: "#94a3b8",
+    colorDanger: "#ef4444",
+    colorBackground: "#06070E",
+    colorInput: "#0e1a19",
+    colorInputForeground: "#f8fafc",
+    colorNeutral: "#2A504C",
+    fontFamily: "Inter, sans-serif",
+    borderRadius: "0.75rem",
   },
   elements: {
     rootBox: "w-full flex justify-center",
-    cardBox: "rounded-2xl border border-slate-700/50 w-[440px] max-w-full overflow-hidden shadow-xl",
+    cardBox: "rounded-2xl border border-border w-[440px] max-w-full overflow-hidden shadow-xl",
     card: "!shadow-none !border-0 !bg-transparent !rounded-none",
     footer: "!shadow-none !border-0 !bg-transparent !rounded-none !hidden",
     footerAction: "!hidden",
@@ -85,32 +83,32 @@ const clerkAppearance = {
     socialButtonsBlockButtonText: "text-slate-200 font-medium",
     formFieldLabel: "text-slate-300 font-medium",
     dividerText: "text-slate-600",
-    identityPreviewEditButton: "text-cyan-400",
+    identityPreviewEditButton: "text-primary",
     formFieldSuccessText: "text-emerald-400",
     alertText: "text-white",
     logoBox: "justify-center",
     logoImage: "rounded-xl",
-    socialButtonsBlockButton: "border-slate-700/60 bg-slate-800/50 hover:bg-slate-700/60",
-    formButtonPrimary: "bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold",
-  formFieldInput: "bg-slate-800/50 border-slate-700/50 text-white",
-    dividerLine: "bg-slate-700/50",
+    socialButtonsBlockButton: "border-border bg-[#0e1a19]/50 hover:bg-[#0e1a19]",
+    formButtonPrimary: "bg-primary hover:bg-primary/80 text-[#F5F5F5] font-semibold",
+    formFieldInput: "bg-[#0e1a19]/50 border-border text-white",
+    dividerLine: "bg-border",
     alert: "bg-red-500/10 border-red-500/20",
-    otpCodeFieldInput: "bg-slate-800/50 border-slate-700/50 text-white",
+    otpCodeFieldInput: "bg-[#0e1a19]/50 border-border text-white",
     formFieldRow: "",
     main: "",
   },
 };
 
 const Spinner = () => (
-  <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
-    <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+  <div className="min-h-screen bg-[#06070E] flex items-center justify-center">
+    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
   </div>
 );
 
 function SignInPage() {
   const [, navigate] = useLocation();
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-[#06070E] flex flex-col items-center justify-center px-4">
       <button
         onClick={() => navigate("/")}
         className="absolute top-6 left-6 flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
@@ -150,7 +148,7 @@ function SignUpPage() {
 
   if (!role) {
     return (
-      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-[#06070E] flex items-center justify-center px-4">
         <div className="w-full max-w-md">
           <button
             onClick={() => navigate("/")}
@@ -160,9 +158,7 @@ function SignUpPage() {
             Back
           </button>
           <div className="flex justify-center mb-8">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: 'transparent' }}>
-              <img src={`${window.location.origin}${basePath}/logo-mark.svg`} alt="Thrive" className="w-10 h-10" />
-            </div>
+            <img src="/logo.svg" alt="Thrive" className="h-14 w-auto" />
           </div>
 
           <h1 className="text-2xl font-bold text-white text-center mb-2">I'm joining as a…</h1>
@@ -171,41 +167,41 @@ function SignUpPage() {
           <div className="space-y-3 mb-6">
             <button
               onClick={() => handleSelectRole("athlete")}
-              className="w-full text-left rounded-2xl border border-cyan-500/40 p-5 transition-all group hover:border-cyan-400/70 hover:shadow-lg hover:shadow-cyan-500/10"
-              style={{ background: "linear-gradient(135deg, rgba(6,182,212,0.08) 0%, rgba(6,182,212,0.03) 100%)" }}
+              className="w-full text-left rounded-2xl border border-primary/40 p-5 transition-all group hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10"
+              style={{ background: "linear-gradient(135deg, rgba(42,80,76,0.08) 0%, rgba(42,80,76,0.03) 100%)" }}
             >
               <div className="flex items-center gap-4">
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: "linear-gradient(135deg, rgba(6,182,212,0.25) 0%, rgba(59,130,246,0.15) 100%)", border: "1px solid rgba(6,182,212,0.4)" }}
+                  style={{ background: "linear-gradient(135deg, rgba(42,80,76,0.25) 0%, rgba(61,122,116,0.15) 100%)", border: "1px solid rgba(42,80,76,0.4)" }}
                 >
-                  <User className="w-5 h-5 text-cyan-300" />
+                  <User className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-white group-hover:text-cyan-200 transition-colors">Athlete</p>
+                  <p className="text-sm font-bold text-white group-hover:text-primary transition-colors">Athlete</p>
                   <p className="text-xs text-slate-500 mt-0.5">Personal training log · AI coach · Injury alerts · Plans</p>
                 </div>
-                <svg className="w-4 h-4 text-cyan-500/60 group-hover:text-cyan-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+                <svg className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
               </div>
             </button>
 
             <button
               onClick={() => handleSelectRole("coach")}
-              className="w-full text-left rounded-2xl border border-violet-500/40 p-5 transition-all group hover:border-violet-400/70 hover:shadow-lg hover:shadow-violet-500/10"
-              style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(139,92,246,0.03) 100%)" }}
+              className="w-full text-left rounded-2xl border border-[#F2D2CF]/40 p-5 transition-all group hover:border-[#F2D2CF]/60 hover:shadow-lg hover:shadow-[#F2D2CF]/10"
+              style={{ background: "linear-gradient(135deg, rgba(242,210,207,0.08) 0%, rgba(242,210,207,0.03) 100%)" }}
             >
               <div className="flex items-center gap-4">
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.25) 0%, rgba(99,102,241,0.15) 100%)", border: "1px solid rgba(139,92,246,0.4)" }}
+                  style={{ background: "linear-gradient(135deg, rgba(242,210,207,0.25) 0%, rgba(242,210,207,0.15) 100%)", border: "1px solid rgba(242,210,207,0.4)" }}
                 >
-                  <Users className="w-5 h-5 text-violet-300" />
+                  <Users className="w-5 h-5 text-[#F2D2CF]" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-white group-hover:text-violet-200 transition-colors">Coach</p>
+                  <p className="text-sm font-bold text-white group-hover:text-[#F2D2CF] transition-colors">Coach</p>
                   <p className="text-xs text-slate-500 mt-0.5">Team roster · Workload monitoring · Risk dashboard · Alerts</p>
                 </div>
-                <svg className="w-4 h-4 text-violet-500/60 group-hover:text-violet-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+                <svg className="w-4 h-4 text-[#F2D2CF]/60 group-hover:text-[#F2D2CF] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
               </div>
             </button>
           </div>
@@ -216,10 +212,10 @@ function SignUpPage() {
   }
 
   const roleLabel = role === "athlete" ? "Athlete" : "Coach";
-  const roleColor = role === "athlete" ? "text-cyan-300 border-cyan-500/30 bg-cyan-500/10" : "text-violet-300 border-violet-500/30 bg-violet-500/10";
+  const roleColor = role === "athlete" ? "text-primary border-primary/30 bg-primary/10" : "text-[#F2D2CF] border-[#F2D2CF]/30 bg-[#F2D2CF]/10";
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center px-4 gap-5">
+    <div className="min-h-screen bg-[#06070E] flex flex-col items-center justify-center px-4 gap-5">
       <button
         onClick={() => navigate("/")}
         className="absolute top-6 left-6 flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"

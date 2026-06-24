@@ -94,8 +94,8 @@ function HelpModal({ guideKey, onClose }: { guideKey: NonNullable<GuideKey>; onC
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full sm:max-w-lg max-h-[85vh] overflow-y-auto bg-[#0f172a] border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl">
-        <div className="sticky top-0 bg-[#0f172a] border-b border-border px-5 py-4 flex items-start justify-between gap-3 rounded-t-2xl">
+      <div className="relative z-10 w-full sm:max-w-lg max-h-[85vh] overflow-y-auto bg-[#06070E] border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl">
+        <div className="sticky top-0 bg-[#06070E] border-b border-border px-5 py-4 flex items-start justify-between gap-3 rounded-t-2xl">
           <div>
             <h2 className="text-base font-semibold text-foreground">{guide.title}</h2>
             <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{guide.subtitle}</p>
@@ -176,7 +176,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md bg-[#0f172a] border border-red-500/30 rounded-2xl shadow-2xl p-6">
+      <div className="relative z-10 w-full max-w-md bg-[#06070E] border border-red-500/30 rounded-2xl shadow-2xl p-6">
         <div className="flex items-start gap-3 mb-5">
           <div className="shrink-0 w-10 h-10 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center">
             <TriangleAlert className="w-5 h-5 text-red-400" />
@@ -281,14 +281,14 @@ function CoachProfile() {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-[#0d1529] border border-slate-800 rounded-xl p-6">
+        <div className="bg-[#06070E] border border-border rounded-xl p-6">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-xl font-bold text-white">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#2A504C] to-[#3d7a74] flex items-center justify-center text-xl font-bold text-white">
               {profile?.name?.charAt(0)?.toUpperCase() ?? "C"}
             </div>
             <div>
               <p className="text-sm font-semibold text-white">{profile?.name ?? "Coach"}</p>
-              <p className="text-xs text-cyan-400 font-medium uppercase tracking-wider">Thrive Coach</p>
+              <p className="text-xs text-primary font-medium uppercase tracking-wider">Thrive Coach</p>
               <p className="text-xs text-slate-500 mt-0.5">{profile?.email ?? ""}</p>
             </div>
           </div>
@@ -300,7 +300,7 @@ function CoachProfile() {
                   <FormItem className="col-span-2">
                     <FormLabel className="text-xs text-slate-400 font-medium uppercase tracking-wider">Name</FormLabel>
                     <FormControl>
-                      <Input className="bg-[#0a0f1e] border-slate-800 text-white placeholder-slate-600" {...field} />
+                      <Input className="bg-[#06070E] border-border text-white placeholder-slate-600" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -309,7 +309,7 @@ function CoachProfile() {
                   <FormItem>
                     <FormLabel className="text-xs text-slate-400 font-medium uppercase tracking-wider">Age</FormLabel>
                     <FormControl>
-                      <Input type="number" className="bg-[#0a0f1e] border-slate-800 text-white placeholder-slate-600" {...field} />
+                      <Input type="number" className="bg-[#06070E] border-border text-white placeholder-slate-600" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -320,7 +320,7 @@ function CoachProfile() {
                   <FormLabel className="text-xs text-slate-400 font-medium uppercase tracking-wider">Coaching Bio</FormLabel>
                   <FormControl>
                     <textarea
-                      className="w-full bg-[#0a0f1e] border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500 min-h-[80px] resize-y"
+                      className="w-full bg-[#06070E] border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary min-h-[80px] resize-y"
                       placeholder="Describe your coaching philosophy, specialties, and experience..."
                       maxLength={500}
                       {...field}
@@ -333,7 +333,7 @@ function CoachProfile() {
                 <Button
                   type="submit"
                   disabled={updateProfile.isPending}
-                  className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold"
+                  className="bg-primary hover:bg-primary/80 text-[#F5F5F5] font-semibold"
                 >
                   {updateProfile.isPending ? "Saving..." : "Save Profile"}
                 </Button>

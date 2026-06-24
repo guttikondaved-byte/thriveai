@@ -6,8 +6,6 @@ import NotificationBell from "./NotificationBell";
 import { getFocusConfig } from "@/lib/coachingFocus";
 import { useState, useEffect, useRef } from "react";
 
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-
 const NAV = [
   { href: "/", label: "Team Dashboard", icon: LayoutDashboard },
   { href: "/team", label: "Athlete Roster", icon: Users },
@@ -137,10 +135,10 @@ function AveraTipPopup() {
 
   return (
     <div className="fixed bottom-6 right-6 z-50 w-80 animate-in slide-in-from-bottom-4 fade-in duration-300">
-        <div className="bg-[#0d1529] border border-primary/30 rounded-xl shadow-2xl shadow-black/50 overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-800 bg-primary/5">
+      <div className="bg-[#06070E] border border-primary/30 rounded-xl shadow-2xl shadow-black/50 overflow-hidden">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-primary/5">
           <div className="w-6 h-6 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
-            <img src={`${window.location.origin}${basePath}/logo-mark.svg`} alt="Thrive" className="w-3 h-3" />
+            <Bot className="w-3 h-3 text-primary" />
           </div>
           <span className="text-xs font-semibold text-primary">AveraAI has a suggestion</span>
           <button
@@ -156,8 +154,8 @@ function AveraTipPopup() {
         </div>
 
         {flow === "proposal" && proposal && (
-          <div className="mx-4 mb-3 rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3">
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-cyan-400">
+          <div className="mx-4 mb-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
               <Calendar className="w-3 h-3" /> Proposed plan
             </div>
             <p className="mt-1.5 text-sm font-semibold text-white">{proposal.name}</p>
@@ -191,21 +189,21 @@ function AveraTipPopup() {
           {flow === "idle" && (
             <button
               onClick={buildPlan}
-              className="text-xs font-medium text-slate-900 bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-md px-2.5 py-1.5"
+              className="text-xs font-medium text-[#F5F5F5] bg-primary hover:bg-primary/80 transition-colors rounded-md px-2.5 py-1.5"
             >
               Build a training plan
             </button>
           )}
 
           {flow === "loading" && (
-            <span className="text-xs text-cyan-400 font-medium">Avera is designing a plan…</span>
+            <span className="text-xs text-primary font-medium">Avera is designing a plan…</span>
           )}
 
           {flow === "proposal" && (
             <>
               <button
                 onClick={applyPlan}
-                className="text-xs font-medium text-slate-900 bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-md px-2.5 py-1.5"
+                className="text-xs font-medium text-[#F5F5F5] bg-primary hover:bg-primary/80 transition-colors rounded-md px-2.5 py-1.5"
               >
                 Add to training plan
               </button>
@@ -219,14 +217,14 @@ function AveraTipPopup() {
           )}
 
           {flow === "applying" && (
-            <span className="text-xs text-cyan-400 font-medium">Adding plan…</span>
+            <span className="text-xs text-primary font-medium">Adding plan…</span>
           )}
 
           {flow === "done" && (
             <Link
               href="/plans"
               onClick={() => setVisible(false)}
-              className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+              className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
             >
               View plans →
             </Link>
@@ -235,7 +233,7 @@ function AveraTipPopup() {
           {flow === "error" && (
             <button
               onClick={buildPlan}
-              className="text-xs font-medium text-cyan-400 hover:text-cyan-300 transition-colors"
+              className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
             >
               Try again
             </button>
@@ -245,7 +243,7 @@ function AveraTipPopup() {
             <Link
               href="/ai-assistant"
               onClick={() => setVisible(false)}
-              className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+              className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
             >
               Open AveraAI →
             </Link>
@@ -264,7 +262,6 @@ function AveraTipPopup() {
 }
 
 export default function CoachLayout({ children }: { children: React.ReactNode }) {
-  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
   const [location] = useLocation();
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -278,10 +275,9 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <aside className="w-60 flex-shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border">
-        <div className="px-5 py-5 border-b border-sidebar-border flex items-center">
-          <div className="flex items-center gap-3">
-            <img src={`${window.location.origin}${basePath || ''}/logo.svg`} alt="Thrive" className="w-24 h-auto" />
-          </div>
+        <div className="px-5 py-5 border-b border-sidebar-border flex items-center gap-3">
+          <img src="/logo.svg" alt="Thrive" className="h-7 w-auto" />
+          <div className={`text-[10px] font-bold uppercase tracking-[0.15em] ${focus.accentText}`}>{focus.label} Coach</div>
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">

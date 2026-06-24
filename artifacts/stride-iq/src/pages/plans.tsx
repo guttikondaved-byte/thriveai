@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "text-[#10b981] bg-[#10b981]/10 border border-[#10b981]/20",
-  completed: "text-[#3b82f6] bg-[#3b82f6]/10 border border-[#3b82f6]/20",
+  completed: "text-[#A2AE98] bg-[#A2AE98]/10 border border-[#A2AE98]/20",
   paused: "text-[#f59e0b] bg-[#f59e0b]/10 border border-[#f59e0b]/20",
 };
 
