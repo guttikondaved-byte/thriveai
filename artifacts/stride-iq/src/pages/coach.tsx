@@ -3,11 +3,12 @@ import {
   useListOpenaiConversations,
   useCreateOpenaiConversation,
   useGetOpenaiConversation,
+  useDeleteOpenaiConversation,
   getListOpenaiConversationsQueryKey,
   getGetOpenaiConversationQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Send, Bot, User } from "lucide-react";
+import { Plus, Send, Bot, User, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -66,6 +67,7 @@ export default function CoachAI() {
   const [input, setInput] = useState("");
   const [streamMessages, setStreamMessages] = useState<StreamMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
   const qc = useQueryClient();
@@ -73,6 +75,7 @@ export default function CoachAI() {
 
   const { data: conversations, isLoading: convsLoading } = useListOpenaiConversations();
   const createConv = useCreateOpenaiConversation();
+  const deleteConv = useDeleteOpenaiConversation();
   const { data: conversation } = useGetOpenaiConversation(selectedId!, {
     query: { enabled: !!selectedId, queryKey: getGetOpenaiConversationQueryKey(selectedId!) },
   });
@@ -114,6 +117,24 @@ export default function CoachAI() {
         qc.invalidateQueries({ queryKey: getListOpenaiConversationsQueryKey() });
         setSelectedId(conv.id);
         setStreamMessages([]);
+      },
+    });
+  }
+
+  function handleDeleteConfirm() {
+    if (!confirmDeleteId) return;
+    const deletingId = confirmDeleteId;
+    setConfirmDeleteId(null);
+    deleteConv.mutate({ id: deletingId }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListOpenaiConversationsQueryKey() });
+        if (selectedId === deletingId) {
+          setSelectedId(null);
+          setStreamMessages([]);
+        }
+      },
+      onError: () => {
+        toast({ title: "Error", description: "Failed to delete conversation", variant: "destructive" });
       },
     });
   }
@@ -233,19 +254,27 @@ export default function CoachAI() {
             <p className="text-xs text-slate-500 px-4 py-3">No conversations yet</p>
           ) : (
             conversations.map(conv => (
-              <button
-                key={conv.id}
-                onClick={() => setSelectedId(conv.id)}
-                data-testid={`conversation-${conv.id}`}
-                className={`w-full text-left px-3 py-2 text-xs rounded mx-1 transition-colors ${
-                  selectedId === conv.id
-                    ? "bg-cyan-500/15 text-cyan-300"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
-                }`}
-              >
-                <div className="font-medium truncate">{conv.title}</div>
-                <div className="text-slate-500 mt-0.5">{format(new Date(conv.createdAt), "MMM d")}</div>
-              </button>
+              <div key={conv.id} className="group relative mx-1">
+                <button
+                  onClick={() => setSelectedId(conv.id)}
+                  data-testid={`conversation-${conv.id}`}
+                  className={`w-full text-left px-3 py-2 pr-8 text-xs rounded transition-colors ${
+                    selectedId === conv.id
+                      ? "bg-cyan-500/15 text-cyan-300"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                  }`}
+                >
+                  <div className="font-medium truncate">{conv.title}</div>
+                  <div className="text-slate-500 mt-0.5">{format(new Date(conv.createdAt), "MMM d")}</div>
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(conv.id); }}
+                  aria-label="Delete conversation"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-all"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
             ))
           )}
         </div>
@@ -333,6 +362,23 @@ export default function CoachAI() {
           </>
         )}
       </div>
+
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setConfirmDeleteId(null)}>
+          <div className="bg-card border border-border rounded-xl p-6 w-80 shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-foreground mb-1">Delete conversation?</h3>
+            <p className="text-xs text-muted-foreground mb-5">This will permanently remove the conversation and all its messages. This cannot be undone.</p>
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteId(null)} className="text-muted-foreground">
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleDeleteConfirm} className="bg-red-500 hover:bg-red-600 text-white">
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
