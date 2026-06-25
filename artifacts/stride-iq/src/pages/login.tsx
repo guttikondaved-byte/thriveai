@@ -23,7 +23,7 @@ const TESTIMONIALS = [
 const FAQ = [
   { question: "How does the coach pricing work?", answer: "Coaches pay a base subscription for 25 athletes, then $4 per athlete above 25 through Stripe's monthly billing." },
   { question: "What exactly does Thrive track?", answer: "Mileage, pace, and injury risk — all in one place." },
-  { question: "How do I connect my data?", answer: "Go to Settings, click \"Connect Device,\" and authorize Strava. If you don't have Strava, you can also choose to log data yourself." },
+  { question: "How do I connect my data?", answer: "Connect directly using Strava API, and if you don't have Strava, you can also choose to log data yourself." },
   { question: "I am just a high school track runner, is this for me?", answer: "Yes of course! It's built for high school athletes, beginners, and casual runners who want to train smarter." },
   { question: "What does it cost for athletes?", answer: "It's $10/month for athletes." },
 ];
