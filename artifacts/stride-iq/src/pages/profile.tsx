@@ -223,6 +223,71 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+function BillingCard({ userRole }: { userRole: string | null | undefined }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const planType = userRole === "coach" ? "coach" : "athlete";
+  const title = planType === "coach" ? "Coach subscription" : "Athlete subscription";
+  const description = planType === "coach"
+    ? "Coach plan includes 25 athletes, then $4 per athlete after 25."
+    : "$10 per month for athlete access.";
+
+  async function handleCheckout() {
+    if (isLoading) return;
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/stripe/checkout-session", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planType }),
+      });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        const message = data?.error ?? "Unable to start checkout. Please try again.";
+        toast({ title: "Checkout failed", description: message, variant: "destructive" });
+        return;
+      }
+
+      if (!data?.url) {
+        throw new Error("Invalid checkout session response");
+      }
+
+      window.location.href = data.url;
+    } catch (error: unknown) {
+      console.error(error);
+      toast({
+        title: "Checkout failed",
+        description: error instanceof Error ? error.message : "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-white">{title}</p>
+          <p className="text-xs text-slate-400 mt-1">{description}</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleCheckout}
+          disabled={isLoading}
+          className="mt-2 sm:mt-0 inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? "Opening checkout…" : "Checkout with Stripe"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function CoachProfile() {
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -273,6 +338,7 @@ function CoachProfile() {
   return (
     <>
       {showDeleteModal && <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />}
+      <BillingCard userRole={profile?.userRole} />
       <div className="p-6 max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <div className="mb-2">
@@ -428,6 +494,7 @@ function AthleteProfile() {
     <>
       {activeGuide && <HelpModal guideKey={activeGuide} onClose={() => setActiveGuide(null)} />}
       {showDeleteModal && <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />}
+      <BillingCard userRole={profile?.userRole} />
 
       <div className="p-8 max-w-3xl mx-auto">
         <div className="mb-8 border-b border-border pb-6">
