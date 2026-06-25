@@ -15,6 +15,7 @@ const navItems = [
 ];
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+const logoutRedirectUrl = `${window.location.origin}${basePath || "/"}`;
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -71,7 +72,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <button
-            onClick={() => signOut({ redirectUrl: "/" })}
+            onClick={() => signOut({ redirectUrl: logoutRedirectUrl })}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
             <LogOut className="w-3.5 h-3.5" />

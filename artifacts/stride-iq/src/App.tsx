@@ -29,6 +29,7 @@ import { useGetAthleteProfile, setAuthTokenGetter } from "@workspace/api-client-
 const queryClient = new QueryClient();
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+const landingUrl = `${window.location.origin}${basePath || "/"}`;
 
 // REQUIRED — copy verbatim. Resolves the key from window.location.hostname.
 const clerkPubKey = publishableKeyFromHost(
@@ -125,7 +126,7 @@ function SignInPage() {
         <ArrowLeft size={16} />
         Back
       </button>
-      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+      <SignIn routing="path" path="/sign-in" signUpUrl={`${basePath}/sign-up`} />
     </div>
   );
 }
@@ -244,7 +245,7 @@ function SignUpPage() {
           Change
         </button>
       </div>
-      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+      <SignUp routing="path" path="/sign-up" signInUrl={`${basePath}/sign-in`} />
     </div>
   );
 }
@@ -285,8 +286,28 @@ function CoachRouter() {
 }
 
 function AppContent() {
-  const { data: profile, isLoading } = useGetAthleteProfile();
+  const { data: profile, isLoading, isError, error } = useGetAthleteProfile();
   const [location, navigate] = useLocation();
+  const { signOut } = useClerk();
+  const [hasHandledAuthError, setHasHandledAuthError] = useState(false);
+
+  function isApiError(err: unknown): err is { status: number } {
+    return Boolean(
+      err && typeof err === "object" &&
+      "status" in err &&
+      typeof (err as any).status === "number",
+    );
+  }
+
+  useEffect(() => {
+    if (!isError || hasHandledAuthError) return;
+    if (isApiError(error) && (error.status === 401 || error.status === 403)) {
+      setHasHandledAuthError(true);
+      signOut({ redirectUrl: landingUrl }).catch(() => {
+        window.location.href = landingUrl;
+      });
+    }
+  }, [error, hasHandledAuthError, isError, signOut]);
 
   useEffect(() => {
     if (isLoading) return;

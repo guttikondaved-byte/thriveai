@@ -44,6 +44,11 @@ function isEmailUniqueViolation(err: unknown): boolean {
   return false;
 }
 
+function isClerkNotFound(err: unknown): boolean {
+  const e = err as { status?: unknown; statusCode?: unknown } | null;
+  return !!e && (e.status === 404 || e.statusCode === 404);
+}
+
 /**
  * Migrate an old account (UUID id) to a Clerk user ID.
  * Strategy: create new user row with Clerk ID, reparent all child rows,
@@ -161,7 +166,9 @@ export async function authMiddleware(
     } catch (insertErr: unknown) {
       if (isEmailUniqueViolation(insertErr) && email) {
         // A pre-Clerk account with this email exists under a different ID.
-        // Find the old account and migrate it to the Clerk user ID.
+        // Find the old account and migrate it to the Clerk user ID if it still
+        // exists in Clerk. If the old Clerk user was already deleted, free the
+        // email on the stale row so a new account can be provisioned.
         const [oldUser] = await db
           .select()
           .from(usersTable)
@@ -169,13 +176,40 @@ export async function authMiddleware(
           .limit(1);
 
         if (oldUser && oldUser.id !== clerkUserId) {
-          req.log?.info({ oldId: oldUser.id, clerkUserId }, "Migrating pre-Clerk account to Clerk ID");
-          await migrateUserToClerkId(oldUser.id, clerkUserId, email, firstName, lastName, profileImageUrl);
-          [newUser] = await db
-            .select()
-            .from(usersTable)
-            .where(eq(usersTable.id, clerkUserId))
-            .limit(1);
+          let oldUserExists = true;
+          try {
+            await clerkClient.users.getUser(oldUser.id);
+          } catch (err) {
+            if (isClerkNotFound(err)) {
+              oldUserExists = false;
+            } else {
+              throw err;
+            }
+          }
+
+          if (oldUserExists) {
+            req.log?.info({ oldId: oldUser.id, clerkUserId }, "Migrating pre-Clerk account to Clerk ID");
+            await migrateUserToClerkId(oldUser.id, clerkUserId, email, firstName, lastName, profileImageUrl);
+          } else {
+            req.log?.info({ oldId: oldUser.id, clerkUserId }, "Clearing stale deleted user email to allow new Clerk account");
+            const tempEmail = `deleted_${oldUser.id}@placeholder.local`;
+            await db
+              .update(usersTable)
+              .set({ email: tempEmail })
+              .where(eq(usersTable.id, oldUser.id));
+            [newUser] = await db
+              .insert(usersTable)
+              .values({ id: clerkUserId, email, firstName, lastName, profileImageUrl })
+              .returning();
+          }
+
+          if (!newUser) {
+            [newUser] = await db
+              .select()
+              .from(usersTable)
+              .where(eq(usersTable.id, clerkUserId))
+              .limit(1);
+          }
         }
       } else {
         throw insertErr;

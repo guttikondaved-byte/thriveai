@@ -265,6 +265,8 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
   const [location] = useLocation();
   const { user } = useUser();
   const { signOut } = useClerk();
+  const basePath = import.meta.env.BASE_URL.replace(/\/\$/, "");
+  const logoutRedirectUrl = `${window.location.origin}${basePath || "/"}`;
   const { data: profile } = useGetAthleteProfile();
   const focus = getFocusConfig(profile?.primaryGoal);
 
@@ -315,7 +317,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
             </div>
           </div>
           <button
-            onClick={() => signOut({ redirectUrl: "/" })}
+            onClick={() => signOut({ redirectUrl: logoutRedirectUrl })}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground font-medium hover:text-foreground hover:bg-secondary/50 transition-colors"
           >
             <LogOut size={14} className="opacity-70" />

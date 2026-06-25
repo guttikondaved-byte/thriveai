@@ -381,6 +381,33 @@ function isClerkNotFound(err: unknown): boolean {
   return !!e && (e.status === 404 || e.statusCode === 404);
 }
 
+async function deleteClerkUserAndAwaitRemoval(userId: string): Promise<void> {
+  try {
+    await clerkClient.users.deleteUser(userId);
+  } catch (err) {
+    if (isClerkNotFound(err)) {
+      return;
+    }
+    throw err;
+  }
+
+  const maxAttempts = 20;
+  const delayMs = 250;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      await clerkClient.users.getUser(userId);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    } catch (err) {
+      if (isClerkNotFound(err)) {
+        return;
+      }
+      throw err;
+    }
+  }
+
+  throw new Error("Clerk user still visible after delete");
+}
+
 router.delete("/account", async (req: Request, res: Response): Promise<void> => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
@@ -398,7 +425,7 @@ router.delete("/account", async (req: Request, res: Response): Promise<void> => 
   // aborts. We must NOT proceed to the DB delete unless this succeeds, or the surviving
   // session would simply resurrect the account.
   try {
-    await clerkClient.users.deleteUser(userId);
+    await deleteClerkUserAndAwaitRemoval(userId);
   } catch (err) {
     // 404 = the Clerk user is already gone (a retry after a partial failure, or deleted
     // from the dashboard) — that satisfies our goal, so continue. Any other error means

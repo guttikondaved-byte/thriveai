@@ -12,6 +12,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useClerk } from "@clerk/react";
 import { HelpCircle, X, TriangleAlert, Trash2 } from "lucide-react";
 
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+const landingUrl = `${window.location.origin}${basePath || "/"}`;
+
 const schema = z.object({
   name: z.string().min(1, "Required"),
   age: z.string().min(1, "Required"),
@@ -158,14 +161,20 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
       const res = await fetch("/api/account", { method: "DELETE", credentials: "include" });
       if (!res.ok) throw new Error("Deletion failed — please try again.");
       deleted = true;
-      // Sign out of Clerk so the now-deleted session can't reprovision an empty
-      // user and trap them in onboarding; this lands them on the landing page.
-      await signOut({ redirectUrl: "/" });
+      sessionStorage.removeItem("thrive_pending_role");
+
+      await Promise.race([
+        signOut({ redirectUrl: landingUrl }),
+        new Promise((resolve) => setTimeout(resolve, 1000)),
+      ]).catch(() => undefined);
+
+      window.location.href = landingUrl;
+      return;
     } catch (e: unknown) {
       // The account is already gone, so never leave the user stuck on the modal:
       // if sign-out fails, force a full reload to the signed-out landing page.
       if (deleted) {
-        window.location.href = "/";
+        window.location.href = landingUrl;
         return;
       }
       setErr(e instanceof Error ? e.message : "Something went wrong");
