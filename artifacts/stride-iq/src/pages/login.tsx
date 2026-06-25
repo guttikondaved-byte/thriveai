@@ -141,7 +141,7 @@ function Landing() {
         <p className="text-sm text-slate-400 max-w-2xl">Ready to see how Thrive helps you train with fewer injuries, smarter plans, and better coach collaboration?</p>
         <button
           type="button"
-          onClick={() => navigate(`${basePath}/sign-up`)}
+          onClick={() => navigate("/sign-up")}
           className="rounded-full bg-primary px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:bg-primary/90 transition"
         >
           Get Started
@@ -157,11 +157,11 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-[#06070E] flex items-center justify-center px-4 py-12">
       <div className="fixed top-4 right-5 z-50 flex items-center gap-2">
-        <button onClick={() => navigate(`${basePath}/sign-up`)}
+        <button onClick={() => navigate("/sign-up")}
           className="text-xs font-semibold text-muted-foreground hover:text-white px-3 py-1.5 rounded-lg border border-border hover:border-primary/50 bg-[#06070E]/70 backdrop-blur-sm transition-all">
           Sign up
         </button>
-        <button onClick={() => navigate(`${basePath}/sign-in`)}
+        <button onClick={() => navigate("/sign-in")}
           className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg bg-primary/20 border border-primary/40 hover:bg-primary/30 hover:border-primary/60 backdrop-blur-sm transition-all">
           Log in
         </button>
