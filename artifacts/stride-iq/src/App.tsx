@@ -364,8 +364,8 @@ function ClerkProviderWithRoutes() {
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
       <Switch>
-        <Route path="/sign-in/*?" component={SignInPage} />
-        <Route path="/sign-up/*?" component={SignUpPage} />
+        <Route path="/sign-in/*" component={SignInPage} />
+        <Route path="/sign-up/*" component={SignUpPage} />
         <Route component={HomeContent} />
       </Switch>
     </ClerkProvider>
