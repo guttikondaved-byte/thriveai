@@ -15,14 +15,17 @@ const FEATURES = [
 ];
 
 const TESTIMONIALS = [
-  { quote: "Thrive turned our club into a data-driven coaching machine.", author: "Mia, Head Coach" },
-  { quote: "My injury alerts saved me from a stress fracture before it started.", author: "Aaron, marathoner" },
+  { quote: "I can't believe this app does not exist already! It's such a brilliant idea.", author: "Teen athlete" },
+  { quote: "This will be so helpful to me for monitoring all of my team members. Thank you for creating this app!", author: "Coach" },
+  { quote: "Wow, amazing! I am going to share this with all of the track athletes in my team.", author: "Track athlete" },
 ];
 
 const FAQ = [
-  { question: "Is Thrive for runners and coaches?", answer: "Yes — runners get personalized plans and recovery insights, while coaches manage teams, athletes, and pricing in one place." },
-  { question: "Do I need Strava to use Thrive?", answer: "Strava sync is optional but recommended. You can still manually track training and use the AI coach without it." },
   { question: "How does the coach pricing work?", answer: "Coaches pay a base subscription for 25 athletes, then $4 per athlete above 25 through Stripe's monthly billing." },
+  { question: "What exactly does Thrive track?", answer: "Mileage, pace, and injury risk — all in one place." },
+  { question: "How do I connect my data?", answer: "Go to Settings, click \"Connect Device,\" and authorize Strava. If you don't have Strava, you can also choose to log data yourself." },
+  { question: "I am just a high school track runner, is this for me?", answer: "Yes of course! It's built for high school athletes, beginners, and casual runners who want to train smarter." },
+  { question: "What does it cost for athletes?", answer: "It's $10/month for athletes." },
 ];
 
 function Landing() {
@@ -35,16 +38,19 @@ function Landing() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_35%_at_90%_70%,rgba(242,210,207,0.08)_0%,transparent_70%)]" />
       </div>
 
-      <div className="flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
-        <div className="max-w-2xl">
+      <div className="flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between mb-12">
+        <div className="flex-1 lg:max-w-xl">
           <div className="inline-flex items-center gap-2 text-[11px] font-semibold text-[#A2AE98] bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-full mb-6">
             AI-driven training for runners and coaches
           </div>
-          <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight text-white mb-5 leading-tight">
-            Train smarter, stay stronger, and scale coaching with confidence.
-          </h1>
+          <img
+            src="/thrive-logo-white.svg"
+            alt="Thrive"
+            className="h-24 sm:h-32 w-auto mb-5"
+          />
+          <h1 className="sr-only">Thrive — AI training for runners and coaches</h1>
           <p className="text-slate-400 text-lg leading-8 max-w-xl mb-8">
-            Thrive blends Strava sync, AI coaching, and injury detection into one platform — so athletes hit new PRs and coaches manage teams without guesswork.
+            Know your risks, track your progress, and stay injury-free.
           </p>
           <div className="flex flex-wrap items-center gap-3 mb-8">
             <button
@@ -63,61 +69,23 @@ function Landing() {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-left">
-            <div className="rounded-2xl border border-slate-700/60 bg-slate-950/60 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-500 mb-2">Trusted by</p>
-              <p className="text-2xl font-semibold text-white">120+ running teams</p>
-            </div>
-            <div className="rounded-2xl border border-slate-700/60 bg-slate-950/60 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-500 mb-2">Monthly insights</p>
-              <p className="text-2xl font-semibold text-white">98% athlete engagement</p>
-            </div>
+          <div className="rounded-2xl border border-slate-700/60 bg-slate-950/60 p-4 max-w-sm">
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-500 mb-2">Validated by</p>
+            <p className="text-2xl font-semibold text-white">70+ users before launch</p>
           </div>
         </div>
 
-        <div className="relative w-full max-w-xl">
-          <div className="rounded-[2rem] border border-white/10 bg-slate-950/70 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur-xl">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <p className="text-xs text-slate-500 uppercase tracking-[0.25em] mb-1">Thrive preview</p>
-                <p className="text-sm font-semibold text-white">Dashboard snapshot</p>
-              </div>
-              <div className="rounded-2xl bg-slate-900/80 px-3 py-1 text-[11px] font-semibold text-[#A2AE98] border border-[#A2AE98]/15">
-                Live
-              </div>
-            </div>
-            <div className="h-[320px] rounded-[1.75rem] bg-gradient-to-br from-[#06110F] to-[#111827] border border-white/10 p-5 overflow-hidden">
-              <div className="h-full grid grid-rows-[1fr_auto] gap-4">
-                <div className="space-y-4">
-                  <div className="h-10 w-32 rounded-full bg-slate-800/90" />
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="h-24 rounded-3xl bg-slate-900/90 p-4 border border-slate-700/70">
-                      <p className="text-xs text-slate-500">Weekly load</p>
-                      <p className="mt-3 text-2xl font-semibold text-white">42<span className="text-sm">mi</span></p>
-                    </div>
-                    <div className="h-24 rounded-3xl bg-slate-900/90 p-4 border border-slate-700/70">
-                      <p className="text-xs text-slate-500">HRV</p>
-                      <p className="mt-3 text-2xl font-semibold text-white">78</p>
-                    </div>
-                    <div className="h-24 rounded-3xl bg-slate-900/90 p-4 border border-slate-700/70">
-                      <p className="text-xs text-slate-500">Risk</p>
-                      <p className="mt-3 text-2xl font-semibold text-white">Low</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-[1.5rem] border border-slate-800/80 bg-slate-900/90 p-4 text-[11px] text-slate-400">
-                  <p className="font-semibold text-white mb-3">Recommended this week</p>
-                  <ul className="space-y-2">
-                    <li>• Recovery day with focused mobility</li>
-                    <li>• 6 mi easy run + cadence drill</li>
-                    <li>• Strength session for knee stability</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
+        <div className="relative flex-1 w-full">
+          <div className="rounded-[2rem] border border-white/10 bg-slate-950/70 p-3 shadow-2xl shadow-slate-950/40 backdrop-blur-xl">
+            <img
+              src="/homepage-screen.png"
+              alt="Thrive product screenshot showing the dashboard with weekly distance, runs, training load, and recent activity"
+              className="w-full h-auto rounded-[1.5rem] border border-white/10"
+              loading="eager"
+            />
           </div>
-          <div className="absolute top-8 left-4 hidden sm:block w-16 h-16 rounded-full bg-primary/15 blur-2xl" />
-          <div className="absolute bottom-8 right-8 hidden sm:block w-24 h-24 rounded-full bg-[#F2D2CF]/15 blur-2xl" />
+          <div className="absolute -top-6 -left-4 hidden sm:block w-24 h-24 rounded-full bg-primary/15 blur-3xl" />
+          <div className="absolute -bottom-6 -right-4 hidden sm:block w-32 h-32 rounded-full bg-[#F2D2CF]/15 blur-3xl" />
         </div>
       </div>
 
@@ -145,7 +113,7 @@ function Landing() {
           </ul>
         </div>
         <div className="rounded-3xl border border-slate-700/50 bg-slate-950/70 p-6">
-          <p className="text-xs uppercase tracking-[0.25em] text-slate-500 mb-3">More proof</p>
+          <p className="text-xs uppercase tracking-[0.25em] text-slate-500 mb-3">What our users say about Thrive</p>
           {TESTIMONIALS.map((testimonial) => (
             <div key={testimonial.author} className="rounded-3xl border border-slate-800/70 bg-slate-900/80 p-5 mb-4 last:mb-0">
               <p className="text-sm text-slate-200 leading-7">“{testimonial.quote}”</p>
@@ -174,7 +142,7 @@ function Landing() {
           onClick={() => navigate("/sign-up")}
           className="rounded-full bg-primary px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:bg-primary/90 transition"
         >
-          Start your free trial
+          Get Started
         </button>
       </div>
     </div>
