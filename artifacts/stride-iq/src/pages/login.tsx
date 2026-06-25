@@ -1,6 +1,8 @@
 import { useLocation } from "wouter";
 import { Brain, ShieldCheck, LineChart, MessageSquare, Users, Dumbbell, User, Activity, Bot, ChevronRight } from "lucide-react";
 
+const basePath = import.meta.env.BASE_URL || "";
+
 const STATS = [
   { value: "Track",   label: "Every session",      color: "text-cyan-300",   bg: "bg-cyan-500/10 border-cyan-500/25" },
   { value: "Monitor", label: "Injury risk",         color: "text-red-300",    bg: "bg-red-500/10 border-red-500/25" },
@@ -30,11 +32,11 @@ function Landing() {
       {/* Logo + hero */}
       <div className="flex justify-center mb-5">
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: 'transparent' }}>
-          <img src={`${window.location.origin}/logo-mark.svg`} alt="Thrive" className="w-10 h-10" />
+              <img src={`${window.location.origin}${basePath}/logo-mark.svg`} alt="Thrive" className="w-10 h-10" />
         </div>
       </div>
       <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary bg-primary/10 border border-primary/30 px-3 py-1 rounded-full mb-5 shadow-sm">
-        <img src={`${window.location.origin}/logo-mark.svg`} alt="Thrive" className="w-3 h-3" /> AI-powered running platform
+  <img src={`${window.location.origin}${basePath}/logo-mark.svg`} alt="Thrive" className="w-3 h-3" /> AI-powered running platform
       </div>
       <h1 className="text-4xl font-extrabold mb-3 tracking-tight leading-tight">
         <span className="text-white">Train smarter.</span><br />
