@@ -1,6 +1,6 @@
 import {
   Trees,
-  Zap,
+  // Zap removed in favor of other icons
   Route,
   Mountain,
   Sparkles,
@@ -76,7 +76,7 @@ const FOCUS_MAP: Record<string, FocusConfig> = {
     focusAreas: ["Speed & interval work", "Event-specific blocks", "Sprint / distance balance", "Meet-day peaking"],
     keySessionTypes: ["400m / 800m repeats", "Tempo intervals", "Sprint drills", "Race simulation"],
     distanceLabel: "Track Volume",
-    icon: Zap,
+  icon: Route,
     accentText: "text-amber-400",
     accentBg: "bg-amber-500/10",
     accentBorder: "border-amber-500/20",

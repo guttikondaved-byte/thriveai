@@ -3,9 +3,10 @@ import { useGetActivity } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import {
   ArrowLeft, MapPin, Clock, TrendingUp, Heart, Activity as ActivityIcon,
-  Flame, Zap, Footprints, Gauge, Thermometer, Trophy, Award, ThumbsUp,
+  Flame, Footprints, Gauge, Thermometer, Trophy, Award, ThumbsUp,
   MessageCircle, Mountain, Timer,
 } from "lucide-react";
+const basePath = import.meta.env.BASE_URL || "";
 import { decodePolyline, polylineToSvgPath } from "@/lib/polyline";
 
 const ACTIVITY_LABELS: Record<string, string> = {
@@ -189,14 +190,14 @@ export default function ActivityDetail() {
         {activity.calories != null && (
           <MetricCard icon={<Flame className="w-4 h-4" />} label="Calories" value={`${Math.round(activity.calories)}`} />
         )}
-        {activity.sufferScore != null && (
-          <MetricCard icon={<Zap className="w-4 h-4" />} label="Relative Effort" value={`${activity.sufferScore}`} />
-        )}
+    {activity.sufferScore != null && (
+      <MetricCard icon={<img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-4 h-4" alt="effort" />} label="Relative Effort" value={`${activity.sufferScore}`} />
+    )}
         {activity.maxSpeed != null && (
           <MetricCard icon={<Timer className="w-4 h-4" />} label="Best Pace" value={paceFromSpeed(activity.maxSpeed)} />
         )}
         {activity.avgWatts != null && (
-          <MetricCard icon={<Zap className="w-4 h-4" />} label="Avg Power" value={`${Math.round(activity.avgWatts)} W`} />
+          <MetricCard icon={<img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-4 h-4" alt="power" />} label="Avg Power" value={`${Math.round(activity.avgWatts)} W`} />
         )}
         {(activity.elevHighM != null || activity.elevLowM != null) && (
           <MetricCard icon={<Mountain className="w-4 h-4" />} label="Elevation"

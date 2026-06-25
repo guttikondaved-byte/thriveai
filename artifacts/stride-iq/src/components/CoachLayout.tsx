@@ -1,10 +1,12 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, Bot, Settings, LogOut, Calendar, X, Zap, Check } from "lucide-react";
+import { LayoutDashboard, Users, Bot, Settings, LogOut, Calendar, X, Check } from "lucide-react";
 import { useUser, useClerk } from "@clerk/react";
 import { useGetAthleteProfile } from "@workspace/api-client-react";
 import NotificationBell from "./NotificationBell";
 import { getFocusConfig } from "@/lib/coachingFocus";
 import { useState, useEffect, useRef } from "react";
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const NAV = [
   { href: "/", label: "Team Dashboard", icon: LayoutDashboard },
@@ -135,12 +137,12 @@ function AveraTipPopup() {
 
   return (
     <div className="fixed bottom-6 right-6 z-50 w-80 animate-in slide-in-from-bottom-4 fade-in duration-300">
-      <div className="bg-[#0d1529] border border-cyan-500/30 rounded-xl shadow-2xl shadow-black/50 overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-800 bg-cyan-500/5">
-          <div className="w-6 h-6 rounded-full bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center shrink-0">
-            <Zap className="w-3 h-3 text-cyan-400" />
+        <div className="bg-[#0d1529] border border-primary/30 rounded-xl shadow-2xl shadow-black/50 overflow-hidden">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-800 bg-primary/5">
+          <div className="w-6 h-6 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
+            <img src={`${window.location.origin}${basePath}/logo-mark.svg`} alt="Thrive" className="w-3 h-3" />
           </div>
-          <span className="text-xs font-semibold text-cyan-400">AveraAI has a suggestion</span>
+          <span className="text-xs font-semibold text-primary">AveraAI has a suggestion</span>
           <button
             onClick={() => { setDismissed(true); setVisible(false); }}
             className="ml-auto text-slate-500 hover:text-slate-300 transition-colors"

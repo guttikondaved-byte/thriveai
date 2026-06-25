@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useUpdateAthleteProfile, getGetAthleteProfileQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, ChevronLeft, Check, Upload, Zap, Users, User, LayoutDashboard, ShieldAlert, Bot, TrendingUp, Activity } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, Upload, Users, User, LayoutDashboard, ShieldAlert, Bot, TrendingUp, Activity } from "lucide-react";
 
 type Role = "athlete" | "coach";
 type FitnessLevel = "beginner" | "intermediate" | "advanced" | "elite";
@@ -119,6 +119,7 @@ const inputCls = (error?: string) =>
   }`;
 
 export default function Onboarding() {
+  const basePath = import.meta.env.BASE_URL || "";
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormData>(() => {
     const stored = sessionStorage.getItem("thrive_pending_role");
@@ -250,9 +251,9 @@ export default function Onboarding() {
 
         {/* Logo */}
         <div className="flex items-center gap-2 mb-10">
-          <div className="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center">
-            <Zap size={16} className="text-slate-900" fill="currentColor" />
-          </div>
+            <div className="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center">
+              <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-6 h-6" alt="logo" />
+            </div>
           <span className="text-lg font-bold text-white tracking-wide">Thrive</span>
         </div>
 

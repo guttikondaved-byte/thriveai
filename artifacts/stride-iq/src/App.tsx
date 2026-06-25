@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Zap, User, Users, ArrowLeft } from "lucide-react";
+import { User, Users, ArrowLeft } from "lucide-react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ClerkProvider, SignIn, SignUp, useUser, useClerk, useAuth } from "@clerk/react";
@@ -158,11 +158,8 @@ function SignUpPage() {
             Back
           </button>
           <div className="flex justify-center mb-8">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/25"
-              style={{ background: "linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)" }}
-            >
-              <Zap className="w-7 h-7 text-white" strokeWidth={2.5} fill="white" />
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: 'transparent' }}>
+              <img src={`${window.location.origin}${basePath}/logo-mark.svg`} alt="Thrive" className="w-10 h-10" />
             </div>
           </div>
 

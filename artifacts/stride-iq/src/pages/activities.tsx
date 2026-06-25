@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+const basePath = import.meta.env.BASE_URL || "";
 import { Link } from "wouter";
 import { useListActivities, useCreateActivity, getListActivitiesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, X, Upload, Zap, CheckCircle2, RefreshCw, Unlink } from "lucide-react";
+import { Plus, X, Upload, CheckCircle2, RefreshCw, Unlink } from "lucide-react";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -189,10 +190,10 @@ export default function Activities() {
       </div>
 
       {/* Strava connection banner */}
-      {stravaStatus.data?.connected ? (
+  {stravaStatus.data?.connected ? (
         <div className="flex items-center justify-between bg-[#FC4C02]/10 border border-[#FC4C02]/30 rounded-xl px-5 py-3.5 mb-6">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 size={18} className="text-[#FC4C02] shrink-0" />
+            <div className="flex items-center gap-3">
+            <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-4 h-4 shrink-0" alt="Strava" />
             <div>
               <p className="text-sm font-semibold text-white">Strava connected</p>
               <p className="text-xs text-slate-400">New runs sync automatically via webhook.</p>
@@ -222,10 +223,10 @@ export default function Activities() {
             </button>
           </div>
         </div>
-      ) : (
+        ) : (
         <div className="flex items-center justify-between bg-slate-800/50 border border-slate-700/60 rounded-xl px-5 py-3.5 mb-6">
           <div className="flex items-center gap-3">
-            <Zap size={18} className="text-[#FC4C02] shrink-0" />
+            <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-4 h-4 shrink-0" alt="Strava" />
             <div>
               <p className="text-sm font-semibold text-white">Connect Strava</p>
               <p className="text-xs text-slate-400">Sync runs automatically — every new Strava activity appears here in real time.</p>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, Copy, Check, Link as LinkIcon, UserPlus, Zap, ChevronRight, RefreshCw, Trash2, LogOut, AlertTriangle } from "lucide-react";
+import { Users, Copy, Check, Link as LinkIcon, UserPlus, ChevronRight, RefreshCw, Trash2, LogOut, AlertTriangle } from "lucide-react";
 import { useGetAthleteProfile } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import AthleteProfileModal from "../components/AthleteProfileModal";
@@ -26,6 +26,7 @@ interface StravaStatus {
 }
 
 export default function Team() {
+  const basePath = import.meta.env.BASE_URL || "";
   const { data: profile } = useGetAthleteProfile();
   const isCoach = profile?.userRole === "coach";
   const { toast } = useToast();
@@ -386,7 +387,7 @@ export default function Team() {
             ? "bg-[#FC4C02]/10 border-[#FC4C02]/30"
             : "bg-slate-800/50 border-slate-700/60"
         }`}>
-          <Zap size={16} className="text-[#FC4C02] shrink-0" />
+          <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-4 h-4 shrink-0" alt="Strava" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-white">
               {connectedCount} / {totalMembers} athlete{totalMembers !== 1 ? "s" : ""} connected to Strava
@@ -408,7 +409,7 @@ export default function Team() {
             <span className="text-sm font-semibold text-foreground">Athletes</span>
           </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Zap size={11} className="text-[#FC4C02]" />
+            <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-3.5 h-3.5" alt="Strava" />
             Strava
           </div>
         </div>
@@ -437,8 +438,8 @@ export default function Team() {
                   <div className="flex items-center gap-3 shrink-0">
                     {strava?.connected ? (
                       <div className="flex items-center gap-1.5">
-                        <span className="flex items-center gap-1 text-xs font-medium text-[#FC4C02] bg-[#FC4C02]/10 border border-[#FC4C02]/25 px-2 py-0.5 rounded-full">
-                          <Zap size={9} fill="currentColor" />
+                          <span className="flex items-center gap-1 text-xs font-medium text-[#FC4C02] bg-[#FC4C02]/10 border border-[#FC4C02]/25 px-2 py-0.5 rounded-full">
+                          <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-2.5 h-2.5" alt="Strava" />
                           Strava linked
                         </span>
                         {strava.lastSync && (

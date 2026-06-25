@@ -7,7 +7,7 @@ import {
   getGetOpenaiConversationQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Send, Bot, User, Zap } from "lucide-react";
+import { Plus, Send, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -61,6 +61,7 @@ function AssistantMarkdown({ content }: { content: string }) {
 }
 
 export default function CoachAI() {
+  const basePath = import.meta.env.BASE_URL || "";
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [input, setInput] = useState("");
   const [streamMessages, setStreamMessages] = useState<StreamMessage[]>([]);
@@ -208,7 +209,7 @@ export default function CoachAI() {
       <div className="w-56 border-r border-white/10 flex flex-col shrink-0 bg-[#0d1426]">
         <div className="p-4 border-b border-white/10">
           <div className="flex items-center gap-2 mb-3">
-            <Zap className="w-4 h-4 text-cyan-400" />
+            <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-4 h-4" alt="Avera" />
             <span className="text-sm font-semibold text-white">AveraAI</span>
             <span className="text-xs text-slate-400">Coach Advisor</span>
           </div>
@@ -255,7 +256,7 @@ export default function CoachAI() {
         {!selectedId ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8">
             <div className="w-14 h-14 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-5">
-              <Bot className="w-7 h-7 text-cyan-400" />
+              <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-7 h-7" alt="Avera" />
             </div>
             <h2 className="text-xl font-semibold text-white mb-2">AveraAI — Coaching Advisor</h2>
             <p className="text-sm text-slate-400 text-center max-w-sm mb-6">

@@ -1,5 +1,5 @@
 import { useGetDashboardSummary } from "@workspace/api-client-react";
-import { AlertTriangle, Activity, TrendingUp, Zap, X } from "lucide-react";
+import { AlertTriangle, Activity, TrendingUp, X } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
@@ -121,7 +121,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
         <StatCard label="Weekly Distance" value={`${data.weeklyDistanceKm} mi`} sub="last 7 days" icon={Activity} />
         <StatCard label="Weekly Runs" value={data.weeklyRuns} sub="this week" icon={TrendingUp} />
-        <StatCard label="Avg Pace" value={paceStr} sub="per mi" icon={Zap} />
+  <StatCard label="Avg Pace" value={paceStr} sub="per mi" icon={TrendingUp} />
         <StatCard label="Injury Alerts" value={data.activeAlerts} sub="active" icon={AlertTriangle} />
       </div>
 

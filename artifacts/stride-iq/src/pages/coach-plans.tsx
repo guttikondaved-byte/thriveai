@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { Plus, X, Trash2, Calendar, ChevronDown, ChevronUp, Zap, Loader2, Check } from "lucide-react";
+import { Plus, X, Trash2, Calendar, ChevronDown, ChevronUp, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+
+const basePath = import.meta.env.BASE_URL || "";
 
 interface Athlete {
   userId: string;
@@ -206,14 +208,14 @@ export default function CoachPlans() {
           <h1 className="text-2xl font-bold text-white">Training Plans</h1>
           <p className="text-sm text-slate-400 mt-0.5">Manage training plans for each athlete</p>
         </div>
-        <Button
+    <Button
           onClick={averaFlow === "idle" || averaFlow === "error" ? buildWithAvera : undefined}
           disabled={averaFlow === "loading" || averaFlow === "applying"}
           className="gap-2 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 disabled:opacity-60"
         >
           {(averaFlow === "loading" || averaFlow === "applying")
             ? <Loader2 className="w-4 h-4 animate-spin" />
-            : <Zap className="w-4 h-4" />}
+      : <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-4 h-4" alt="Avera" />}
           {averaFlow === "loading" ? "Avera is thinking…"
             : averaFlow === "applying" ? "Adding plan…"
             : "Build plan with Avera"}
@@ -224,7 +226,7 @@ export default function CoachPlans() {
         <div className="mb-6 rounded-xl border border-cyan-500/30 bg-cyan-500/5 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3 border-b border-cyan-500/15">
             <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-cyan-400" />
+              <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-4 h-4" alt="Avera" />
               <span className="text-sm font-semibold text-cyan-400">AveraAI Plan Builder</span>
             </div>
             <button

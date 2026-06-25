@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Zap, Brain, ShieldCheck, LineChart, MessageSquare, Users, Dumbbell, User, Activity, Bot, ChevronRight } from "lucide-react";
+import { Brain, ShieldCheck, LineChart, MessageSquare, Users, Dumbbell, User, Activity, Bot, ChevronRight } from "lucide-react";
 
 const STATS = [
   { value: "Track",   label: "Every session",      color: "text-cyan-300",   bg: "bg-cyan-500/10 border-cyan-500/25" },
@@ -29,13 +29,12 @@ function Landing() {
 
       {/* Logo + hero */}
       <div className="flex justify-center mb-5">
-        <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/25"
-          style={{ background: "linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)" }}>
-          <Zap className="w-8 h-8 text-white" strokeWidth={2.5} fill="white" />
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: 'transparent' }}>
+          <img src={`${window.location.origin}/logo-mark.svg`} alt="Thrive" className="w-10 h-10" />
         </div>
       </div>
-      <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-cyan-300 bg-cyan-500/15 border border-cyan-400/30 px-3 py-1 rounded-full mb-5 shadow-sm shadow-cyan-500/10">
-        <Zap size={10} fill="currentColor" /> AI-powered running platform
+      <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary bg-primary/10 border border-primary/30 px-3 py-1 rounded-full mb-5 shadow-sm">
+        <img src={`${window.location.origin}/logo-mark.svg`} alt="Thrive" className="w-3 h-3" /> AI-powered running platform
       </div>
       <h1 className="text-4xl font-extrabold mb-3 tracking-tight leading-tight">
         <span className="text-white">Train smarter.</span><br />

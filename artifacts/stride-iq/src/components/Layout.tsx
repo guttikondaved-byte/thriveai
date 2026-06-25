@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Activity, Calendar, AlertTriangle, Bot, User, Zap, HeartPulse, Users, LogOut } from "lucide-react";
+import { LayoutDashboard, Activity, Calendar, AlertTriangle, Bot, User, HeartPulse, Users, LogOut } from "lucide-react";
 import { useUser, useClerk } from "@clerk/react";
 import NotificationBell from "./NotificationBell";
 
