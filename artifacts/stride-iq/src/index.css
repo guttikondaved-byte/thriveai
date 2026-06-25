@@ -74,52 +74,54 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  /* Deep slate/navy dark theme as default */
-  --background: 222 47% 4%;
-  --foreground: 210 40% 98%;
+  /* Thrive brand: dark background with royal blue primary and teal secondary */
+  --background: 220 30% 6%;   /* deep navy */
+  --foreground: 210 40% 98%;  /* near white */
 
-  --border: 217 33% 15%;
-  --input: 217 33% 15%;
-  --ring: 189 94% 43%; /* Cyan/Teal */
+  --border: 215 18% 12%;
+  --input: 215 18% 12%;
+  --ring: 217 86% 44%;       /* bright ring for focus (royal-ish) */
 
-  --card: 222 47% 6%;
+  --card: 220 30% 8%;
   --card-foreground: 210 40% 98%;
-  --card-border: 217 33% 15%;
+  --card-border: 215 18% 12%;
 
-  --popover: 222 47% 6%;
+  --popover: 220 30% 8%;
   --popover-foreground: 210 40% 98%;
-  --popover-border: 217 33% 15%;
+  --popover-border: 215 18% 12%;
 
-  --primary: 189 94% 43%; /* Cyan */
-  --primary-foreground: 222 47% 4%;
+  /* Primary: Thrive Royal Blue */
+  --primary: 217 100% 42%;    /* ~#0057D9 */
+  --primary-foreground: 222 47% 98%;
 
-  --secondary: 217 33% 12%;
-  --secondary-foreground: 210 40% 98%;
+  /* Secondary: Thrive Teal */
+  --secondary: 171 100% 40%;  /* ~#00BFA6 */
+  --secondary-foreground: 222 47% 98%;
 
-  --muted: 217 33% 12%;
-  --muted-foreground: 215 20.2% 65.1%;
+  --muted: 215 12% 30%;
+  --muted-foreground: 215 12% 58%;
 
-  --accent: 189 94% 15%;
-  --accent-foreground: 189 94% 60%;
+  --accent: 38 100% 56%;      /* gold accent ~#FFB020 */
+  --accent-foreground: 220 30% 6%;
 
   --destructive: 350 80% 50%;
   --destructive-foreground: 210 40% 98%;
 
-  /* Vibrant data colors */
-  --chart-1: 189 94% 43%; /* Cyan */
-  --chart-2: 150 84% 45%; /* Electric Green */
-  --chart-3: 39 100% 50%; /* Vibrant Orange */
-  --chart-4: 280 85% 65%; /* Bright Violet */
-  --chart-5: 340 85% 60%; /* Hot Pink */
+  /* Vibrant data colors (respect brand) */
+  --chart-1: 217 100% 42%; /* primary */
+  --chart-2: 171 100% 40%; /* secondary */
+  --chart-3: 39 100% 50%;
+  --chart-4: 280 85% 65%;
+  --chart-5: 340 85% 60%;
 
-  --sidebar: 222 47% 5%;
+  --sidebar: 220 30% 8%;
   --sidebar-foreground: 210 40% 98%;
-  --sidebar-border: 217 33% 12%;
-  --sidebar-primary: 189 94% 43%;
-  --sidebar-primary-foreground: 222 47% 4%;
-  --sidebar-accent: 217 33% 12%;
-  --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-ring: 189 94% 43%;
+  --sidebar-border: 215 18% 12%;
+  --sidebar-primary: 217 100% 42%;
+  --sidebar-primary-foreground: 222 47% 98%;
+  --sidebar-accent: 171 100% 40%;
+  --sidebar-accent-foreground: 222 47% 98%;
+  --sidebar-ring: 217 100% 42%;
 
   --radius: 0.75rem;
 
@@ -194,3 +196,17 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Utility aliases: map existing cyan/violet utilities to Thrive brand colors */
+.text-cyan-300 { color: hsl(var(--primary)); }
+.bg-cyan-500\/10 { background-color: color-mix(in srgb, hsl(var(--primary)) 10%, transparent); }
+.border-cyan-500\/25 { border-color: color-mix(in srgb, hsl(var(--primary)) 25%, transparent); }
+.bg-cyan-500\/5 { background-color: color-mix(in srgb, hsl(var(--primary)) 5%, transparent); }
+.text-cyan-400 { color: hsl(var(--primary)); }
+.bg-cyan-500 { background-color: hsl(var(--primary)); }
+.border-cyan-500\/30 { border-color: color-mix(in srgb, hsl(var(--primary)) 30%, transparent); }
+
+.text-violet-300 { color: hsl(var(--secondary)); }
+.bg-violet-500\/10 { background-color: color-mix(in srgb, hsl(var(--secondary)) 10%, transparent); }
+.border-violet-500\/30 { border-color: color-mix(in srgb, hsl(var(--secondary)) 30%, transparent); }
+

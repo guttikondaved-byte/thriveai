@@ -15,6 +15,7 @@ const navItems = [
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
   const [location] = useLocation();
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -29,8 +30,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <aside className="w-60 shrink-0 border-r border-border flex flex-col" data-testid="sidebar">
         <div className="px-6 py-5 border-b border-border flex items-center">
           <div className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-primary" strokeWidth={2.5} />
-            <span className="text-lg font-semibold tracking-tight text-foreground">Thrive</span>
+            <img src={`${window.location.origin}${basePath || ''}/logo.svg`} alt="Thrive" className="w-28 h-auto" />
           </div>
         </div>
         <nav className="flex-1 py-4 px-3 space-y-0.5">

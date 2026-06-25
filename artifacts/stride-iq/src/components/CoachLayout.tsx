@@ -262,6 +262,7 @@ function AveraTipPopup() {
 }
 
 export default function CoachLayout({ children }: { children: React.ReactNode }) {
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
   const [location] = useLocation();
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -277,13 +278,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
       <aside className="w-60 flex-shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border">
         <div className="px-5 py-5 border-b border-sidebar-border flex items-center">
           <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-lg ${focus.accentBg} border ${focus.accentBorder} flex items-center justify-center ${focus.accentText}`}>
-              <focus.icon size={16} />
-            </div>
-            <div>
-              <div className="text-sm font-bold text-foreground tracking-tight">Thrive</div>
-              <div className={`text-[10px] font-bold uppercase tracking-[0.15em] ${focus.accentText}`}>{focus.label} Coach</div>
-            </div>
+            <img src={`${window.location.origin}${basePath || ''}/logo.svg`} alt="Thrive" className="w-24 h-auto" />
           </div>
         </div>
 
