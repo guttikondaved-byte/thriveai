@@ -40,9 +40,18 @@ const clerkPubKey = publishableKeyFromHost(
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL?.trim() || undefined;
 
 function stripBase(path: string): string {
-  return basePath && path.startsWith(basePath)
-    ? path.slice(basePath.length) || "/"
-    : path;
+  let normalizedPath = path;
+
+  try {
+    const url = new URL(path, window.location.origin);
+    normalizedPath = `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    normalizedPath = path;
+  }
+
+  return basePath && normalizedPath.startsWith(basePath)
+    ? normalizedPath.slice(basePath.length) || "/"
+    : normalizedPath;
 }
 
 if (!clerkPubKey) {
@@ -116,7 +125,7 @@ function SignInPage() {
         <ArrowLeft size={16} />
         Back
       </button>
-      <SignIn routing="path" path="/sign-in/*?" signUpUrl="/sign-up" />
+      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
     </div>
   );
 }
@@ -235,7 +244,7 @@ function SignUpPage() {
           Change
         </button>
       </div>
-      <SignUp routing="path" path="/sign-up/*?" signInUrl="/sign-in" />
+      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
     </div>
   );
 }
@@ -358,18 +367,16 @@ function ClerkProviderWithRoutes() {
       publishableKey={clerkPubKey}
       proxyUrl={clerkProxyUrl}
       appearance={clerkAppearance}
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
+      signInUrl={`${basePath}/sign-in`}
+      signUpUrl={`${basePath}/sign-up`}
       routerPush={(to) => setLocation(stripBase(to))}
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
       <Switch>
         <Route path="/sign-in" component={SignInPage} />
         <Route path="/sign-in/*" component={SignInPage} />
-        <Route path="/sign-in/callback" component={SignInPage} />
         <Route path="/sign-up" component={SignUpPage} />
         <Route path="/sign-up/*" component={SignUpPage} />
-        <Route path="/sign-up/callback" component={SignUpPage} />
         <Route component={HomeContent} />
       </Switch>
     </ClerkProvider>
