@@ -689,43 +689,44 @@ type RosterEntry = {
 };
 
 router.get("/openai/suggest-plan", async (req: Request, res): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  const userId = req.user.id;
-  const profileRows = await db.select({ userRole: athleteProfileTable.userRole }).from(athleteProfileTable).where(eq(athleteProfileTable.userId, userId)).limit(1);
-  if (profileRows[0]?.userRole !== "coach") {
-    res.status(403).json({ error: "Coach only" });
-    return;
-  }
-  if (!openaiClient) {
-    res.status(503).json({ error: "AI is not configured" });
-    return;
-  }
+  try {
+    if (!req.isAuthenticated()) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const userId = req.user.id;
+    const profileRows = await db.select({ userRole: athleteProfileTable.userRole }).from(athleteProfileTable).where(eq(athleteProfileTable.userId, userId)).limit(1);
+    if (profileRows[0]?.userRole !== "coach") {
+      res.status(403).json({ error: "Coach only" });
+      return;
+    }
+    if (!openaiClient) {
+      res.status(503).json({ error: "AI is not configured" });
+      return;
+    }
 
-  const data = await getCoachTeamRoster(userId);
-  if (!data) {
-    res.status(404).json({ error: "No team found" });
-    return;
-  }
-  if (data.roster.length === 0) {
-    res.status(400).json({ error: "No athletes on your team yet" });
-    return;
-  }
+    const data = await getCoachTeamRoster(userId);
+    if (!data) {
+      res.status(404).json({ error: "No team found" });
+      return;
+    }
+    if (data.roster.length === 0) {
+      res.status(400).json({ error: "No athletes on your team yet" });
+      return;
+    }
 
-  // Prefer athletes without an active plan; fall back to whole roster.
-  const candidates = data.roster.filter(r => !r.hasActivePlan);
-  const pool = candidates.length > 0 ? candidates : data.roster;
+    // Prefer athletes without an active plan; fall back to whole roster.
+    const candidates = data.roster.filter(r => !r.hasActivePlan);
+    const pool = candidates.length > 0 ? candidates : data.roster;
 
-  const rosterLines = pool.map((r, i) =>
-    `${i + 1}. ${r.name} | level: ${r.fitnessLevel ?? "unknown"} | goal: ${r.primaryGoal ?? "general fitness"} | recent weekly: ${r.weeklyMiles}mi${r.alerts.length ? ` | ALERTS: ${r.alerts.join(", ")}` : ""}${r.hasActivePlan ? " | (already has an active plan)" : ""}`
-  ).join("\n");
+    const rosterLines = pool.map((r, i) =>
+      `${i + 1}. ${r.name} | level: ${r.fitnessLevel ?? "unknown"} | goal: ${r.primaryGoal ?? "general fitness"} | recent weekly: ${r.weeklyMiles}mi${r.alerts.length ? ` | ALERTS: ${r.alerts.join(", ")}` : ""}${r.hasActivePlan ? " | (already has an active plan)" : ""}`
+    ).join("\n");
 
-  const startDate = nextMondayISO();
-  const endDate = addDaysISO(startDate, 13); // 2-week plan
+    const startDate = nextMondayISO();
+    const endDate = addDaysISO(startDate, 13); // 2-week plan
 
-  const systemPrompt = `You are AveraAI, an expert running coach. Design a focused 2-week training plan for ONE athlete from the roster below. All distances are in MILES.
+    const systemPrompt = `You are AveraAI, an expert running coach. Design a focused 2-week training plan for ONE athlete from the roster below. All distances are in MILES.
 
 Pick the athlete who would benefit most from a new plan. If an athlete has an injury alert, keep volume conservative and bias toward easy_run, cross_training, and rest.
 
@@ -742,7 +743,6 @@ Respond with ONLY a valid JSON object (no markdown, no prose) of this exact shap
 }
 Provide exactly 14 sessions: weeks 1 and 2, dayOfWeek 1 (Mon) through 7 (Sun) for each. Use realistic mileage based on the athlete's recent weekly volume. dayOfWeek: 1=Mon ... 7=Sun.`;
 
-  try {
     const completion = await openaiClient.chat.completions.create({
       model: "glm-4-flash",
       max_tokens: 1800,
@@ -809,40 +809,40 @@ Provide exactly 14 sessions: weeks 1 and 2, dayOfWeek 1 (Mon) through 7 (Sun) fo
 
 // ── Avera: apply a suggested plan to an athlete (coach only) ─────────────────
 router.post("/openai/apply-plan", async (req: Request, res): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  const userId = req.user.id;
-  const profileRows = await db.select({ userRole: athleteProfileTable.userRole, name: athleteProfileTable.name }).from(athleteProfileTable).where(eq(athleteProfileTable.userId, userId)).limit(1);
-  if (profileRows[0]?.userRole !== "coach") {
-    res.status(403).json({ error: "Coach only" });
-    return;
-  }
-  const coachName = profileRows[0]?.name || "Your coach";
-
-  const body = req.body as Record<string, unknown>;
-  const athleteUserId = typeof body.athleteUserId === "string" ? body.athleteUserId : "";
-  const name = typeof body.name === "string" ? body.name.trim() : "";
-  const goal = typeof body.goal === "string" ? body.goal.trim() : "";
-  const startDate = typeof body.startDate === "string" ? body.startDate : "";
-  const endDate = typeof body.endDate === "string" ? body.endDate : "";
-  const weeklyMileage = body.weeklyMileage != null ? Number(body.weeklyMileage) : null;
-  const sessionsIn = Array.isArray(body.sessions) ? body.sessions : [];
-
-  if (!athleteUserId || !name || !goal || !startDate || !endDate || sessionsIn.length === 0) {
-    res.status(400).json({ error: "Missing required plan fields" });
-    return;
-  }
-
-  // Validate the athlete is on this coach's team.
-  const data = await getCoachTeamRoster(userId);
-  if (!data || !data.roster.some(r => r.userId === athleteUserId)) {
-    res.status(403).json({ error: "Athlete is not on your team" });
-    return;
-  }
-
   try {
+    if (!req.isAuthenticated()) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const userId = req.user.id;
+    const profileRows = await db.select({ userRole: athleteProfileTable.userRole, name: athleteProfileTable.name }).from(athleteProfileTable).where(eq(athleteProfileTable.userId, userId)).limit(1);
+    if (profileRows[0]?.userRole !== "coach") {
+      res.status(403).json({ error: "Coach only" });
+      return;
+    }
+    const coachName = profileRows[0]?.name || "Your coach";
+
+    const body = req.body as Record<string, unknown>;
+    const athleteUserId = typeof body.athleteUserId === "string" ? body.athleteUserId : "";
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const goal = typeof body.goal === "string" ? body.goal.trim() : "";
+    const startDate = typeof body.startDate === "string" ? body.startDate : "";
+    const endDate = typeof body.endDate === "string" ? body.endDate : "";
+    const weeklyMileage = body.weeklyMileage != null ? Number(body.weeklyMileage) : null;
+    const sessionsIn = Array.isArray(body.sessions) ? body.sessions : [];
+
+    if (!athleteUserId || !name || !goal || !startDate || !endDate || sessionsIn.length === 0) {
+      res.status(400).json({ error: "Missing required plan fields" });
+      return;
+    }
+
+    // Validate the athlete is on this coach's team.
+    const data = await getCoachTeamRoster(userId);
+    if (!data || !data.roster.some(r => r.userId === athleteUserId)) {
+      res.status(403).json({ error: "Athlete is not on your team" });
+      return;
+    }
+
     const [plan] = await db.insert(trainingPlansTable).values({
       userId: athleteUserId,
       name,
