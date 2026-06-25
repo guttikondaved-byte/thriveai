@@ -55,18 +55,20 @@ const clerkAppearance = {
   options: {
     logoPlacement: "inside" as const,
     logoLinkUrl: basePath || "/",
-    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+    // Use compact mark for small logo placements
+    logoImageUrl: `${window.location.origin}${basePath}/logo-mark.svg`,
     socialButtonsPlacement: "top" as const,
     socialButtonsVariant: "blockButton" as const,
   },
   variables: {
-  colorPrimary: "#0057D9",
-  colorForeground: "#f8fafc",
-  colorMutedForeground: "#9aa6b3",
-  colorDanger: "#ef4444",
-  colorBackground: "#0b1220",
-  colorInput: "#0f1724",
-  colorInputForeground: "#f8fafc",
+  // Thrive brand tokens (from supplied palette)
+  colorPrimary: "#2A504C", // dark slate green
+  colorForeground: "#0B1220",
+  colorMutedForeground: "#9AA6B3",
+  colorDanger: "#EF4444",
+  colorBackground: "#06070E",
+  colorInput: "#2A504C",
+  colorInputForeground: "#F5F5F5",
   colorNeutral: "#334155",
   fontFamily: "Inter, sans-serif",
   borderRadius: "0.75rem",
