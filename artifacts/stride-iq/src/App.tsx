@@ -116,7 +116,7 @@ function SignInPage() {
         <ArrowLeft size={16} />
         Back
       </button>
-      <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" />
+      <SignIn routing="path" path="/sign-in/*?" signUpUrl="/sign-up" />
     </div>
   );
 }
@@ -235,7 +235,7 @@ function SignUpPage() {
           Change
         </button>
       </div>
-      <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" />
+      <SignUp routing="path" path="/sign-up/*?" signInUrl="/sign-in" />
     </div>
   );
 }
@@ -366,8 +366,10 @@ function ClerkProviderWithRoutes() {
       <Switch>
         <Route path="/sign-in" component={SignInPage} />
         <Route path="/sign-in/*" component={SignInPage} />
+        <Route path="/sign-in/callback" component={SignInPage} />
         <Route path="/sign-up" component={SignUpPage} />
         <Route path="/sign-up/*" component={SignUpPage} />
+        <Route path="/sign-up/callback" component={SignUpPage} />
         <Route component={HomeContent} />
       </Switch>
     </ClerkProvider>
