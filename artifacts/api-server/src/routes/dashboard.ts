@@ -48,11 +48,23 @@ router.get("/dashboard/summary", async (req: Request, res): Promise<void> => {
     activeAlerts: allAlerts.length,
     currentPlanName: currentPlan?.name ?? null,
     currentPlanProgress: null,
-    recentActivities: recentActivities.map(a => ({
-      ...a,
-      distanceKm: a.distanceKm ? Number(a.distanceKm) : null,
-      createdAt: a.createdAt.toISOString(),
-    })),
+    recentActivities: recentActivities.map(a => {
+      const n = (v: string | null | undefined): number | null => v == null ? null : Number(v);
+      return {
+        ...a,
+        // Drizzle returns numeric() columns as strings; zod expects numbers.
+        distanceKm: n(a.distanceKm),
+        elevationGainM: n(a.elevationGainM),
+        elevHighM: n(a.elevHighM),
+        elevLowM: n(a.elevLowM),
+        avgCadence: n(a.avgCadence),
+        avgSpeed: n(a.avgSpeed),
+        maxSpeed: n(a.maxSpeed),
+        calories: n(a.calories),
+        avgWatts: n(a.avgWatts),
+        createdAt: a.createdAt.toISOString(),
+      };
+    }),
     hrvTrend: null,
     trainingLoad,
   }));
