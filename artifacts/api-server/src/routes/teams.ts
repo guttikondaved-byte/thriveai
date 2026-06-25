@@ -628,6 +628,27 @@ router.patch("/teams/:teamId/code", async (req, res): Promise<void> => {
   res.json({ inviteCode: updated.inviteCode });
 });
 
+// DELETE /teams/leave — athlete leaves their current team.
+// Must come before the /teams/:teamId route below, otherwise "leave" would
+// be parsed as a teamId and the request would 400 on Number("leave") = NaN.
+router.delete("/teams/leave", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const deleted = await db.delete(teamMembershipsTable)
+    .where(eq(teamMembershipsTable.athleteUserId, req.user.id))
+    .returning();
+
+  if (deleted.length === 0) {
+    res.status(404).json({ error: "You are not a member of any team" });
+    return;
+  }
+
+  res.status(204).end();
+});
+
 // DELETE /teams/:teamId — delete a specific team
 router.delete("/teams/:teamId", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) {
@@ -655,25 +676,6 @@ router.delete("/teams/:teamId", async (req, res): Promise<void> => {
 
   await db.delete(teamsTable)
     .where(eq(teamsTable.id, teamId));
-
-  res.status(204).end();
-});
-
-// DELETE /teams/leave — athlete leaves their current team
-router.delete("/teams/leave", async (req, res): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  const deleted = await db.delete(teamMembershipsTable)
-    .where(eq(teamMembershipsTable.athleteUserId, req.user.id))
-    .returning();
-
-  if (deleted.length === 0) {
-    res.status(404).json({ error: "You are not a member of any team" });
-    return;
-  }
 
   res.status(204).end();
 });

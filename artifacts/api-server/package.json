@@ -13,6 +13,7 @@
     "@clerk/express": "^2.1.30",
     "@clerk/shared": "^4.20.0",
     "@workspace/api-zod": "workspace:*",
+    "zod": "catalog:",
     "@workspace/db": "workspace:*",
     "@workspace/integrations-openai-ai-server": "workspace:*",
     "bcryptjs": "^3.0.3",

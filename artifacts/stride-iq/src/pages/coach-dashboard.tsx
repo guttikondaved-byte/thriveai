@@ -82,7 +82,7 @@ export default function CoachDashboard() {
   function regenerateCode() {
     if (!team) return;
     setRegenerating(true);
-    fetch("/api/teams/code", { method: "PATCH", credentials: "include" })
+    fetch(`/api/teams/${team.id}/code`, { method: "PATCH", credentials: "include" })
       .then(async r => {
         if (!r.ok) throw new Error();
         return r.json();
