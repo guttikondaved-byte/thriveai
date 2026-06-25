@@ -37,7 +37,7 @@ const clerkPubKey = publishableKeyFromHost(
 );
 
 // REQUIRED — copy verbatim. Empty in dev, auto-set in prod.
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL?.trim() || undefined;
 
 function stripBase(path: string): string {
   return basePath && path.startsWith(basePath)
