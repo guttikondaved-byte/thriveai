@@ -1,6 +1,6 @@
 import { Router, type Request, type IRouter } from "express";
-import { eq, and, desc } from "drizzle-orm";
-import { db, activitiesTable } from "@workspace/db";
+import { eq, and, desc, gte } from "drizzle-orm";
+import { db, activitiesTable, athleteProfileTable, injuryAlertsTable, trainingPlansTable, planSessionsTable } from "@workspace/db";
 import {
   ListActivitiesResponse,
   CreateActivityBody,
@@ -8,6 +8,9 @@ import {
   GetActivityResponse,
   ListActivitiesQueryParams,
 } from "@workspace/api-zod";
+import { assessInjuryRisk } from "../lib/injuryRiskCalculator";
+import { findBestSessionMatch } from "../lib/trainingCompletion";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -72,8 +75,162 @@ router.post("/activities", async (req: Request, res): Promise<void> => {
   if (parsed.data.notes !== undefined) insertData.notes = parsed.data.notes;
 
   const [activity] = await db.insert(activitiesTable).values(insertData as Parameters<typeof db.insert>[0] extends { values: (v: infer V) => unknown } ? V : never).returning();
+
+  // ── Assess injury risk ──
+  try {
+    const [athleteProfile, recentActivities] = await Promise.all([
+      db.select().from(athleteProfileTable).where(eq(athleteProfileTable.userId, userId)).limit(1),
+      db
+        .select()
+        .from(activitiesTable)
+        .where(and(eq(activitiesTable.userId, userId), gte(activitiesTable.activityDate, getDateNDaysAgo(7))))
+        .orderBy(desc(activitiesTable.activityDate)),
+    ]);
+
+    const profile = athleteProfile[0] || null;
+
+    // Calculate previous week's distance (before this activity)
+    const weekAgo = getDateNDaysAgo(14);
+    const prevWeekActivities = recentActivities.filter(
+      (a) => a.activityDate && a.activityDate >= weekAgo && a.activityDate < getDateNDaysAgo(7),
+    );
+    const previousWeekKm = prevWeekActivities.reduce((sum, a) => sum + (a.distanceKm ? Number(a.distanceKm) : 0), 0);
+
+    const assessment = await assessInjuryRisk(activity, profile, previousWeekKm, recentActivities);
+
+    // Log the assessment with risk factors for debugging
+    logger.info(
+      {
+        userId,
+        activityId: activity.id,
+        riskLevel: assessment.riskLevel,
+        riskScore: assessment.riskScore,
+        factorCount: assessment.riskFactors.length,
+        factors: assessment.riskFactors.map((f) => ({
+          factor: f.factor,
+          severity: f.severity,
+          value: f.value,
+        })),
+      },
+      "Injury risk assessment completed",
+    );
+
+    // Create alerts if risk is detected
+    if (assessment.riskLevel !== "low") {
+      // Check if we already have an unacknowledged alert for this user and body part (avoid duplicates)
+      const existingAlerts = await db
+        .select()
+        .from(injuryAlertsTable)
+        .where(
+          and(
+            eq(injuryAlertsTable.userId, userId),
+            eq(injuryAlertsTable.acknowledged, false),
+          ),
+        );
+
+      // Determine primary body part
+      const bodyPart = assessment.primaryBodyParts[0] || "general";
+
+      // Only create alert if we don't have a recent one for the same body part
+      const recentSameBodyPart = existingAlerts.filter((a) => a.bodyPart.toLowerCase().includes(bodyPart.toLowerCase()));
+
+      if (recentSameBodyPart.length === 0) {
+        // Build detailed message with risk factors
+        const factorSummary = assessment.riskFactors
+          .map((f) => `• **${f.factor}** (${f.severity}): ${f.value}`)
+          .join("\n");
+
+        const detailedMessage =
+          assessment.riskFactors.length > 0
+            ? `${assessment.message}\n\n**Risk Factors:**\n${factorSummary}`
+            : assessment.message;
+
+        await db.insert(injuryAlertsTable).values({
+          userId,
+          riskLevel: assessment.riskLevel,
+          bodyPart,
+          message: detailedMessage,
+          recommendation: assessment.recommendation,
+        });
+
+        logger.info(
+          { userId, activityId: activity.id, riskLevel: assessment.riskLevel, bodyPart },
+          "Injury alert created",
+        );
+      }
+    }
+  } catch (err) {
+    // Don't fail the activity creation if risk assessment fails
+    logger.error({ err, userId, activityId: activity.id }, "Injury risk assessment failed");
+  }
+
+  // ── Auto-match activity to training plan sessions ──
+  try {
+    // Fetch active training plans for this user
+    const activePlans = await db
+      .select()
+      .from(trainingPlansTable)
+      .where(and(eq(trainingPlansTable.userId, userId), eq(trainingPlansTable.status, "active")));
+
+    if (activePlans.length > 0) {
+      // For each active plan, try to match this activity to an uncompleted session
+      for (const plan of activePlans) {
+        const sessions = await db
+          .select()
+          .from(planSessionsTable)
+          .where(eq(planSessionsTable.planId, plan.id));
+
+        // Calculate scheduled dates for each session
+        const startDate = new Date(plan.startDate);
+        const sessionsWithDates = sessions.map((s) => {
+          const sessionDate = new Date(startDate);
+          sessionDate.setDate(sessionDate.getDate() + (s.weekNumber - 1) * 7 + (s.dayOfWeek - 1));
+          return { ...s, scheduledDate: sessionDate };
+        });
+
+        // Find best matching uncompleted session
+        const bestMatch = findBestSessionMatch(activity, sessionsWithDates, 60); // 60 = good match threshold
+
+        if (bestMatch && bestMatch.matchScore >= 60) {
+          // Mark session as complete
+          await db
+            .update(planSessionsTable)
+            .set({ completed: true })
+            .where(eq(planSessionsTable.id, bestMatch.sessionId));
+
+          logger.info(
+            {
+              userId,
+              activityId: activity.id,
+              planId: plan.id,
+              sessionId: bestMatch.sessionId,
+              matchScore: bestMatch.matchScore,
+              reasons: bestMatch.matchReasons,
+            },
+            "Activity auto-matched to training session",
+          );
+
+          // Only match to first plan (don't mark same activity for multiple plans)
+          break;
+        }
+      }
+    }
+  } catch (err) {
+    // Don't fail the activity creation if training matching fails
+    logger.error({ err, userId, activityId: activity.id }, "Training session matching failed");
+  }
+
   res.status(201).json(GetActivityResponse.parse(serializeActivity(activity)));
 });
+
+/**
+ * Helper to get ISO date string N days ago
+ */
+function getDateNDaysAgo(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date.toISOString().split("T")[0];
+}
 
 router.get("/activities/:id", async (req: Request, res): Promise<void> => {
   if (!req.isAuthenticated()) {

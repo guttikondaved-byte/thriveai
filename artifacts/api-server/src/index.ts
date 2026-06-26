@@ -24,6 +24,9 @@ app.listen(port, async (err) => {
 
   logger.info({ port }, "Server listening");
 
+  // ── Validate Stripe configuration ──
+  validateStripeConfiguration();
+
   // Auto-register Strava webhook subscription on startup if credentials are present
   if (process.env.STRAVA_CLIENT_ID && process.env.STRAVA_CLIENT_SECRET) {
     try {
@@ -40,3 +43,42 @@ app.listen(port, async (err) => {
     }
   }
 });
+
+/**
+ * Validate Stripe configuration on startup
+ */
+function validateStripeConfiguration() {
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  const athletePriceId = process.env.STRIPE_PRICE_ID_ATHLETE ?? process.env.STRIPE_PRICE_ID;
+  const coachBasePriceId = process.env.STRIPE_PRICE_ID_COACH_BASE;
+  const coachAdditionalPriceId = process.env.STRIPE_PRICE_ID_COACH_ADDITIONAL;
+  const stripePriceMode = process.env.STRIPE_PRICE_MODE === "payment" ? "payment" : "subscription";
+
+  const config = {
+    stripeKeyConfigured: !!stripeSecretKey,
+    athletePriceConfigured: !!athletePriceId,
+    coachBasePriceConfigured: !!coachBasePriceId,
+    coachAdditionalPriceConfigured: !!coachAdditionalPriceId,
+    stripePriceMode,
+  };
+
+  if (!stripeSecretKey) {
+    logger.warn({}, "⚠️  STRIPE_SECRET_KEY not configured. Payment features will be unavailable.");
+  } else if (!athletePriceId && !coachBasePriceId) {
+    logger.warn({}, "⚠️  Stripe price IDs not configured. Payment features will be unavailable.");
+  } else {
+    const missing = [];
+    if (!athletePriceId) missing.push("STRIPE_PRICE_ID_ATHLETE");
+    if (!coachBasePriceId) missing.push("STRIPE_PRICE_ID_COACH_BASE");
+    if (!coachAdditionalPriceId) missing.push("STRIPE_PRICE_ID_COACH_ADDITIONAL");
+
+    if (missing.length > 0) {
+      logger.warn(
+        { missing },
+        `⚠️  Some Stripe price IDs are missing: ${missing.join(", ")}. Limited payment functionality.`,
+      );
+    } else {
+      logger.info(config, "✓ Stripe configuration is complete");
+    }
+  }
+}

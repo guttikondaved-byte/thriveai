@@ -1,5 +1,5 @@
 import { Router, type Request, type IRouter } from "express";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, gte } from "drizzle-orm";
 import {
   db,
   trainingPlansTable,
@@ -336,6 +336,147 @@ router.delete("/plans/:id", async (req: Request, res): Promise<void> => {
     return;
   }
   res.sendStatus(204);
+});
+
+// ── Mark a training session as complete ──
+router.patch("/plans/:planId/sessions/:sessionId", async (req: Request, res): Promise<void> => {
+  const userId = req.user!.id;
+  const planIdRaw = Array.isArray(req.params.planId) ? req.params.planId[0] : req.params.planId;
+  const sessionIdRaw = Array.isArray(req.params.sessionId) ? req.params.sessionId[0] : req.params.sessionId;
+  
+  const planId = parseInt(planIdRaw, 10);
+  const sessionId = parseInt(sessionIdRaw, 10);
+
+  if (isNaN(planId) || isNaN(sessionId)) {
+    res.status(400).json({ error: "Invalid plan or session ID" });
+    return;
+  }
+
+  // Verify user owns the plan
+  const [plan] = await db
+    .select({ id: trainingPlansTable.id })
+    .from(trainingPlansTable)
+    .where(and(eq(trainingPlansTable.id, planId), eq(trainingPlansTable.userId, userId)));
+
+  if (!plan) {
+    res.status(404).json({ error: "Plan not found" });
+    return;
+  }
+
+  // Parse request body for completion status
+  const { completed } = req.body ?? {};
+  const isCompleted = typeof completed === "boolean" ? completed : true;
+
+  // Update session completion status
+  const [session] = await db
+    .update(planSessionsTable)
+    .set({ completed: isCompleted })
+    .where(and(eq(planSessionsTable.id, sessionId), eq(planSessionsTable.planId, planId)))
+    .returning();
+
+  if (!session) {
+    res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
+  logger.info({ userId, planId, sessionId, completed: isCompleted }, "Session marked as complete");
+  res.json(serializeSession(session));
+});
+
+// ── Auto-match activities to plan sessions ──
+router.post("/plans/:planId/match-activities", async (req: Request, res): Promise<void> => {
+  const { findBestSessionMatch, matchActivityToSession } = await import("../lib/trainingCompletion");
+  
+  const userId = req.user!.id;
+  const planIdRaw = Array.isArray(req.params.planId) ? req.params.planId[0] : req.params.planId;
+  const planId = parseInt(planIdRaw, 10);
+
+  if (isNaN(planId)) {
+    res.status(400).json({ error: "Invalid plan ID" });
+    return;
+  }
+
+  // Verify user owns the plan
+  const [plan] = await db
+    .select()
+    .from(trainingPlansTable)
+    .where(and(eq(trainingPlansTable.id, planId), eq(trainingPlansTable.userId, userId)));
+
+  if (!plan) {
+    res.status(404).json({ error: "Plan not found" });
+    return;
+  }
+
+  try {
+    // Fetch all sessions for this plan with their target dates
+    const sessions = await db
+      .select()
+      .from(planSessionsTable)
+      .where(eq(planSessionsTable.planId, planId));
+
+    // Fetch user's activities since plan start
+    const activities = await db
+      .select()
+      .from(activitiesTable)
+      .where(and(
+        eq(activitiesTable.userId, userId),
+        gte(activitiesTable.activityDate, plan.startDate),
+      ));
+
+    // Calculate scheduled dates for each session
+    const startDate = new Date(plan.startDate);
+    const sessionsWithDates = sessions.map((s) => {
+      const sessionDate = new Date(startDate);
+      sessionDate.setDate(sessionDate.getDate() + (s.weekNumber - 1) * 7 + (s.dayOfWeek - 1));
+      return { ...s, scheduledDate: sessionDate };
+    });
+
+    let matchedCount = 0;
+    const matchResults: Array<{ activity: number; session: number; score: number }> = [];
+
+    // For each activity, try to find a matching uncompleted session
+    for (const activity of activities) {
+      const uncompleted = sessionsWithDates.filter((s) => !s.completed);
+      if (uncompleted.length === 0) break;
+
+      const bestMatch = findBestSessionMatch(activity, uncompleted, 50);
+
+      if (bestMatch) {
+        // Mark session as complete
+        await db
+          .update(planSessionsTable)
+          .set({ completed: true })
+          .where(eq(planSessionsTable.id, bestMatch.sessionId));
+
+        matchedCount++;
+        matchResults.push({
+          activity: activity.id,
+          session: bestMatch.sessionId,
+          score: bestMatch.matchScore,
+        });
+
+        logger.info(
+          { userId, sessionId: bestMatch.sessionId, activityId: activity.id, score: bestMatch.matchScore },
+          "Activity auto-matched to session",
+        );
+
+        // Remove matched session from consideration
+        sessionsWithDates.splice(
+          sessionsWithDates.findIndex((s) => s.id === bestMatch.sessionId),
+          1,
+        );
+      }
+    }
+
+    res.json({
+      matched: matchedCount,
+      total: sessions.filter((s) => !s.completed).length,
+      results: matchResults,
+    });
+  } catch (err) {
+    logger.error({ err, userId, planId }, "Activity matching failed");
+    res.status(500).json({ error: "Activity matching failed" });
+  }
 });
 
 export default router;
