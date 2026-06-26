@@ -20,6 +20,7 @@ import {
   trainingPlansTable,
   injuryAlertsTable,
   conversations,
+  sessionsTable,
 } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 import {
@@ -479,6 +480,12 @@ router.delete("/account", async (req: Request, res: Response): Promise<void> => 
     // Clear the active session (sessions table stores data as JSONB with no direct userId column)
     const sid = getSessionId(req);
     if (sid) await deleteSession(sid);
+
+    // Also purge any stale sessions belonging to this deleted user.
+    // Session JSON is stored in `sess`; the user object lives under `sess.user.id`.
+    await db
+      .delete(sessionsTable)
+      .where(sql`(sess->'user'->>'id') = ${userId}`);
 
     res.clearCookie(SESSION_COOKIE, { path: "/" });
     res.json({ success: true });

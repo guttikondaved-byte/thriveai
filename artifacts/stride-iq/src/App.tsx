@@ -226,13 +226,15 @@ function SignUpPage() {
 
   return (
     <div className="min-h-screen bg-[#06070E] flex flex-col items-center justify-center px-4 gap-5">
-      <button
-        onClick={() => navigate("/")}
-        className="absolute top-6 left-6 flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
-      >
-        <ArrowLeft size={16} />
-        Back
-      </button>
+      <div className="w-full max-w-3xl px-4">
+        <button
+          onClick={clearRole}
+          className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </button>
+      </div>
       <div className="flex items-center gap-3">
         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold ${roleColor}`}>
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
