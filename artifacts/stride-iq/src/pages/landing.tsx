@@ -258,6 +258,7 @@ export default function Landing() {
                 Get the coaching support you need as a runner. AI-powered training plans, automatic injury risk detection, and a direct line to your coach — all in one place.
               </p>
               <BtnTeal onClick={() => navigate("/sign-up")}>Get Started</BtnTeal>
+              <p className="text-[#8A9287] text-sm mt-4">Cancel anytime.</p>
             </div>
             <div className="w-full relative shrink-0 lg:w-[44%]">
               <div className="absolute rounded-full blur-[64px] z-0" style={{ inset: "-10% -8%", background: "rgba(42,80,76,0.20)" }} />
@@ -637,6 +638,7 @@ export default function Landing() {
                 Your personalised training platform with AI-powered coaching, automatic injury risk detection, and direct coach-athlete connection — all in one place.
               </p>
               <BtnTeal onClick={() => navigate("/sign-up")}>Get Started</BtnTeal>
+              <p className="text-[#8A9287] text-sm mt-4">Cancel anytime.</p>
             </div>
           </div>
         </div>
