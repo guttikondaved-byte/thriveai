@@ -317,9 +317,11 @@ function AppContent() {
   useEffect(() => {
     if (isLoading) return;
     const needsOnboarding = !profile?.userRole;
-    if (needsOnboarding && location !== "/onboarding") {
-      navigate("/onboarding");
-    } else if (!needsOnboarding && location === "/onboarding") {
+    // Do not force-redirect signed-in users without a saved role into the
+    // onboarding flow. Some users recreate accounts (or delete+recreate) and
+    // expect to access the app immediately. We'll still redirect away from
+    // `/onboarding` once the profile exists, but don't push users into it.
+    if (!needsOnboarding && location === "/onboarding") {
       navigate("/");
     }
   }, [profile, isLoading, location, navigate]);
