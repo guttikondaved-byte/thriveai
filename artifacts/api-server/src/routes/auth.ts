@@ -426,6 +426,18 @@ router.delete("/account", async (req: Request, res: Response): Promise<void> => 
   // aborts. We must NOT proceed to the DB delete unless this succeeds, or the surviving
   // session would simply resurrect the account.
   try {
+    // Fetch Clerk user's email if available so we can defensively wipe any
+    // lingering DB rows that reference the same email (pre-Clerk leftovers).
+    let clerkEmail: string | null = null;
+    try {
+      const clerk = await clerkClient.users.getUser(userId);
+      clerkEmail = clerk.emailAddresses[0]?.emailAddress ?? null;
+    } catch (err) {
+      if (!isClerkNotFound(err)) throw err;
+      // Clerk user already gone — email is unknown.
+      clerkEmail = null;
+    }
+
     await deleteClerkUserAndAwaitRemoval(userId);
   } catch (err) {
     // 404 = the Clerk user is already gone (a retry after a partial failure, or deleted
@@ -486,6 +498,38 @@ router.delete("/account", async (req: Request, res: Response): Promise<void> => 
     await db
       .delete(sessionsTable)
       .where(sql`(sess->'user'->>'id') = ${userId}`);
+
+    // Defensive wipe: if we know the user's email, remove any remaining
+    // pre-Clerk user rows that still contain the same email. This prevents a
+    // stale DB row from being re-attached to a newly-created Clerk identity
+    // for the same email.
+    if (clerkEmail) {
+      try {
+        await db.transaction(async (tx) => {
+          const stale = await tx.select().from(usersTable).where(eq(usersTable.email, clerkEmail));
+          for (const u of stale) {
+            // Remove child rows that reference this user id (defensive, mirror above)
+            await tx.delete(activitiesTable).where(eq(activitiesTable.userId, u.id));
+            await tx.delete(notificationsTable).where(eq(notificationsTable.userId, u.id));
+            await tx.delete(stravaTokensTable).where(eq(stravaTokensTable.userId, u.id));
+            await tx.delete(injuryAlertsTable).where(eq(injuryAlertsTable.userId, u.id));
+            await tx.delete(trainingPlansTable).where(eq(trainingPlansTable.userId, u.id));
+            await tx.delete(teamMembershipsTable).where(eq(teamMembershipsTable.athleteUserId, u.id));
+            const owned = await tx.select({ id: teamsTable.id }).from(teamsTable).where(eq(teamsTable.coachUserId, u.id));
+            if (owned.length > 0) {
+              const ids = owned.map(t => t.id);
+              await tx.delete(teamMembershipsTable).where(inArray(teamMembershipsTable.teamId, ids));
+              await tx.delete(teamsTable).where(eq(teamsTable.coachUserId, u.id));
+            }
+            await tx.delete(conversations).where(eq(conversations.userId, u.id));
+            await tx.delete(athleteProfileTable).where(eq(athleteProfileTable.userId, u.id));
+            await tx.delete(usersTable).where(eq(usersTable.id, u.id));
+          }
+        });
+      } catch (err) {
+        req.log?.warn({ err, userId, clerkEmail }, "Defensive wipe of stale email rows failed");
+      }
+    }
 
     res.clearCookie(SESSION_COOKIE, { path: "/" });
     res.json({ success: true });
