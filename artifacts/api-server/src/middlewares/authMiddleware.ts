@@ -1,4 +1,5 @@
 import { getAuth, clerkClient } from "@clerk/express";
+import { getSession, SESSION_COOKIE } from "../lib/auth";
 import { type Request, type Response, type NextFunction } from "express";
 import type { AuthUser } from "@workspace/api-zod";
 import { db, usersTable } from "@workspace/db";
@@ -112,6 +113,23 @@ export async function authMiddleware(
   const clerkUserId = auth?.userId;
 
   if (!clerkUserId) {
+    // No Clerk identity present. Fall back to the local session cookie (sid)
+    // used by the legacy email/password flow so developer-created sessions
+    // (tests, curl) authenticate correctly in dev.
+    try {
+      const sid = req.cookies?.[SESSION_COOKIE];
+      if (typeof sid === "string") {
+        const sess = await getSession(sid);
+        if (sess && sess.user) {
+          req.user = sess.user as any;
+          next();
+          return;
+        }
+      }
+    } catch (err) {
+      req.log?.warn({ err }, "Failed to read fallback session");
+    }
+
     next();
     return;
   }

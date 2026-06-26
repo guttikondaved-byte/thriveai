@@ -425,10 +425,10 @@ router.delete("/account", async (req: Request, res: Response): Promise<void> => 
   // the email. Deleting the Clerk user first makes that getUser() 404 so provisioning
   // aborts. We must NOT proceed to the DB delete unless this succeeds, or the surviving
   // session would simply resurrect the account.
+  // Track the Clerk user's email (if available) so we can defensively wipe
+  // any leftover DB rows that reference the same email.
+  let clerkEmail: string | null = null;
   try {
-    // Fetch Clerk user's email if available so we can defensively wipe any
-    // lingering DB rows that reference the same email (pre-Clerk leftovers).
-    let clerkEmail: string | null = null;
     try {
       const clerk = await clerkClient.users.getUser(userId);
       clerkEmail = clerk.emailAddresses[0]?.emailAddress ?? null;
