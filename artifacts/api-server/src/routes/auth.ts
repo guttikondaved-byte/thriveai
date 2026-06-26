@@ -22,7 +22,7 @@ import {
   conversations,
   sessionsTable,
 } from "@workspace/db";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import {
   clearSession,
   getOidcConfig,
