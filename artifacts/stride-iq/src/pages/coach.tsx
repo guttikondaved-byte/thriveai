@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "wouter";
 import {
   useListOpenaiConversations,
   useCreateOpenaiConversation,
@@ -8,7 +9,7 @@ import {
   getGetOpenaiConversationQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Send, Bot, User, Trash2 } from "lucide-react";
+import { Plus, Send, Bot, User, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +18,110 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 type StreamMessage = { role: "user" | "assistant"; content: string; streaming?: boolean };
+
+type AveraProposal = {
+  athleteUserId: string;
+  athleteName: string;
+  name: string;
+  goal: string;
+  startDate: string;
+  endDate: string;
+  weeklyMileage: number;
+  rationale?: string;
+  sessions: Array<{
+    weekNumber: number;
+    dayOfWeek: number;
+    sessionType: string;
+    description: string;
+    distanceMiles: number;
+    durationMinutes: number;
+  }>;
+};
+
+function extractJsonObject(content: string): string | null {
+  const fenceMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenceMatch?.[1]) {
+    return fenceMatch[1].trim();
+  }
+
+  const firstBrace = content.indexOf("{");
+  const lastBrace = content.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return content.slice(firstBrace, lastBrace + 1);
+  }
+  return null;
+}
+
+function parseAveraProposal(content: string): AveraProposal | null {
+  const jsonText = extractJsonObject(content);
+  if (!jsonText) return null;
+
+  try {
+    const parsed = JSON.parse(jsonText) as Record<string, unknown>;
+    if (
+      typeof parsed.athleteUserId !== "string" ||
+      typeof parsed.athleteName !== "string" ||
+      typeof parsed.name !== "string" ||
+      typeof parsed.goal !== "string" ||
+      typeof parsed.startDate !== "string" ||
+      typeof parsed.endDate !== "string" ||
+      (typeof parsed.weeklyMileage !== "number" && typeof parsed.weeklyMileage !== "string") ||
+      !Array.isArray(parsed.sessions)
+    ) {
+      return null;
+    }
+
+    const sessions = parsed.sessions.map((s) => {
+      const session = s as Record<string, unknown>;
+      return {
+        weekNumber: Number(session.weekNumber ?? 0),
+        dayOfWeek: Number(session.dayOfWeek ?? 0),
+        sessionType: String(session.sessionType ?? "easy_run"),
+        description: String(session.description ?? "Run"),
+        distanceMiles: Number(session.distanceMiles ?? 0),
+        durationMinutes: Number(session.durationMinutes ?? 0),
+      };
+    });
+
+    if (sessions.some((s) => Number.isNaN(s.weekNumber) || Number.isNaN(s.dayOfWeek) || !s.sessionType)) {
+      return null;
+    }
+
+    return {
+      athleteUserId: parsed.athleteUserId,
+      athleteName: parsed.athleteName,
+      name: parsed.name,
+      goal: parsed.goal,
+      startDate: parsed.startDate,
+      endDate: parsed.endDate,
+      weeklyMileage: Number(parsed.weeklyMileage),
+      rationale: typeof parsed.rationale === "string" ? parsed.rationale : undefined,
+      sessions,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function isTrainingPlanResponse(content: string) {
+  const normalized = content.toLowerCase();
+  const trainingKeywords = [
+    "training plan",
+    "weekly mileage",
+    "session",
+    "plan",
+    "goal",
+    "periodization",
+    "tempo run",
+    "long run",
+    "cross training",
+    "race",
+    "workout",
+    "recovery",
+  ];
+  if (trainingKeywords.some((keyword) => normalized.includes(keyword))) return true;
+  return /"athleteNumber"\s*:\s*\d+|"weeklyMileage"|"sessions"|"startDate"|"endDate"/i.test(content);
+}
 
 function AssistantMarkdown({ content }: { content: string }) {
   return (
@@ -67,10 +172,12 @@ export default function CoachAI() {
   const [streamMessages, setStreamMessages] = useState<StreamMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [addingPlanMessageIndex, setAddingPlanMessageIndex] = useState<number | null>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
   const qc = useQueryClient();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   const { data: conversations, isLoading: convsLoading } = useListOpenaiConversations();
   const createConv = useCreateOpenaiConversation();
@@ -216,6 +323,48 @@ export default function CoachAI() {
     }
   }
 
+  async function handleAddToTrainingPlan(message: StreamMessage, index: number) {
+    if (addingPlanMessageIndex !== null) return;
+    const proposal = parseAveraProposal(message.content);
+    if (!proposal) {
+      toast({
+        title: "Training plan not detected",
+        description: "This response doesn’t contain a structured plan. Open the Plans page to add one manually.",
+        variant: "warning",
+      });
+      navigate("/plans");
+      return;
+    }
+
+    setAddingPlanMessageIndex(index);
+    try {
+      const response = await fetch(`/api/openai/apply-plan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(proposal),
+      });
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.planId) {
+        throw new Error(result.error || "Failed to add training plan");
+      }
+
+      toast({
+        title: "Training plan added",
+        description: `${proposal.name} was added for ${proposal.athleteName}.`,
+      });
+    } catch (err) {
+      toast({
+        title: "Unable to add training plan",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAddingPlanMessageIndex(null);
+    }
+  }
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -326,6 +475,19 @@ export default function CoachAI() {
                           : (msg.streaming && <span className="inline-block w-2 h-4 bg-primary opacity-70 animate-pulse rounded-sm" />))
                       : msg.content}
                   </div>
+                  {msg.role === "assistant" && !msg.streaming && isTrainingPlanResponse(msg.content) && (
+                    <div className="flex justify-end mt-2">
+                      <Button
+                        size="xs"
+                        onClick={() => handleAddToTrainingPlan(msg, i)}
+                        disabled={addingPlanMessageIndex === i}
+                        className="bg-primary/10 text-primary hover:bg-primary/20"
+                      >
+                        {addingPlanMessageIndex === i ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                        Add to training plan
+                      </Button>
+                    </div>
+                  )}
                   {msg.role === "user" && (
                     <div className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center shrink-0 mt-0.5">
                       <User className="w-4 h-4 text-muted-foreground" />

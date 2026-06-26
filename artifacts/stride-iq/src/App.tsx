@@ -160,13 +160,16 @@ function SignUpPage() {
     return (
       <div className="min-h-screen bg-[#06070E] flex items-center justify-center px-4">
         <div className="w-full max-w-md">
-          <button
-            onClick={() => navigate("/")}
-            className="absolute top-6 left-6 flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft size={16} />
-            Back
-          </button>
+          <div className="mb-6 flex items-center justify-between">
+            <button
+              onClick={() => navigate("/")}
+              className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft size={16} />
+              Back
+            </button>
+            <span className="text-sm text-slate-500">Select your role to continue</span>
+          </div>
           <div className="flex justify-center mb-8">
             <img src="/logo.svg" alt="Thrive" className="h-14 w-auto" />
           </div>
