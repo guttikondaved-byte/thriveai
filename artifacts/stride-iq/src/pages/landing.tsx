@@ -236,7 +236,7 @@ export default function Landing() {
               onClick={() => { navigate("/sign-in"); setMenuOpen(false); }}
               className="w-full text-white font-semibold py-3 border border-[#182220] rounded-[10px] mt-[14px] bg-transparent cursor-pointer text-[15px] font-sans"
             >Log in</button>
-            <BtnTeal onClick={() => { navigate("/sign-up"); setMenuOpen(false); }} className="w-full shadow-none py-3">Get Started Free</BtnTeal>
+            <BtnTeal onClick={() => { navigate("/sign-up"); setMenuOpen(false); }} className="w-full shadow-none py-3">Get Started</BtnTeal>
           </div>
         )}
       </header>
@@ -257,7 +257,7 @@ export default function Landing() {
               <p className="text-[#8A9287] leading-[1.65] max-w-[30rem] mb-8" style={{ fontSize: "clamp(15px,1.6vw,18px)" }}>
                 Get the coaching support you need as a runner. AI-powered training plans, automatic injury risk detection, and a direct line to your coach — all in one place.
               </p>
-              <BtnTeal onClick={() => navigate("/sign-up")}>Get Started Free</BtnTeal>
+              <BtnTeal onClick={() => navigate("/sign-up")}>Get Started</BtnTeal>
               <p className="text-[#8A9287] text-sm mt-4">First month free. Cancel anytime.</p>
             </div>
             <div className="w-full relative shrink-0 lg:w-[44%]">
@@ -287,7 +287,7 @@ export default function Landing() {
                 Whether you're a high school sprinter or a first-time 5K runner, Thrive gives you the tools that used to be reserved for elite athletes. Log your runs, understand your data, and train with a plan that evolves as you do.
               </p>
               <NumList items={ATHLETE_FEATURES} accent="#3D7A74" />
-              <BtnTeal onClick={() => navigate("/sign-up?role=athlete")} className="mt-[34px]">Start for free</BtnTeal>
+              <BtnTeal onClick={() => navigate("/sign-up?role=athlete")} className="mt-[34px]">Get Started</BtnTeal>
             </div>
             <div className="flex-1">
               <div className="rounded-[18px] border border-[#182220] bg-[#06070E] p-4 flex flex-col gap-3" style={{ boxShadow: "0 30px 60px -28px rgba(0,0,0,0.7)" }}>
@@ -418,7 +418,7 @@ export default function Landing() {
             ))}
           </div>
           <div className="flex justify-center mt-12">
-            <BtnTeal onClick={() => navigate("/sign-up")}>Get Started Free</BtnTeal>
+            <BtnTeal onClick={() => navigate("/sign-up")}>Get Started</BtnTeal>
           </div>
         </div>
       </section>
@@ -528,7 +528,7 @@ export default function Landing() {
                 ))}
               </div>
               <div className="h-9 shrink-0" />
-              <BtnTeal onClick={() => navigate("/sign-up?role=athlete")} className="w-full mt-auto shadow-none">Get started</BtnTeal>
+              <BtnTeal onClick={() => navigate("/sign-up?role=athlete")} className="w-full mt-auto shadow-none">Get Started</BtnTeal>
             </div>
             <div className="flex flex-col bg-[#0C0F1A] rounded-[24px] border border-[#F2D2CF]/[24%]" style={{ padding: "clamp(28px,3.2vw,42px)", boxShadow: "0 0 60px -30px rgba(242,210,207,0.30),0 30px 60px -34px rgba(0,0,0,0.75)" }}>
               <p className={cn(eyebrow, "text-[#F2D2CF] mb-[18px]")}>For Coaches</p>
@@ -637,7 +637,7 @@ export default function Landing() {
               <p className="text-[#8A9287] leading-[1.65] max-w-[30rem] mb-[30px]" style={{ fontSize: "clamp(15px,1.6vw,18px)" }}>
                 Your personalised training platform with AI-powered coaching, automatic injury risk detection, and direct coach-athlete connection — all in one place.
               </p>
-              <BtnTeal onClick={() => navigate("/sign-up")}>Get Started Free</BtnTeal>
+              <BtnTeal onClick={() => navigate("/sign-up")}>Get Started</BtnTeal>
               <p className="text-[#8A9287] text-sm mt-4">First month free. Cancel anytime.</p>
             </div>
           </div>
