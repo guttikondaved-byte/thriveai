@@ -898,4 +898,44 @@ router.post("/openai/apply-plan", async (req: Request, res): Promise<void> => {
   }
 });
 
+// ── Suggest a plan to the athlete's coach (creates a coach notification) ──────
+router.post("/openai/suggest-to-coach", async (req: Request, res): Promise<void> => {
+  try {
+    if (!req.isAuthenticated()) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const userId = req.user.id;
+
+    // Verify the athlete is a member of a team and find the coach user id
+    const membership = await db.select({ teamId: teamMembershipsTable.teamId })
+      .from(teamMembershipsTable)
+      .where(eq(teamMembershipsTable.athleteUserId, userId)).limit(1);
+    if (!membership || membership.length === 0) {
+      res.status(404).json({ error: "No coach found for this athlete" });
+      return;
+    }
+    const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, membership[0].teamId)).limit(1);
+    if (!team) {
+      res.status(404).json({ error: "No coach found for this athlete" });
+      return;
+    }
+
+    const body = req.body as Record<string, unknown>;
+    const name = typeof body.name === "string" ? body.name.trim() : "Proposed plan";
+
+    await db.insert(notificationsTable).values({
+      userId: team.coachUserId,
+      type: "plan_suggestion",
+      title: "Plan suggestion",
+      message: `${req.user.firstName ?? "An athlete"} suggested a plan: \"${name}\".`,
+    });
+
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "suggest-to-coach error");
+    res.status(500).json({ error: "Failed to suggest plan to coach" });
+  }
+});
+
 export default router;

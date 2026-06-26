@@ -8,6 +8,7 @@ import {
   getListOpenaiConversationsQueryKey,
   getGetOpenaiConversationQueryKey,
 } from "@workspace/api-client-react";
+import { useGetAthleteProfile } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Send, Bot, User, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -202,6 +203,8 @@ export default function CoachAI() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const { data: profile } = useGetAthleteProfile();
+  const [myTeam, setMyTeam] = useState<null | { id: number; name: string }>(null);
 
   const { data: conversations, isLoading: convsLoading } = useListOpenaiConversations();
   const createConv = useCreateOpenaiConversation();
@@ -218,21 +221,47 @@ export default function CoachAI() {
     }
   }, [conversation?.id, conversation?.messages?.length]);
 
-  // Pin the messages container to the bottom as content grows, but only when the
-  // user is already near the bottom. Scrolling the container directly (instant)
-  // avoids the janky, stacked smooth-scroll animations that fired on every token.
   useEffect(() => {
-    if (streamMessages.length === 0) return;
-    const el = messagesRef.current;
-    if (!el || !shouldAutoScroll.current) return;
-    el.scrollTop = el.scrollHeight;
-  }, [streamMessages]);
+    // Fetch the user's team (if any) so we can suggest plans to the coach instead
+    // of attempting a coach-only apply call when the user is an athlete.
+    let mounted = true;
+    fetch("/api/teams/my", { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!mounted) return;
+        setMyTeam(d?.team ?? null);
+      })
+      .catch(() => { if (mounted) setMyTeam(null); });
+    return () => { mounted = false; };
+  }, []);
 
+  // Pin the messages container to the bottom as content grows, but only when the
+  // user is already near the bottom. During streaming we snap instantly to follow
+  // token updates; when a message finalises we smooth-scroll to the bottom.
   useEffect(() => {
     if (streamMessages.length === 0) return;
-    const el = bottomRef.current;
-    if (!el || !shouldAutoScroll.current) return;
-    el.scrollIntoView({ behavior: "smooth" });
+    if (!shouldAutoScroll.current) return;
+    const el = messagesRef.current;
+    const bottomEl = bottomRef.current;
+    if (!el || !bottomEl) return;
+
+    const last = streamMessages[streamMessages.length - 1];
+
+    if (last?.streaming) {
+      // Snap immediately so token updates don't animate and stay visible.
+      el.scrollTop = el.scrollHeight;
+      return;
+    }
+
+    // Wait until layout stabilises, then smooth-scroll to the bottom.
+    // Double rAF helps when images or markdown blocks affect height.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      try {
+        bottomEl.scrollIntoView({ behavior: "smooth", block: "end" });
+      } catch {
+        el.scrollTop = el.scrollHeight;
+      }
+    }));
   }, [streamMessages]);
 
   // When switching conversations, always start pinned to the bottom.
@@ -362,37 +391,73 @@ export default function CoachAI() {
     let proposal = parseAveraProposal(message.content);
     try {
       if (!proposal) {
-        const suggestResponse = await fetch("/api/openai/suggest-plan", {
-          credentials: "include",
-        });
-        const suggestData = await suggestResponse.json().catch(() => ({}));
-        if (!suggestResponse.ok || !suggestData.proposal) {
-          throw new Error(suggestData.error || "Failed to generate a training plan");
+        // Only coaches can call the suggest-plan helper on the server — do not
+        // attempt that for athletes. If no explicit JSON proposal exists in the
+        // message, we can't proceed for athletes.
+        if (profile?.userRole === "coach") {
+          const suggestResponse = await fetch("/api/openai/suggest-plan", {
+            credentials: "include",
+          });
+          const suggestData = await suggestResponse.json().catch(() => ({}));
+          if (!suggestResponse.ok || !suggestData.proposal) {
+            throw new Error(suggestData.error || "Failed to generate a training plan");
+          }
+          proposal = suggestData.proposal as AveraProposal;
+        } else {
+          throw new Error("Couldn't detect a structured plan in the assistant response. Ask AveraAI to output the plan as JSON or as a fenced ```json``` block.");
         }
-        proposal = suggestData.proposal as AveraProposal;
       }
 
-      const applyResponse = await fetch(`/api/openai/apply-plan`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(proposal),
-      });
-      const applyData = await applyResponse.json().catch(() => ({}));
-      if (!applyResponse.ok || !applyData.planId) {
-        throw new Error(applyData.error || "Failed to add training plan");
-      }
+      // If the current user is a coach, continue to use the coach-only apply
+      // endpoint. If the user is an athlete, either create the plan for them
+      // directly (no team) or suggest it to their coach (team exists).
+      if (profile?.userRole === "coach") {
+        const applyResponse = await fetch(`/api/openai/apply-plan`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(proposal),
+        });
+        const applyData = await applyResponse.json().catch(() => ({}));
+        if (!applyResponse.ok || !applyData.planId) {
+          throw new Error(applyData.error || "Failed to add training plan");
+        }
 
-      toast({
-        title: "Training plan added",
-        description: `${proposal.name} was added for ${proposal.athleteName}.`,
-      });
+        toast({ title: "Training plan added", description: `${proposal.name} was added for ${proposal.athleteName}.` });
+      } else {
+        // Athlete path
+        if (myTeam) {
+          // Suggest the plan to the coach — create a coach notification on the server.
+          const res = await fetch(`/api/openai/suggest-to-coach`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(proposal),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || "Failed to suggest plan to coach");
+          toast({ title: "Suggested to coach", description: `Your coach was notified about "${proposal.name}".` });
+        } else {
+          // Create a personal plan for the athlete.
+          const createRes = await fetch(`/api/plans`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              name: proposal.name,
+              goal: proposal.goal,
+              startDate: proposal.startDate,
+              endDate: proposal.endDate,
+              weeklyMileage: proposal.weeklyMileage,
+            }),
+          });
+          const createData = await createRes.json().catch(() => ({}));
+          if (!createRes.ok) throw new Error(createData.error || "Failed to add plan to your account");
+          toast({ title: "Plan added", description: `${proposal.name} was added to your training plans.` });
+        }
+      }
     } catch (err) {
-      toast({
-        title: "Unable to add training plan",
-        description: err instanceof Error ? err.message : "Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Unable to add training plan", description: err instanceof Error ? err.message : "Please try again.", variant: "destructive" });
     } finally {
       setAddingPlanMessageIndex(null);
     }

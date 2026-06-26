@@ -622,15 +622,7 @@ export default function Onboarding() {
         )}
 
         {/* ── Navigation ── */}
-        <div className="flex items-center justify-between mt-10">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
-          >
-            <ChevronLeft size={16} /> Back
-          </button>
-
+        <div className="flex items-center justify-end mt-10">
           {isLastStep ? (
             <button
               onClick={finish}
