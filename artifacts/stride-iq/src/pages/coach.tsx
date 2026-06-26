@@ -38,89 +38,94 @@ type AveraProposal = {
   }>;
 };
 
-function extractJsonObject(content: string): string | null {
-  const fenceMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fenceMatch?.[1]) {
-    return fenceMatch[1].trim();
+function findJsonCandidates(content: string): string[] {
+  const candidates: string[] = [];
+  const fenceRe = /```(?:json)?\s*([\s\S]*?)```/gi;
+  let fenceMatch: RegExpExecArray | null;
+
+  while ((fenceMatch = fenceRe.exec(content)) !== null) {
+    if (fenceMatch[1]?.trim()) {
+      candidates.push(fenceMatch[1].trim());
+    }
   }
 
-  const firstBrace = content.indexOf("{");
-  const lastBrace = content.lastIndexOf("}");
-  if (firstBrace >= 0 && lastBrace > firstBrace) {
-    return content.slice(firstBrace, lastBrace + 1);
+  const raw = content;
+  for (let i = 0; i < raw.length; i += 1) {
+    if (raw[i] !== "{") continue;
+    let depth = 0;
+    for (let j = i; j < raw.length; j += 1) {
+      if (raw[j] === "{") depth += 1;
+      if (raw[j] === "}") {
+        depth -= 1;
+        if (depth === 0) {
+          const slice = raw.slice(i, j + 1);
+          candidates.push(slice);
+          break;
+        }
+      }
+    }
   }
-  return null;
+
+  return [...new Set(candidates)];
 }
 
 function parseAveraProposal(content: string): AveraProposal | null {
-  const jsonText = extractJsonObject(content);
-  if (!jsonText) return null;
+  const candidates = findJsonCandidates(content);
+  if (candidates.length === 0) return null;
 
-  try {
-    const parsed = JSON.parse(jsonText) as Record<string, unknown>;
-    if (
-      typeof parsed.athleteUserId !== "string" ||
-      typeof parsed.athleteName !== "string" ||
-      typeof parsed.name !== "string" ||
-      typeof parsed.goal !== "string" ||
-      typeof parsed.startDate !== "string" ||
-      typeof parsed.endDate !== "string" ||
-      (typeof parsed.weeklyMileage !== "number" && typeof parsed.weeklyMileage !== "string") ||
-      !Array.isArray(parsed.sessions)
-    ) {
-      return null;
-    }
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as Record<string, unknown>;
+      if (
+        typeof parsed.athleteUserId !== "string" ||
+        typeof parsed.athleteName !== "string" ||
+        typeof parsed.name !== "string" ||
+        typeof parsed.goal !== "string" ||
+        typeof parsed.startDate !== "string" ||
+        typeof parsed.endDate !== "string" ||
+        (typeof parsed.weeklyMileage !== "number" && typeof parsed.weeklyMileage !== "string") ||
+        !Array.isArray(parsed.sessions)
+      ) {
+        continue;
+      }
 
-    const sessions = parsed.sessions.map((s) => {
-      const session = s as Record<string, unknown>;
+      const sessions = parsed.sessions.map((s) => {
+        const session = s as Record<string, unknown>;
+        return {
+          weekNumber: Number(session.weekNumber ?? 0),
+          dayOfWeek: Number(session.dayOfWeek ?? 0),
+          sessionType: String(session.sessionType ?? "easy_run"),
+          description: String(session.description ?? "Run"),
+          distanceMiles: Number(session.distanceMiles ?? 0),
+          durationMinutes: Number(session.durationMinutes ?? 0),
+        };
+      });
+
+      if (sessions.some((s) => Number.isNaN(s.weekNumber) || Number.isNaN(s.dayOfWeek) || !s.sessionType)) {
+        continue;
+      }
+
       return {
-        weekNumber: Number(session.weekNumber ?? 0),
-        dayOfWeek: Number(session.dayOfWeek ?? 0),
-        sessionType: String(session.sessionType ?? "easy_run"),
-        description: String(session.description ?? "Run"),
-        distanceMiles: Number(session.distanceMiles ?? 0),
-        durationMinutes: Number(session.durationMinutes ?? 0),
+        athleteUserId: parsed.athleteUserId,
+        athleteName: parsed.athleteName,
+        name: parsed.name,
+        goal: parsed.goal,
+        startDate: parsed.startDate,
+        endDate: parsed.endDate,
+        weeklyMileage: Number(parsed.weeklyMileage),
+        rationale: typeof parsed.rationale === "string" ? parsed.rationale : undefined,
+        sessions,
       };
-    });
-
-    if (sessions.some((s) => Number.isNaN(s.weekNumber) || Number.isNaN(s.dayOfWeek) || !s.sessionType)) {
-      return null;
+    } catch {
+      // Try the next candidate.
     }
-
-    return {
-      athleteUserId: parsed.athleteUserId,
-      athleteName: parsed.athleteName,
-      name: parsed.name,
-      goal: parsed.goal,
-      startDate: parsed.startDate,
-      endDate: parsed.endDate,
-      weeklyMileage: Number(parsed.weeklyMileage),
-      rationale: typeof parsed.rationale === "string" ? parsed.rationale : undefined,
-      sessions,
-    };
-  } catch {
-    return null;
   }
+
+  return null;
 }
 
 function isTrainingPlanResponse(content: string) {
-  const normalized = content.toLowerCase();
-  const trainingKeywords = [
-    "training plan",
-    "weekly mileage",
-    "session",
-    "plan",
-    "goal",
-    "periodization",
-    "tempo run",
-    "long run",
-    "cross training",
-    "race",
-    "workout",
-    "recovery",
-  ];
-  if (trainingKeywords.some((keyword) => normalized.includes(keyword))) return true;
-  return /"athleteNumber"\s*:\s*\d+|"weeklyMileage"|"sessions"|"startDate"|"endDate"/i.test(content);
+  return parseAveraProposal(content) !== null;
 }
 
 function AssistantMarkdown({ content }: { content: string }) {
@@ -174,6 +179,7 @@ export default function CoachAI() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [addingPlanMessageIndex, setAddingPlanMessageIndex] = useState<number | null>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -201,6 +207,12 @@ export default function CoachAI() {
     const el = messagesRef.current;
     if (!el || !shouldAutoScroll.current) return;
     el.scrollTop = el.scrollHeight;
+  }, [streamMessages]);
+
+  useEffect(() => {
+    const el = bottomRef.current;
+    if (!el || !shouldAutoScroll.current) return;
+    el.scrollIntoView({ behavior: "smooth" });
   }, [streamMessages]);
 
   // When switching conversations, always start pinned to the bottom.
@@ -475,16 +487,15 @@ export default function CoachAI() {
                           : (msg.streaming && <span className="inline-block w-2 h-4 bg-primary opacity-70 animate-pulse rounded-sm" />))
                       : msg.content}
                   </div>
-                  {msg.role === "assistant" && !msg.streaming && isTrainingPlanResponse(msg.content) && (
+                  {msg.role === "assistant" && !msg.streaming && parseAveraProposal(msg.content) && (
                     <div className="flex justify-end mt-2">
                       <Button
-                        size="xs"
+                        size="icon"
                         onClick={() => handleAddToTrainingPlan(msg, i)}
                         disabled={addingPlanMessageIndex === i}
-                        className="bg-primary/10 text-primary hover:bg-primary/20"
+                        className="h-7 px-3 text-[11px] bg-primary/10 text-primary hover:bg-primary/20"
                       >
-                        {addingPlanMessageIndex === i ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                        Add to training plan
+                        {addingPlanMessageIndex === i ? <Loader2 className="w-3 h-3 animate-spin" /> : "Add"}
                       </Button>
                     </div>
                   )}
@@ -495,6 +506,7 @@ export default function CoachAI() {
                   )}
                 </div>
               ))}
+              <div ref={bottomRef} />
             </div>
 
             {/* Input */}
