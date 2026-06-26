@@ -145,6 +145,20 @@ export default function Onboarding() {
 
   const steps = form.role === "coach" ? COACH_STEPS : ATHLETE_STEPS;
 
+  function handleBack() {
+    const currentPath = window.location.pathname;
+    if (window.history.length > 1) {
+      window.history.back();
+      window.setTimeout(() => {
+        if (window.location.pathname === currentPath) {
+          navigate("/sign-in");
+        }
+      }, 250);
+    } else {
+      navigate("/sign-in");
+    }
+  }
+
   function set<K extends keyof FormData>(key: K, value: FormData[K]) {
     setForm(f => ({ ...f, [key]: value }));
     setErrors(e => ({ ...e, [key]: undefined }));
@@ -248,13 +262,8 @@ export default function Onboarding() {
     <div className="min-h-screen bg-[#06070E] flex flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-2xl relative pt-10">
         <button
-          onClick={() => {
-            if (window.history.length > 1) {
-              window.history.back();
-            } else {
-              navigate("/sign-in");
-            }
-          }}
+          type="button"
+          onClick={handleBack}
           className="absolute left-0 top-0 flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
         >
           <ChevronLeft size={16} /> Back
@@ -615,13 +624,8 @@ export default function Onboarding() {
         {/* ── Navigation ── */}
         <div className="flex items-center justify-between mt-10">
           <button
-            onClick={() => {
-              if (window.history.length > 1) {
-                window.history.back();
-              } else {
-                navigate("/sign-in");
-              }
-            }}
+            type="button"
+            onClick={handleBack}
             className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
           >
             <ChevronLeft size={16} /> Back
