@@ -60,6 +60,7 @@
   --font-sans: "Inter", sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: "JetBrains Mono", Menlo, monospace;
+  --font-display: "Syne", sans-serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
