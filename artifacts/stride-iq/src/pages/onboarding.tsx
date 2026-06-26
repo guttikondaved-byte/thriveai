@@ -246,7 +246,19 @@ export default function Onboarding() {
 
   return (
     <div className="min-h-screen bg-[#06070E] flex flex-col items-center justify-center px-4 py-12">
-      <div className="w-full max-w-2xl">
+      <div className="w-full max-w-2xl relative pt-10">
+        <button
+          onClick={() => {
+            if (window.history.length > 1) {
+              window.history.back();
+            } else {
+              navigate("/sign-in");
+            }
+          }}
+          className="absolute left-0 top-0 flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
+        >
+          <ChevronLeft size={16} /> Back
+        </button>
 
         {/* Logo */}
         <div className="flex items-center gap-2 mb-10">
@@ -607,7 +619,7 @@ export default function Onboarding() {
               if (window.history.length > 1) {
                 window.history.back();
               } else {
-                navigate("/");
+                navigate("/sign-in");
               }
             }}
             className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
