@@ -146,9 +146,16 @@ export default function Onboarding() {
   const steps = form.role === "coach" ? COACH_STEPS : ATHLETE_STEPS;
 
   function handleBack() {
+    // If the user is mid-onboarding, move back a step instead of navigating
+    // the browser history — this makes the top-left Back button behave like
+    // the previous footer Back action did.
+    if (step > 0) {
+      setStep(s => Math.max(0, s - 1));
+      return;
+    }
+
     const currentLoc = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (window.history.length > 1) {
-      // Prefer go(-1) for predictable behaviour in some browsers.
       window.history.go(-1);
       window.setTimeout(() => {
         const now = `${window.location.pathname}${window.location.search}${window.location.hash}`;
