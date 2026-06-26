@@ -125,7 +125,25 @@ function parseAveraProposal(content: string): AveraProposal | null {
 }
 
 function isTrainingPlanResponse(content: string) {
-  return parseAveraProposal(content) !== null;
+  const normalized = content.toLowerCase();
+  const keywords = [
+    "training plan",
+    "weekly mileage",
+    "session",
+    "plan",
+    "goal",
+    "periodization",
+    "tempo run",
+    "long run",
+    "cross training",
+    "race",
+    "workout",
+    "recovery",
+    "structured plan",
+    "training block",
+    "weekly volume",
+  ];
+  return parseAveraProposal(content) !== null || keywords.some((keyword) => normalized.includes(keyword));
 }
 
 function AssistantMarkdown({ content }: { content: string }) {
@@ -204,12 +222,14 @@ export default function CoachAI() {
   // user is already near the bottom. Scrolling the container directly (instant)
   // avoids the janky, stacked smooth-scroll animations that fired on every token.
   useEffect(() => {
+    if (streamMessages.length === 0) return;
     const el = messagesRef.current;
     if (!el || !shouldAutoScroll.current) return;
     el.scrollTop = el.scrollHeight;
   }, [streamMessages]);
 
   useEffect(() => {
+    if (streamMessages.length === 0) return;
     const el = bottomRef.current;
     if (!el || !shouldAutoScroll.current) return;
     el.scrollIntoView({ behavior: "smooth" });
@@ -337,29 +357,30 @@ export default function CoachAI() {
 
   async function handleAddToTrainingPlan(message: StreamMessage, index: number) {
     if (addingPlanMessageIndex !== null) return;
-    const proposal = parseAveraProposal(message.content);
-    if (!proposal) {
-      toast({
-        title: "Training plan not detected",
-        description: "This response doesn’t contain a structured plan. Open the Plans page to add one manually.",
-        variant: "warning",
-      });
-      navigate("/plans");
-      return;
-    }
-
     setAddingPlanMessageIndex(index);
+
+    let proposal = parseAveraProposal(message.content);
     try {
-      const response = await fetch(`/api/openai/apply-plan`, {
+      if (!proposal) {
+        const suggestResponse = await fetch("/api/openai/suggest-plan", {
+          credentials: "include",
+        });
+        const suggestData = await suggestResponse.json().catch(() => ({}));
+        if (!suggestResponse.ok || !suggestData.proposal) {
+          throw new Error(suggestData.error || "Failed to generate a training plan");
+        }
+        proposal = suggestData.proposal as AveraProposal;
+      }
+
+      const applyResponse = await fetch(`/api/openai/apply-plan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(proposal),
       });
-
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || !result.planId) {
-        throw new Error(result.error || "Failed to add training plan");
+      const applyData = await applyResponse.json().catch(() => ({}));
+      if (!applyResponse.ok || !applyData.planId) {
+        throw new Error(applyData.error || "Failed to add training plan");
       }
 
       toast({
@@ -487,7 +508,7 @@ export default function CoachAI() {
                           : (msg.streaming && <span className="inline-block w-2 h-4 bg-primary opacity-70 animate-pulse rounded-sm" />))
                       : msg.content}
                   </div>
-                  {msg.role === "assistant" && !msg.streaming && parseAveraProposal(msg.content) && (
+                  {msg.role === "assistant" && !msg.streaming && isTrainingPlanResponse(msg.content) && (
                     <div className="flex justify-end mt-2">
                       <Button
                         size="icon"
