@@ -150,11 +150,20 @@ export default function Onboarding() {
     // the browser history — this makes the top-left Back button behave like
     // the previous footer Back action did.
     if (step > 0) {
-      setStep(s => Math.max(0, s - 1));
+      // debug: log intent and new step
+      setStep(s => {
+        const next = Math.max(0, s - 1);
+        // eslint-disable-next-line no-console
+        console.debug("onboarding: handleBack - stepping from", s, "to", next);
+        return next;
+      });
       return;
     }
 
     const currentLoc = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    // debug: no local step to go back to
+    // eslint-disable-next-line no-console
+    console.debug("onboarding: handleBack - no local step, history.length=", window.history.length);
     if (window.history.length > 1) {
       window.history.go(-1);
       window.setTimeout(() => {
