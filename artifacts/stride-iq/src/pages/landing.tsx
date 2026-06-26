@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const REVIEWS = [
   { quote: "I can't believe this app does not exist already! It's such a brilliant idea. Every high school runner needs this.", author: "Teen athlete, track team" },
@@ -57,67 +58,37 @@ const STRIPE_IMAGES = [
 const WRAP = "max-w-[1180px] mx-auto px-[clamp(20px,4vw,32px)]";
 const SEC = "py-[clamp(56px,8vw,112px)]";
 
-const eyebrowStyle: React.CSSProperties = {
-  fontFamily: "'JetBrains Mono', monospace",
-  fontSize: "12px",
-  letterSpacing: "0.2em",
-  textTransform: "uppercase",
-  margin: "0 0 16px",
-};
+// Shared className strings replacing inline style objects
+const eyebrow = "font-mono text-[12px] tracking-[0.2em] uppercase mb-4";
+const h2 = "font-display font-bold leading-[1.08] tracking-[-0.02em] text-[#F5F5F5] mb-5";
 
-const h2Style: React.CSSProperties = {
-  fontFamily: "'Syne', sans-serif",
-  fontWeight: 700,
-  fontSize: "clamp(28px,4.4vw,52px)",
-  lineHeight: 1.08,
-  letterSpacing: "-0.02em",
-  color: "#F5F5F5",
-  margin: "0 0 20px",
-};
-
-const subStyle: React.CSSProperties = {
-  color: "#8A9287",
-  fontSize: "clamp(15px,1.6vw,18px)",
-  lineHeight: 1.65,
-  margin: 0,
-};
-
-function BtnTeal({ onClick, children, style }: { onClick?: () => void; children: React.ReactNode; style?: React.CSSProperties }) {
+function BtnTeal({ onClick, children, className }: { onClick?: () => void; children: React.ReactNode; className?: string }) {
   return (
     <button
       onClick={onClick}
-      style={{
-        display: "inline-flex", alignItems: "center", justifyContent: "center",
-        fontFamily: "'Inter', sans-serif", fontWeight: 600, border: "none",
-        cursor: "pointer", borderRadius: "10px", fontSize: "16px",
-        padding: "15px 30px", background: "#3D7A74", color: "#fff",
-        boxShadow: "0 14px 30px -12px rgba(61,122,116,0.6)",
-        transition: "background .2s",
-        ...style,
-      }}
-      onMouseOver={e => (e.currentTarget.style.background = "#2A504C")}
-      onMouseOut={e => (e.currentTarget.style.background = "#3D7A74")}
+      className={cn(
+        "inline-flex items-center justify-center font-sans font-semibold border-0",
+        "cursor-pointer rounded-[10px] text-base px-[30px] py-[15px]",
+        "bg-[#3D7A74] text-white shadow-[0_14px_30px_-12px_rgba(61,122,116,0.6)]",
+        "transition-colors hover:bg-[#2A504C]",
+        className,
+      )}
     >
       {children}
     </button>
   );
 }
 
-function BtnGhost({ onClick, children, style }: { onClick?: () => void; children: React.ReactNode; style?: React.CSSProperties }) {
+function BtnGhost({ onClick, children, className }: { onClick?: () => void; children: React.ReactNode; className?: string }) {
   return (
     <button
       onClick={onClick}
-      style={{
-        display: "inline-flex", alignItems: "center", justifyContent: "center",
-        fontFamily: "'Inter', sans-serif", fontWeight: 600,
-        border: "1px solid rgba(242,210,207,0.45)", cursor: "pointer",
-        borderRadius: "10px", fontSize: "15px", padding: "14px 28px",
-        background: "transparent", color: "#F2D2CF",
-        transition: "background .2s",
-        ...style,
-      }}
-      onMouseOver={e => (e.currentTarget.style.background = "rgba(242,210,207,0.10)")}
-      onMouseOut={e => (e.currentTarget.style.background = "transparent")}
+      className={cn(
+        "inline-flex items-center justify-center font-sans font-semibold cursor-pointer",
+        "rounded-[10px] text-[15px] px-7 py-[14px] bg-transparent text-[#F2D2CF]",
+        "border border-[#F2D2CF]/[45%] transition-colors hover:bg-[#F2D2CF]/10",
+        className,
+      )}
     >
       {children}
     </button>
@@ -126,31 +97,32 @@ function BtnGhost({ onClick, children, style }: { onClick?: () => void; children
 
 function NumList({ items, accent }: { items: { title: string; desc: string }[]; accent: string }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "clamp(20px,3vw,28px)", marginTop: "8px" }}>
+    <div className="flex flex-col mt-2" style={{ gap: "clamp(20px,3vw,28px)" }}>
       {items.map((item, i) => {
         const isLast = i === items.length - 1;
         return (
-          <div key={item.title} style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
-            <div style={{
-              flexShrink: 0, width: "34px", height: "34px", borderRadius: "9999px",
-              border: `2px solid ${isLast ? accent : "#28322f"}`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontFamily: "'JetBrains Mono', monospace", fontSize: "14px",
-              color: isLast ? accent : "#8A9287", marginTop: "2px",
-            }}>
+          <div key={item.title} className="flex gap-4 items-start">
+            <div
+              className="shrink-0 w-[34px] h-[34px] rounded-full flex items-center justify-center font-mono text-sm mt-0.5"
+              style={{
+                border: `2px solid ${isLast ? accent : "#28322f"}`,
+                color: isLast ? accent : "#8A9287",
+              }}
+            >
               {i + 1}
             </div>
             <div>
-              <p style={{
-                fontWeight: 600, color: "#F5F5F5", fontSize: "clamp(16px,2vw,18px)",
-                margin: "0 0 6px",
-                textDecoration: isLast ? "underline" : "none",
-                textDecorationColor: isLast ? accent : "transparent",
-                textUnderlineOffset: "4px",
-              }}>
+              <p
+                className="font-semibold text-[#F5F5F5] mb-[6px] underline-offset-4"
+                style={{
+                  fontSize: "clamp(16px,2vw,18px)",
+                  textDecoration: isLast ? "underline" : "none",
+                  textDecorationColor: isLast ? accent : "transparent",
+                }}
+              >
                 {item.title}
               </p>
-              <p style={{ color: "#8A9287", fontSize: "15px", lineHeight: 1.6, margin: 0 }}>{item.desc}</p>
+              <p className="text-[#8A9287] text-[15px] leading-[1.6] m-0">{item.desc}</p>
             </div>
           </div>
         );
@@ -159,15 +131,19 @@ function NumList({ items, accent }: { items: { title: string; desc: string }[]; 
   );
 }
 
-function DeviceFrame({ src, alt, maxWidth = 480, style }: { src: string; alt: string; maxWidth?: number; style?: React.CSSProperties }) {
+function DeviceFrame({ src, alt, maxWidth = 480, style, className }: { src: string; alt: string; maxWidth?: number; style?: React.CSSProperties; className?: string }) {
   return (
-    <div style={{
-      borderRadius: "18px", border: "1px solid #182220", background: "#0C0F1A",
-      padding: "8px", boxShadow: "0 30px 60px -28px rgba(0,0,0,0.75)",
-      maxWidth: `${maxWidth}px`, width: "100%",
-      ...style,
-    }}>
-      <img src={src} alt={alt} style={{ width: "100%", height: "auto", borderRadius: "12px", display: "block" }} />
+    <div
+      className={cn("rounded-[18px] p-2 w-full", className)}
+      style={{
+        border: "1px solid #182220",
+        background: "#0C0F1A",
+        boxShadow: "0 30px 60px -28px rgba(0,0,0,0.75)",
+        maxWidth: `${maxWidth}px`,
+        ...style,
+      }}
+    >
+      <img src={src} alt={alt} className="w-full h-auto rounded-[12px] block" />
     </div>
   );
 }
@@ -206,85 +182,93 @@ export default function Landing() {
   ];
 
   return (
-    <div style={{ background: "#06070E", overflowX: "hidden" }}>
+    <div className="bg-[#06070E] overflow-x-hidden">
 
       {/* NAVBAR */}
-      <header style={{
-        position: "sticky", top: 0, zIndex: 50,
-        background: scrolled ? "rgba(6,7,14,0.95)" : "rgba(6,7,14,0.85)",
-        backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-        borderBottom: "1px solid #182220",
-        boxShadow: scrolled ? "0 4px 24px -8px rgba(0,0,0,0.5)" : "none",
-        transition: "background .2s, box-shadow .2s",
-      }}>
-        <div className={WRAP} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: "68px" }}>
-          <button onClick={() => scrollTo("top")} style={{ display: "flex", alignItems: "center", gap: "10px", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-            <img src="/logo.svg" alt="Thrive" style={{ width: "30px", height: "30px", borderRadius: "8px" }} />
-            <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "21px", letterSpacing: "-0.02em", color: "#F5F5F5" }}>Thrive</span>
+      <header
+        className="sticky top-0 z-50 backdrop-blur-[12px] border-b border-[#182220] transition-[background-color,box-shadow] duration-200"
+        style={{
+          background: scrolled ? "rgba(6,7,14,0.95)" : "rgba(6,7,14,0.85)",
+          boxShadow: scrolled ? "0 4px 24px -8px rgba(0,0,0,0.5)" : "none",
+          WebkitBackdropFilter: "blur(12px)",
+        }}
+      >
+        <div className={cn(WRAP, "flex items-center justify-between h-[68px]")}>
+          <button onClick={() => scrollTo("top")} className="flex items-center gap-[10px] bg-transparent border-0 cursor-pointer p-0">
+            <img src="/logo.svg" alt="Thrive" className="w-[30px] h-[30px] rounded-[8px]" />
+            <span className="font-display font-extrabold text-[21px] tracking-[-0.02em] text-[#F5F5F5]">Thrive</span>
           </button>
-          <nav className="hidden lg:flex" style={{ alignItems: "center", gap: "34px" }}>
+          <nav className="hidden lg:flex items-center gap-[34px]">
             {navLinks.map(([label, id]) => (
-              <button key={id} onClick={() => scrollTo(id)} style={{ fontFamily: "'Inter', sans-serif", fontSize: "14px", color: "#8A9287", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0, transition: "color .2s" }}
-                onMouseOver={e => (e.currentTarget.style.color = "#F5F5F5")}
-                onMouseOut={e => (e.currentTarget.style.color = "#8A9287")}
+              <button
+                key={id}
+                onClick={() => scrollTo(id)}
+                className="font-sans text-sm text-[#8A9287] font-medium bg-transparent border-0 cursor-pointer p-0 transition-colors hover:text-[#F5F5F5]"
               >{label}</button>
             ))}
           </nav>
-          <div className="hidden lg:flex" style={{ alignItems: "center", gap: "18px" }}>
-            <button onClick={() => navigate("/sign-in")} style={{ fontFamily: "'Inter', sans-serif", fontSize: "14px", color: "#8A9287", fontWeight: 500, background: "none", border: "none", cursor: "pointer", transition: "color .2s" }}
-              onMouseOver={e => (e.currentTarget.style.color = "#F5F5F5")}
-              onMouseOut={e => (e.currentTarget.style.color = "#8A9287")}
+          <div className="hidden lg:flex items-center gap-[18px]">
+            <button
+              onClick={() => navigate("/sign-in")}
+              className="font-sans text-sm text-[#8A9287] font-medium bg-transparent border-0 cursor-pointer transition-colors hover:text-[#F5F5F5]"
             >Log in</button>
-            <BtnTeal onClick={() => navigate("/sign-up")} style={{ padding: "9px 18px", fontSize: "14px", boxShadow: "none" }}>Get Started</BtnTeal>
+            <BtnTeal onClick={() => navigate("/sign-up")} className="py-[9px] px-[18px] text-sm shadow-none">Get Started</BtnTeal>
           </div>
-          <div className="flex lg:hidden" style={{ alignItems: "center", gap: "12px" }}>
-            <BtnTeal onClick={() => navigate("/sign-up")} style={{ padding: "9px 16px", fontSize: "14px", boxShadow: "none" }}>Get Started</BtnTeal>
-            <button onClick={() => setMenuOpen(o => !o)} style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: "5px", width: "42px", height: "42px", alignItems: "center", background: "none", border: "none", cursor: "pointer" }}>
-              <span style={{ width: "22px", height: "2px", background: "#F5F5F5", borderRadius: "2px" }} />
-              <span style={{ width: "22px", height: "2px", background: "#F5F5F5", borderRadius: "2px" }} />
-              <span style={{ width: "22px", height: "2px", background: "#F5F5F5", borderRadius: "2px" }} />
+          <div className="flex lg:hidden items-center gap-3">
+            <BtnTeal onClick={() => navigate("/sign-up")} className="py-[9px] px-4 text-sm shadow-none">Get Started</BtnTeal>
+            <button onClick={() => setMenuOpen(o => !o)} className="flex flex-col justify-center gap-[5px] w-[42px] h-[42px] items-center bg-transparent border-0 cursor-pointer">
+              <span className="w-[22px] h-0.5 bg-[#F5F5F5] rounded-[2px]" />
+              <span className="w-[22px] h-0.5 bg-[#F5F5F5] rounded-[2px]" />
+              <span className="w-[22px] h-0.5 bg-[#F5F5F5] rounded-[2px]" />
             </button>
           </div>
         </div>
         {menuOpen && (
-          <div className="lg:hidden" style={{ display: "flex", flexDirection: "column", gap: "6px", background: "#06070E", borderTop: "1px solid #182220", padding: "18px clamp(20px,4vw,32px) 26px" }}>
+          <div className="lg:hidden flex flex-col gap-[6px] bg-[#06070E] border-t border-[#182220]" style={{ padding: "18px clamp(20px,4vw,32px) 26px" }}>
             {navLinks.map(([label, id]) => (
-              <button key={id} onClick={() => scrollTo(id)} style={{ textAlign: "left", color: "#F5F5F5", fontSize: "16px", fontWeight: 500, padding: "12px 0", background: "none", border: "none", borderBottom: "1px solid #182220", cursor: "pointer", fontFamily: "'Inter', sans-serif" }}>{label}</button>
+              <button
+                key={id}
+                onClick={() => scrollTo(id)}
+                className="text-left text-[#F5F5F5] text-base font-medium py-3 bg-transparent border-0 border-b border-[#182220] cursor-pointer font-sans"
+              >{label}</button>
             ))}
-            <button onClick={() => { navigate("/sign-in"); setMenuOpen(false); }} style={{ width: "100%", color: "#fff", fontWeight: 600, padding: "12px", border: "1px solid #182220", borderRadius: "10px", marginTop: "14px", background: "none", cursor: "pointer", fontSize: "15px", fontFamily: "'Inter', sans-serif" }}>Log in</button>
-            <BtnTeal onClick={() => { navigate("/sign-up"); setMenuOpen(false); }} style={{ width: "100%", boxShadow: "none", paddingTop: "12px", paddingBottom: "12px" }}>Get Started Free</BtnTeal>
+            <button
+              onClick={() => { navigate("/sign-in"); setMenuOpen(false); }}
+              className="w-full text-white font-semibold py-3 border border-[#182220] rounded-[10px] mt-[14px] bg-transparent cursor-pointer text-[15px] font-sans"
+            >Log in</button>
+            <BtnTeal onClick={() => { navigate("/sign-up"); setMenuOpen(false); }} className="w-full shadow-none py-3">Get Started Free</BtnTeal>
           </div>
         )}
       </header>
 
       {/* HERO */}
-      <section id="top" style={{ position: "relative", overflow: "hidden", background: "#06070E" }}>
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(ellipse 55% 60% at 78% 50%,rgba(42,80,76,0.20) 0%,transparent 64%)" }} />
-        <div className={`${WRAP} ${SEC}`} style={{ position: "relative" }}>
+      <section id="top" className="relative overflow-hidden bg-[#06070E]">
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 55% 60% at 78% 50%,rgba(42,80,76,0.20) 0%,transparent 64%)" }} />
+        <div className={cn(WRAP, SEC, "relative")}>
           <div className="flex flex-col lg:flex-row lg:items-center" style={{ gap: "clamp(40px,5vw,64px)" }}>
-            <div style={{ width: "100%", flex: "0 0 auto" }} className="lg:w-[52%]">
-              <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", background: "#0C0F1A", border: "1px solid #182220", borderRadius: "9999px", padding: "8px 16px", marginBottom: "28px" }}>
-                <span style={{ color: "#3D7A74", letterSpacing: "2px", fontSize: "13px" }}>★★★★★</span>
-                <span style={{ color: "#8A9287", fontSize: "13px" }}>Validated by 70+ athletes & coaches before launch</span>
+            <div className="w-full shrink-0 lg:w-[52%]">
+              <div className="inline-flex items-center gap-[10px] bg-[#0C0F1A] border border-[#182220] rounded-full px-4 py-2 mb-7">
+                <span className="text-[#3D7A74] tracking-[2px] text-[13px]">★★★★★</span>
+                <span className="text-[#8A9287] text-[13px]">Validated by 70+ athletes & coaches before launch</span>
               </div>
-              <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(40px,7vw,72px)", lineHeight: 1.04, letterSpacing: "-0.03em", color: "#F5F5F5", margin: "0 0 22px" }}>
-                Take your training<br />to the <span style={{ color: "#3D7A74" }}>next level</span>
+              <h1 className="font-display font-extrabold leading-[1.04] tracking-[-0.03em] text-[#F5F5F5] mb-[22px]" style={{ fontSize: "clamp(40px,7vw,72px)" }}>
+                Take your training<br />to the <span className="text-[#3D7A74]">next level</span>
               </h1>
-              <p style={{ ...subStyle, maxWidth: "30rem", marginBottom: "32px" }}>
+              <p className="text-[#8A9287] leading-[1.65] max-w-[30rem] mb-8" style={{ fontSize: "clamp(15px,1.6vw,18px)" }}>
                 Get the coaching support you need as a runner. AI-powered training plans, automatic injury risk detection, and a direct line to your coach — all in one place.
               </p>
               <BtnTeal onClick={() => navigate("/sign-up")}>Get Started Free</BtnTeal>
-              <p style={{ color: "#8A9287", fontSize: "14px", margin: "16px 0 0" }}>First month free. Cancel anytime.</p>
+              <p className="text-[#8A9287] text-sm mt-4">First month free. Cancel anytime.</p>
             </div>
-            <div style={{ width: "100%", position: "relative", flex: "0 0 auto" }} className="lg:w-[44%]">
-              <div style={{ position: "absolute", inset: "-10% -8%", zIndex: 0, background: "rgba(42,80,76,0.20)", filter: "blur(64px)", borderRadius: "9999px" }} />
-              <div style={{ position: "relative", zIndex: 1, borderRadius: "18px", border: "1px solid rgba(255,255,255,0.10)", background: "#0C0F1A", padding: "10px", boxShadow: "0 36px 70px -28px rgba(0,0,0,0.75)" }}>
-                <div style={{ display: "flex", gap: "7px", padding: "6px 8px 12px" }}>
-                  <span style={{ width: "11px", height: "11px", borderRadius: "9999px", background: "#E5564D" }} />
-                  <span style={{ width: "11px", height: "11px", borderRadius: "9999px", background: "#E6B450" }} />
-                  <span style={{ width: "11px", height: "11px", borderRadius: "9999px", background: "#3D7A74" }} />
+            <div className="w-full relative shrink-0 lg:w-[44%]">
+              <div className="absolute rounded-full blur-[64px] z-0" style={{ inset: "-10% -8%", background: "rgba(42,80,76,0.20)" }} />
+              <div className="relative z-[1] rounded-[18px] border border-white/10 bg-[#0C0F1A] p-[10px]" style={{ boxShadow: "0 36px 70px -28px rgba(0,0,0,0.75)" }}>
+                <div className="flex gap-[7px] px-2 pt-[6px] pb-3">
+                  <span className="w-[11px] h-[11px] rounded-full bg-[#E5564D]" />
+                  <span className="w-[11px] h-[11px] rounded-full bg-[#E6B450]" />
+                  <span className="w-[11px] h-[11px] rounded-full bg-[#3D7A74]" />
                 </div>
-                <img src="/homepage-screen.png" alt="Thrive training dashboard" style={{ width: "100%", height: "auto", borderRadius: "11px", border: "1px solid rgba(255,255,255,0.06)", display: "block" }} />
+                <img src="/homepage-screen.png" alt="Thrive training dashboard" className="w-full h-auto rounded-[11px] border border-white/[6%] block" />
               </div>
             </div>
           </div>
@@ -292,46 +276,46 @@ export default function Landing() {
       </section>
 
       {/* FOR ATHLETES */}
-      <section id="athletes" style={{ position: "relative", overflow: "hidden", background: "#0C0F1A", borderTop: "1px solid #182220" }}>
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(ellipse 65% 50% at 50% 0%,rgba(42,80,76,0.20) 0%,transparent 70%)" }} />
-        <div className={`${WRAP} ${SEC}`} style={{ position: "relative" }}>
+      <section id="athletes" className="relative overflow-hidden bg-[#0C0F1A] border-t border-[#182220]">
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 65% 50% at 50% 0%,rgba(42,80,76,0.20) 0%,transparent 70%)" }} />
+        <div className={cn(WRAP, SEC, "relative")}>
           <div className="flex flex-col lg:flex-row lg:items-center" style={{ gap: "clamp(40px,5vw,64px)" }}>
-            <div style={{ flex: 1 }}>
-              <p style={{ ...eyebrowStyle, color: "#3D7A74" }}>For Athletes</p>
-              <h2 style={h2Style}>Your personal training intelligence layer.</h2>
-              <p style={{ ...subStyle, maxWidth: "34rem", marginBottom: "14px" }}>
+            <div className="flex-1">
+              <p className={cn(eyebrow, "text-[#3D7A74]")}>For Athletes</p>
+              <h2 className={h2} style={{ fontSize: "clamp(28px,4.4vw,52px)" }}>Your personal training intelligence layer.</h2>
+              <p className="text-[#8A9287] leading-[1.65] max-w-[34rem] mb-[14px]" style={{ fontSize: "clamp(15px,1.6vw,18px)" }}>
                 Whether you're a high school sprinter or a first-time 5K runner, Thrive gives you the tools that used to be reserved for elite athletes. Log your runs, understand your data, and train with a plan that evolves as you do.
               </p>
               <NumList items={ATHLETE_FEATURES} accent="#3D7A74" />
-              <BtnTeal onClick={() => navigate("/sign-up?role=athlete")} style={{ marginTop: "34px" }}>Start for free</BtnTeal>
+              <BtnTeal onClick={() => navigate("/sign-up?role=athlete")} className="mt-[34px]">Start for free</BtnTeal>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ borderRadius: "18px", border: "1px solid #182220", background: "#06070E", padding: "16px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "0 30px 60px -28px rgba(0,0,0,0.7)" }}>
-                <div style={{ borderRadius: "14px", border: "1px solid #182220", background: "#0C0F1A", padding: "16px" }}>
-                  <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "#8A9287", margin: "0 0 10px" }}>This week</p>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+            <div className="flex-1">
+              <div className="rounded-[18px] border border-[#182220] bg-[#06070E] p-4 flex flex-col gap-3" style={{ boxShadow: "0 30px 60px -28px rgba(0,0,0,0.7)" }}>
+                <div className="rounded-[14px] border border-[#182220] bg-[#0C0F1A] p-4">
+                  <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-[#8A9287] mb-[10px]">This week</p>
+                  <div className="flex justify-between items-end">
                     <div>
-                      <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: "26px", color: "#F5F5F5", margin: 0 }}>42.3 km</p>
-                      <p style={{ color: "#3D7A74", fontSize: "13px", margin: "4px 0 0" }}>↑ 12% vs last week</p>
+                      <p className="font-display font-bold text-[26px] text-[#F5F5F5] m-0">42.3 km</p>
+                      <p className="text-[#3D7A74] text-[13px] mt-1">↑ 12% vs last week</p>
                     </div>
-                    <div style={{ textAlign: "right" }}>
-                      <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: "26px", color: "#F5F5F5", margin: 0 }}>5</p>
-                      <p style={{ color: "#8A9287", fontSize: "13px", margin: "4px 0 0" }}>runs</p>
+                    <div className="text-right">
+                      <p className="font-display font-bold text-[26px] text-[#F5F5F5] m-0">5</p>
+                      <p className="text-[#8A9287] text-[13px] mt-1">runs</p>
                     </div>
                   </div>
                 </div>
-                <div style={{ borderRadius: "14px", border: "1px solid #182220", background: "#0C0F1A", padding: "16px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <p style={{ fontSize: "14px", fontWeight: 500, color: "#F5F5F5", margin: 0 }}>Injury Risk</p>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: "#5fbf8a", background: "rgba(95,191,138,0.10)", border: "1px solid rgba(95,191,138,0.22)", padding: "2px 9px", borderRadius: "9999px" }}>LOW</span>
+                <div className="rounded-[14px] border border-[#182220] bg-[#0C0F1A] p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-[#F5F5F5] m-0">Injury Risk</p>
+                    <span className="font-mono text-[11px] text-[#5fbf8a] bg-[#5fbf8a]/10 border border-[#5fbf8a]/[22%] px-[9px] py-0.5 rounded-full">LOW</span>
                   </div>
-                  <div style={{ marginTop: "12px", height: "8px", borderRadius: "9999px", background: "#182220" }}>
-                    <div style={{ height: "8px", borderRadius: "9999px", background: "#3D7A74", width: "25%" }} />
+                  <div className="mt-3 h-2 rounded-full bg-[#182220]">
+                    <div className="h-2 rounded-full bg-[#3D7A74] w-1/4" />
                   </div>
                 </div>
-                <div style={{ borderRadius: "14px", border: "1px solid rgba(242,210,207,0.22)", background: "rgba(242,210,207,0.05)", padding: "16px" }}>
-                  <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "#F2D2CF", margin: "0 0 8px" }}>AveraAI</p>
-                  <p style={{ fontSize: "14px", lineHeight: 1.6, color: "#F5F5F5", margin: 0 }}>"Your long run pace yesterday was 8% above your aerobic threshold. I'd recommend an easy 5k tomorrow."</p>
+                <div className="rounded-[14px] border border-[#F2D2CF]/[22%] bg-[#F2D2CF]/[5%] p-4">
+                  <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-[#F2D2CF] mb-2">AveraAI</p>
+                  <p className="text-sm leading-[1.6] text-[#F5F5F5] m-0">"Your long run pace yesterday was 8% above your aerobic threshold. I'd recommend an easy 5k tomorrow."</p>
                 </div>
               </div>
             </div>
@@ -340,28 +324,28 @@ export default function Landing() {
       </section>
 
       {/* FOR COACHES */}
-      <section id="coaches" style={{ position: "relative", overflow: "hidden", background: "#06070E" }}>
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(ellipse 55% 45% at 95% 100%,rgba(242,210,207,0.10) 0%,transparent 65%)" }} />
-        <div className={`${WRAP} ${SEC}`} style={{ position: "relative" }}>
+      <section id="coaches" className="relative overflow-hidden bg-[#06070E]">
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 55% 45% at 95% 100%,rgba(242,210,207,0.10) 0%,transparent 65%)" }} />
+        <div className={cn(WRAP, SEC, "relative")}>
           <div className="flex flex-col lg:flex-row-reverse lg:items-center" style={{ gap: "clamp(40px,5vw,64px)" }}>
-            <div style={{ flex: 1 }}>
-              <p style={{ ...eyebrowStyle, color: "#F2D2CF" }}>For Coaches</p>
-              <h2 style={h2Style}>Manage your whole team. No spreadsheets.</h2>
-              <p style={{ ...subStyle, maxWidth: "34rem", marginBottom: "14px" }}>
+            <div className="flex-1">
+              <p className={cn(eyebrow, "text-[#F2D2CF]")}>For Coaches</p>
+              <h2 className={h2} style={{ fontSize: "clamp(28px,4.4vw,52px)" }}>Manage your whole team. No spreadsheets.</h2>
+              <p className="text-[#8A9287] leading-[1.65] max-w-[34rem] mb-[14px]" style={{ fontSize: "clamp(15px,1.6vw,18px)" }}>
                 Thrive gives coaches the bird's-eye view they've never had: every athlete's weekly mileage, injury risk score, and training load in a single dashboard. Catch overtraining before it becomes a DNS. Scale from 5 athletes to 50 without losing the personal touch.
               </p>
               <NumList items={COACH_FEATURES} accent="#F2D2CF" />
-              <BtnGhost onClick={() => navigate("/sign-up?role=coach")} style={{ marginTop: "34px" }}>Add your team</BtnGhost>
+              <BtnGhost onClick={() => navigate("/sign-up?role=coach")} className="mt-[34px]">Add your team</BtnGhost>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ borderRadius: "18px", border: "1px solid #182220", background: "#0C0F1A", overflow: "hidden", boxShadow: "0 30px 60px -28px rgba(0,0,0,0.7)" }}>
-                <div style={{ padding: "14px 18px", borderBottom: "1px solid #182220", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <p style={{ fontSize: "14px", fontWeight: 600, color: "#F5F5F5", margin: 0 }}>Team Overview</p>
-                  <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "12px", color: "#8A9287", margin: 0 }}>Week of Jun 23</p>
+            <div className="flex-1">
+              <div className="rounded-[18px] border border-[#182220] bg-[#0C0F1A] overflow-hidden" style={{ boxShadow: "0 30px 60px -28px rgba(0,0,0,0.7)" }}>
+                <div className="px-[18px] py-[14px] border-b border-[#182220] flex justify-between items-center">
+                  <p className="text-sm font-semibold text-[#F5F5F5] m-0">Team Overview</p>
+                  <p className="font-mono text-xs text-[#8A9287] m-0">Week of Jun 23</p>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 0.9fr 1fr", padding: "10px 18px", borderBottom: "1px solid #182220" }}>
+                <div className="grid px-[18px] py-[10px] border-b border-[#182220]" style={{ gridTemplateColumns: "1.4fr 1fr 0.9fr 1fr" }}>
                   {["Athlete", "Mileage", "Risk", "Load"].map(h => (
-                    <span key={h} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "#8A9287" }}>{h}</span>
+                    <span key={h} className="font-mono text-[10px] tracking-[0.12em] uppercase text-[#8A9287]">{h}</span>
                   ))}
                 </div>
                 {[
@@ -369,19 +353,24 @@ export default function Landing() {
                   { name: "Jake T. ⚠", km: "67 km", risk: "HIGH", riskColor: "#E5564D", riskBg: "rgba(229,62,62,0.10)", load: "100%", loadColor: "#E53E3E", highlight: true },
                   { name: "Sofia R.", km: "29 km", risk: "LOW", riskColor: "#5fbf8a", riskBg: "rgba(95,191,138,0.10)", load: "35%", loadColor: "#3D7A74", highlight: false },
                 ].map((row, i, arr) => (
-                  <div key={row.name} style={{
-                    display: "grid", gridTemplateColumns: "1.4fr 1fr 0.9fr 1fr", alignItems: "center",
-                    padding: "14px 18px",
-                    borderBottom: i < arr.length - 1 ? "1px solid #182220" : "none",
-                    background: row.highlight ? "rgba(229,62,62,0.06)" : "transparent",
-                    borderLeft: row.highlight ? "2px solid #E53E3E" : "none",
-                  }}>
-                    <span style={{ fontSize: "14px", color: "#F5F5F5" }}>{row.name}</span>
-                    <span style={{ fontSize: "14px", color: "#F5F5F5" }}>{row.km}</span>
-                    <span><span style={{ fontSize: "11px", color: row.riskColor, background: row.riskBg, padding: "2px 8px", borderRadius: "9999px" }}>{row.risk}</span></span>
+                  <div
+                    key={row.name}
+                    className="grid items-center px-[18px] py-[14px]"
+                    style={{
+                      gridTemplateColumns: "1.4fr 1fr 0.9fr 1fr",
+                      borderBottom: i < arr.length - 1 ? "1px solid #182220" : "none",
+                      background: row.highlight ? "rgba(229,62,62,0.06)" : "transparent",
+                      borderLeft: row.highlight ? "2px solid #E53E3E" : "none",
+                    }}
+                  >
+                    <span className="text-sm text-[#F5F5F5]">{row.name}</span>
+                    <span className="text-sm text-[#F5F5F5]">{row.km}</span>
                     <span>
-                      <div style={{ height: "6px", width: "80px", borderRadius: "9999px", background: "#182220" }}>
-                        <div style={{ height: "6px", borderRadius: "9999px", background: row.loadColor, width: row.load }} />
+                      <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ color: row.riskColor, background: row.riskBg }}>{row.risk}</span>
+                    </span>
+                    <span>
+                      <div className="h-[6px] w-20 rounded-full bg-[#182220]">
+                        <div className="h-[6px] rounded-full" style={{ background: row.loadColor, width: row.load }} />
                       </div>
                     </span>
                   </div>
@@ -393,69 +382,80 @@ export default function Landing() {
       </section>
 
       {/* FEATURES */}
-      <section id="features" style={{ background: "#0C0F1A", borderTop: "1px solid #182220" }}>
-        <div className={`${WRAP} ${SEC}`}>
-          <h2 style={{ ...h2Style, textAlign: "center", maxWidth: "18ch", marginLeft: "auto", marginRight: "auto" }}>Train with data that actually matters</h2>
-          <p style={{ ...subStyle, textAlign: "center", maxWidth: "38rem", margin: "0 auto 56px" }}>
+      <section id="features" className="bg-[#0C0F1A] border-t border-[#182220]">
+        <div className={cn(WRAP, SEC)}>
+          <h2 className={cn(h2, "text-center max-w-[18ch] mx-auto")} style={{ fontSize: "clamp(28px,4.4vw,52px)" }}>Train with data that actually matters</h2>
+          <p className="text-[#8A9287] leading-[1.65] text-center max-w-[38rem] mx-auto mb-14" style={{ fontSize: "clamp(15px,1.6vw,18px)" }}>
             See exactly what your training is doing to your body — before it becomes an injury, a plateau, or a missed race.
           </p>
           {/* Mobile horizontal scroll */}
-          <div className="lg:hidden" style={{ marginLeft: "calc(-1 * clamp(20px,4vw,32px))", marginRight: "calc(-1 * clamp(20px,4vw,32px))", paddingLeft: "clamp(20px,4vw,32px)", paddingRight: "clamp(20px,4vw,32px)", overflowX: "auto", display: "flex", gap: "18px", paddingBottom: "10px", scrollSnapType: "x mandatory", scrollbarWidth: "none" }}>
+          <div
+            className="lg:hidden flex gap-[18px] pb-[10px] snap-x snap-mandatory overflow-x-auto [scrollbar-width:none]"
+            style={{ marginLeft: "calc(-1 * clamp(20px,4vw,32px))", marginRight: "calc(-1 * clamp(20px,4vw,32px))", paddingLeft: "clamp(20px,4vw,32px)", paddingRight: "clamp(20px,4vw,32px)" }}
+          >
             {[
               { content: <FeatureDashboardCard />, caption: "Connect Strava and see your weekly distance, injury risk, and training load the moment you log in." },
               { content: <FeatureActivityCard />, caption: "Dive into any run — pace, heart rate, elevation, and cadence — pulled automatically from Strava." },
               { content: <FeaturePlanCard />, caption: "Your personalised training plan updates every week based on your logged workouts, fitness, and goals." },
             ].map((card, i) => (
-              <div key={i} style={{ flexShrink: 0, width: "80vw", scrollSnapAlign: "start", display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div key={i} className="shrink-0 w-[80vw] snap-start flex flex-col gap-[14px]">
                 {card.content}
-                <p style={{ fontSize: "14px", color: "#8A9287", textAlign: "center", margin: 0, padding: "0 6px", lineHeight: 1.55 }}>{card.caption}</p>
+                <p className="text-sm text-[#8A9287] text-center m-0 px-[6px] leading-[1.55]">{card.caption}</p>
               </div>
             ))}
           </div>
           {/* Desktop 3-col grid */}
-          <div className="hidden lg:grid" style={{ gridTemplateColumns: "repeat(3, 1fr)", gap: "32px" }}>
+          <div className="hidden lg:grid grid-cols-3 gap-8">
             {[
               { content: <FeatureDashboardCard />, caption: "Connect Strava and see your weekly distance, injury risk, and training load the moment you log in." },
               { content: <FeatureActivityCard />, caption: "Dive into any run — pace, heart rate, elevation, and cadence — pulled automatically from Strava." },
               { content: <FeaturePlanCard />, caption: "Your personalised training plan updates every week based on your logged workouts, fitness, and goals." },
             ].map((card, i) => (
-              <div key={i} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div key={i} className="flex flex-col gap-[14px]">
                 {card.content}
-                <p style={{ fontSize: "14px", color: "#8A9287", textAlign: "center", margin: 0, padding: "0 6px", lineHeight: 1.55 }}>{card.caption}</p>
+                <p className="text-sm text-[#8A9287] text-center m-0 px-[6px] leading-[1.55]">{card.caption}</p>
               </div>
             ))}
           </div>
-          <div style={{ display: "flex", justifyContent: "center", marginTop: "48px" }}>
+          <div className="flex justify-center mt-12">
             <BtnTeal onClick={() => navigate("/sign-up")}>Get Started Free</BtnTeal>
           </div>
         </div>
       </section>
 
       {/* REVIEWS */}
-      <section style={{ background: "#06070E" }}>
-        <div className={`${WRAP} ${SEC}`}>
-          <div className="flex flex-col lg:flex-row" style={{ borderRadius: "18px", overflow: "hidden" }}>
-            <div className="lg:w-[45%]" style={{ background: "#2A504C", padding: "clamp(32px,4vw,56px)" }}>
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: "clamp(28px,4.4vw,52px)", lineHeight: 1.08, color: "#fff", margin: "0 0 34px" }}>Reviews from users</h2>
-              <div style={{ marginBottom: "32px" }}>
-                <div style={{ display: "flex", gap: "3px", marginBottom: "8px", color: "#fff", fontSize: "22px" }}>★★★★★</div>
-                <p style={{ color: "rgba(255,255,255,0.92)", fontWeight: 600, fontSize: "18px", margin: 0 }}>70+ beta users</p>
-                <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px", margin: "4px 0 0" }}>Athletes and coaches validated Thrive before launch</p>
+      <section className="bg-[#06070E]">
+        <div className={cn(WRAP, SEC)}>
+          <div className="flex flex-col lg:flex-row rounded-[18px] overflow-hidden">
+            <div className="lg:w-[45%] bg-[#2A504C]" style={{ padding: "clamp(32px,4vw,56px)" }}>
+              <h2 className="font-display font-bold leading-[1.08] text-white mb-[34px]" style={{ fontSize: "clamp(28px,4.4vw,52px)" }}>Reviews from users</h2>
+              <div className="mb-8">
+                <div className="flex gap-[3px] mb-2 text-white text-[22px]">★★★★★</div>
+                <p className="text-[rgba(255,255,255,0.92)] font-semibold text-lg m-0">70+ beta users</p>
+                <p className="text-[rgba(255,255,255,0.6)] text-sm mt-1">Athletes and coaches validated Thrive before launch</p>
               </div>
               <div>
-                <div style={{ display: "flex", gap: "3px", marginBottom: "8px", color: "#fff", fontSize: "18px" }}>★★★★★</div>
-                <p style={{ color: "rgba(255,255,255,0.92)", fontWeight: 600, fontSize: "16px", margin: 0 }}>100% would recommend</p>
-                <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px", margin: "4px 0 0" }}>to a teammate or fellow runner</p>
+                <div className="flex gap-[3px] mb-2 text-white text-[18px]">★★★★★</div>
+                <p className="text-[rgba(255,255,255,0.92)] font-semibold text-base m-0">100% would recommend</p>
+                <p className="text-[rgba(255,255,255,0.6)] text-sm mt-1">to a teammate or fellow runner</p>
               </div>
             </div>
-            <div className="lg:w-[55%]" style={{ background: "#0C0F1A", padding: "clamp(32px,4vw,56px)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <div key={currentIndex} style={{ borderLeft: "4px solid #3D7A74", paddingLeft: "24px" }}>
-                <p style={{ color: "#F5F5F5", fontSize: "clamp(17px,2vw,21px)", fontStyle: "italic", lineHeight: 1.6, margin: "0 0 26px" }}>"{REVIEWS[currentIndex].quote}"</p>
-                <p style={{ color: "#fff", fontWeight: 600, margin: 0 }}>{REVIEWS[currentIndex].author}</p>
+            <div className="lg:w-[55%] bg-[#0C0F1A] flex flex-col justify-center" style={{ padding: "clamp(32px,4vw,56px)" }}>
+              <div key={currentIndex} className="border-l-4 border-l-[#3D7A74] pl-6">
+                <p className="text-[#F5F5F5] italic leading-[1.6] mb-[26px]" style={{ fontSize: "clamp(17px,2vw,21px)" }}>"{REVIEWS[currentIndex].quote}"</p>
+                <p className="text-white font-semibold m-0">{REVIEWS[currentIndex].author}</p>
               </div>
-              <div style={{ display: "flex", gap: "8px", marginTop: "40px" }}>
+              <div className="flex gap-2 mt-10">
                 {REVIEWS.map((_, i) => (
-                  <button key={i} onClick={() => setCurrentIndex(i)} style={{ height: "4px", borderRadius: "9999px", border: "none", cursor: "pointer", padding: 0, transition: "all .3s", width: i === currentIndex ? "32px" : "8px", background: i === currentIndex ? "#3D7A74" : "#182220" }} />
+                  <button
+                    key={i}
+                    onClick={() => setCurrentIndex(i)}
+                    className="h-1 rounded-full border-0 cursor-pointer p-0 transition-all duration-300"
+                    style={{
+                      width: i === currentIndex ? "32px" : "8px",
+                      background: i === currentIndex ? "#3D7A74" : "#182220",
+                    }}
+                  />
                 ))}
               </div>
             </div>
@@ -464,16 +464,16 @@ export default function Landing() {
       </section>
 
       {/* WHY USE THRIVE */}
-      <section style={{ position: "relative", overflow: "hidden", background: "#06070E", borderTop: "1px solid #182220" }}>
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(ellipse 60% 45% at 12% 50%,rgba(42,80,76,0.16) 0%,transparent 64%)" }} />
-        <div className={`${WRAP} ${SEC}`} style={{ position: "relative" }}>
+      <section className="relative overflow-hidden bg-[#06070E] border-t border-[#182220]">
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 45% at 12% 50%,rgba(42,80,76,0.16) 0%,transparent 64%)" }} />
+        <div className={cn(WRAP, SEC, "relative")}>
           <div className="flex flex-col lg:flex-row lg:items-center" style={{ gap: "clamp(40px,5vw,64px)" }}>
-            <div className="lg:w-[45%]" style={{ position: "relative", display: "flex", justifyContent: "center" }}>
-              <div style={{ position: "absolute", width: "72%", height: "72%", top: "14%", borderRadius: "9999px", background: "rgba(42,80,76,0.16)", filter: "blur(60px)" }} />
-              <DeviceFrame src="/homepage-screen.png" alt="Thrive dashboard" maxWidth={480} style={{ position: "relative" }} />
+            <div className="lg:w-[45%] relative flex justify-center">
+              <div className="absolute w-[72%] h-[72%] top-[14%] rounded-full blur-[60px]" style={{ background: "rgba(42,80,76,0.16)" }} />
+              <DeviceFrame src="/homepage-screen.png" alt="Thrive dashboard" maxWidth={480} className="relative" />
             </div>
             <div className="lg:w-[55%]">
-              <h2 style={{ ...h2Style, fontSize: "clamp(30px,5vw,60px)", marginBottom: "32px" }}>Why use Thrive?</h2>
+              <h2 className={cn(h2, "mb-8")} style={{ fontSize: "clamp(30px,5vw,60px)" }}>Why use Thrive?</h2>
               <NumList items={WHY_ITEMS} accent="#3D7A74" />
             </div>
           </div>
@@ -481,26 +481,26 @@ export default function Landing() {
       </section>
 
       {/* IMAGE STRIPE */}
-      <div className="lg:hidden" style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+      <div className="lg:hidden grid grid-cols-2">
         {STRIPE_IMAGES.map(img => (
-          <img key={img.src} src={img.src} alt={img.alt} style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
+          <img key={img.src} src={img.src} alt={img.alt} className="w-full aspect-square object-cover block" />
         ))}
       </div>
-      <div className="hidden lg:flex" style={{ width: "100%", height: "224px", overflow: "hidden" }}>
+      <div className="hidden lg:flex w-full h-[224px] overflow-hidden">
         {STRIPE_IMAGES.map(img => (
-          <img key={img.src} src={img.src} alt={img.alt} style={{ height: "100%", width: "auto", objectFit: "cover", flexShrink: 0, display: "block" }} />
+          <img key={img.src} src={img.src} alt={img.alt} className="h-full w-auto object-cover shrink-0 block" />
         ))}
       </div>
 
       {/* BECOME A THRIVE ATHLETE */}
-      <section style={{ background: "#0C0F1A" }}>
-        <div className={`${WRAP} ${SEC}`}>
+      <section className="bg-[#0C0F1A]">
+        <div className={cn(WRAP, SEC)}>
           <div className="flex flex-col lg:flex-row lg:items-center" style={{ gap: "clamp(40px,5vw,64px)" }}>
             <div className="lg:w-[60%]">
-              <h2 style={{ ...h2Style, marginBottom: "30px" }}>Become a Thrive athlete</h2>
+              <h2 className={cn(h2, "mb-[30px]")} style={{ fontSize: "clamp(28px,4.4vw,52px)" }}>Become a Thrive athlete</h2>
               <NumList items={BECOME_ITEMS} accent="#3D7A74" />
             </div>
-            <div className="lg:w-[40%]" style={{ display: "flex", justifyContent: "center" }}>
+            <div className="lg:w-[40%] flex justify-center">
               <DeviceFrame src="/homepage-screen.png" alt="Thrive app" maxWidth={520} />
             </div>
           </div>
@@ -508,96 +508,108 @@ export default function Landing() {
       </section>
 
       {/* PRICING */}
-      <section id="pricing" style={{ background: "#06070E", borderTop: "1px solid #182220" }}>
-        <div className={`${WRAP} ${SEC}`}>
-          <h2 style={{ ...h2Style, textAlign: "center" }}>Simple, fair pricing</h2>
-          <p style={{ ...subStyle, textAlign: "center" }}>Pay for what you use. No annual lock-in.</p>
-          <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: "22px", maxWidth: "900px", margin: "clamp(40px,5vw,56px) auto 0" }}>
-            <div style={{ display: "flex", flexDirection: "column", background: "#0C0F1A", borderRadius: "24px", padding: "clamp(28px,3.2vw,42px)", border: "1px solid rgba(61,122,116,0.30)", boxShadow: "0 0 60px -28px rgba(61,122,116,0.45),0 30px 60px -34px rgba(0,0,0,0.75)" }}>
-              <p style={{ ...eyebrowStyle, color: "#3D7A74", marginBottom: "18px" }}>For Athletes</p>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", marginBottom: "26px" }}>
-                <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(46px,6vw,64px)", lineHeight: 1, color: "#F5F5F5" }}>$10</span>
-                <span style={{ color: "#8A9287", fontSize: "18px", marginBottom: "9px" }}>/ month</span>
+      <section id="pricing" className="bg-[#06070E] border-t border-[#182220]">
+        <div className={cn(WRAP, SEC)}>
+          <h2 className={cn(h2, "text-center")} style={{ fontSize: "clamp(28px,4.4vw,52px)" }}>Simple, fair pricing</h2>
+          <p className="text-[#8A9287] leading-[1.65] text-center" style={{ fontSize: "clamp(15px,1.6vw,18px)" }}>Pay for what you use. No annual lock-in.</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-[22px] max-w-[900px] mx-auto" style={{ marginTop: "clamp(40px,5vw,56px)" }}>
+            <div className="flex flex-col bg-[#0C0F1A] rounded-[24px] border border-[#3D7A74]/30" style={{ padding: "clamp(28px,3.2vw,42px)", boxShadow: "0 0 60px -28px rgba(61,122,116,0.45),0 30px 60px -34px rgba(0,0,0,0.75)" }}>
+              <p className={cn(eyebrow, "text-[#3D7A74] mb-[18px]")}>For Athletes</p>
+              <div className="flex items-end gap-2 mb-[26px]">
+                <span className="font-display font-extrabold leading-none text-[#F5F5F5]" style={{ fontSize: "clamp(46px,6vw,64px)" }}>$10</span>
+                <span className="text-[#8A9287] text-lg mb-[9px]">/ month</span>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+              <div className="flex flex-col gap-[15px]">
                 {["Strava sync", "AveraAI (unlimited)", "Injury risk scoring", "Personalised plans"].map(f => (
-                  <div key={f} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <span style={{ color: "#3D7A74", fontWeight: 700, flexShrink: 0 }}>✓</span>
-                    <span style={{ color: "#F5F5F5", fontSize: "clamp(15px,1.6vw,16px)" }}>{f}</span>
+                  <div key={f} className="flex items-center gap-3">
+                    <span className="text-[#3D7A74] font-bold shrink-0">✓</span>
+                    <span className="text-[#F5F5F5]" style={{ fontSize: "clamp(15px,1.6vw,16px)" }}>{f}</span>
                   </div>
                 ))}
               </div>
-              <div style={{ height: "36px", flexShrink: 0 }} />
-              <BtnTeal onClick={() => navigate("/sign-up?role=athlete")} style={{ width: "100%", marginTop: "auto", paddingTop: "15px", paddingBottom: "15px", boxShadow: "none" }}>Get started</BtnTeal>
+              <div className="h-9 shrink-0" />
+              <BtnTeal onClick={() => navigate("/sign-up?role=athlete")} className="w-full mt-auto shadow-none">Get started</BtnTeal>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", background: "#0C0F1A", borderRadius: "24px", padding: "clamp(28px,3.2vw,42px)", border: "1px solid rgba(242,210,207,0.24)", boxShadow: "0 0 60px -30px rgba(242,210,207,0.30),0 30px 60px -34px rgba(0,0,0,0.75)" }}>
-              <p style={{ ...eyebrowStyle, color: "#F2D2CF", marginBottom: "18px" }}>For Coaches</p>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", marginBottom: "6px" }}>
-                <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(46px,6vw,64px)", lineHeight: 1, color: "#F5F5F5" }}>$100</span>
-                <span style={{ color: "#8A9287", fontSize: "18px", marginBottom: "9px" }}>/ month</span>
+            <div className="flex flex-col bg-[#0C0F1A] rounded-[24px] border border-[#F2D2CF]/[24%]" style={{ padding: "clamp(28px,3.2vw,42px)", boxShadow: "0 0 60px -30px rgba(242,210,207,0.30),0 30px 60px -34px rgba(0,0,0,0.75)" }}>
+              <p className={cn(eyebrow, "text-[#F2D2CF] mb-[18px]")}>For Coaches</p>
+              <div className="flex items-end gap-2 mb-[6px]">
+                <span className="font-display font-extrabold leading-none text-[#F5F5F5]" style={{ fontSize: "clamp(46px,6vw,64px)" }}>$100</span>
+                <span className="text-[#8A9287] text-lg mb-[9px]">/ month</span>
               </div>
-              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "13px", color: "#8A9287", margin: "0 0 24px" }}>+ $4 per athlete above 25</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+              <p className="font-mono text-[13px] text-[#8A9287] mb-6">+ $4 per athlete above 25</p>
+              <div className="flex flex-col gap-[15px]">
                 {["Up to 25 athletes", "Team roster + workload dashboard", "Automated injury alerts", "Per-athlete plan assignment", "Stripe billing"].map(f => (
-                  <div key={f} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <span style={{ color: "#F2D2CF", fontWeight: 700, flexShrink: 0 }}>✓</span>
-                    <span style={{ color: "#F5F5F5", fontSize: "clamp(15px,1.6vw,16px)" }}>{f}</span>
+                  <div key={f} className="flex items-center gap-3">
+                    <span className="text-[#F2D2CF] font-bold shrink-0">✓</span>
+                    <span className="text-[#F5F5F5]" style={{ fontSize: "clamp(15px,1.6vw,16px)" }}>{f}</span>
                   </div>
                 ))}
               </div>
-              <BtnGhost onClick={() => navigate("/sign-up?role=coach")} style={{ width: "100%", marginTop: "36px", paddingTop: "15px", paddingBottom: "15px" }}>Add your team</BtnGhost>
+              <BtnGhost onClick={() => navigate("/sign-up?role=coach")} className="w-full mt-9 py-[15px]">Add your team</BtnGhost>
             </div>
           </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section id="faq" style={{ background: "#06070E", borderTop: "1px solid #182220" }}>
-        <div className={`${WRAP} ${SEC}`}>
+      <section id="faq" className="bg-[#06070E] border-t border-[#182220]">
+        <div className={cn(WRAP, SEC)}>
           <div className="flex flex-col lg:flex-row lg:items-start" style={{ gap: "clamp(32px,4vw,48px)" }}>
             <div className="lg:w-[34%]">
-              <h2 style={{ ...h2Style, margin: 0 }}>FAQ: Everything you need to know about training with Thrive</h2>
+              <h2 className={cn(h2, "mb-0")} style={{ fontSize: "clamp(28px,4.4vw,52px)" }}>FAQ: Everything you need to know about training with Thrive</h2>
             </div>
-            <div className="lg:w-[60%]" style={{ flexGrow: 1 }}>
+            <div className="lg:w-[60%] flex-grow">
               {FAQ_ITEMS.map((item, i) => (
-                <div key={i} style={{ borderTop: "1px solid #182220" }}>
-                  <button onClick={() => setOpenFaq(openFaq === i ? null : i)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", padding: "20px 0", background: "none", border: "none", cursor: "pointer", textAlign: "left", fontFamily: "'Inter', sans-serif" }}>
-                    <span style={{ fontWeight: 500, fontSize: "clamp(15px,1.7vw,17px)", color: "#F5F5F5" }}>{item.q}</span>
-                    <ChevronDown style={{ width: "20px", height: "20px", color: "#8A9287", flexShrink: 0, transition: "transform .2s", transform: openFaq === i ? "rotate(180deg)" : "rotate(0deg)" }} />
+                <div key={i} className="border-t border-[#182220]">
+                  <button
+                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                    className="w-full flex justify-between items-center gap-4 py-5 bg-transparent border-0 cursor-pointer text-left font-sans"
+                  >
+                    <span className="font-medium text-[#F5F5F5]" style={{ fontSize: "clamp(15px,1.7vw,17px)" }}>{item.q}</span>
+                    <ChevronDown
+                      className="w-5 h-5 text-[#8A9287] shrink-0 transition-transform duration-200"
+                      style={{ transform: openFaq === i ? "rotate(180deg)" : "rotate(0deg)" }}
+                    />
                   </button>
                   {openFaq === i && (
-                    <p style={{ color: "#8A9287", fontSize: "15px", lineHeight: 1.65, margin: 0, padding: "0 0 22px", maxWidth: "46rem" }}>{item.a}</p>
+                    <p className="text-[#8A9287] text-[15px] leading-[1.65] m-0 pb-[22px] max-w-[46rem]">{item.a}</p>
                   )}
                 </div>
               ))}
-              <div style={{ borderTop: "1px solid #182220" }} />
+              <div className="border-t border-[#182220]" />
             </div>
           </div>
         </div>
       </section>
 
       {/* EMAIL CAPTURE + FINAL CTA */}
-      <section id="cta" style={{ position: "relative", overflow: "hidden", background: "#0C0F1A" }}>
+      <section id="cta" className="relative overflow-hidden bg-[#0C0F1A]">
         <div className={WRAP} style={{ paddingTop: "clamp(48px,7vw,88px)" }}>
-          <div style={{ background: "#2A504C", borderRadius: "20px", padding: "clamp(28px,4vw,56px)" }}>
+          <div className="bg-[#2A504C] rounded-[20px]" style={{ padding: "clamp(28px,4vw,56px)" }}>
             <div className="flex flex-col lg:flex-row lg:items-center" style={{ gap: "clamp(28px,5vw,72px)" }}>
-              <div style={{ flex: 1 }}>
-                <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: "clamp(24px,3.4vw,40px)", lineHeight: 1.1, color: "#fff", margin: "0 0 12px" }}>
+              <div className="flex-1">
+                <h2 className="font-display font-bold leading-[1.1] text-white mb-3" style={{ fontSize: "clamp(24px,3.4vw,40px)" }}>
                   Get training tips & injury prevention insights in your inbox.
                 </h2>
-                <p style={{ color: "rgba(255,255,255,0.72)", fontSize: "14px", lineHeight: 1.6, margin: 0 }}>
+                <p className="text-[rgba(255,255,255,0.72)] text-sm leading-[1.6] m-0">
                   Join athletes and coaches getting smarter every week. Unsubscribe anytime. We respect your privacy.
                 </p>
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="flex-1">
                 {submitted ? (
-                  <p style={{ color: "#fff", fontSize: "18px", fontWeight: 600, margin: 0 }}>You're in! We'll be in touch soon.</p>
+                  <p className="text-white text-lg font-semibold m-0">You're in! We'll be in touch soon.</p>
                 ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your email address" style={{ width: "100%", padding: "14px 16px", borderRadius: "10px", border: "none", background: "#fff", color: "#06070E", fontSize: "15px", fontFamily: "'Inter', sans-serif", outline: "none", boxSizing: "border-box" }} />
-                    <button onClick={() => setSubmitted(true)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter', sans-serif", fontWeight: 600, border: "none", cursor: "pointer", borderRadius: "10px", fontSize: "15px", padding: "14px 20px", background: "#06070E", color: "#fff", transition: "background .2s" }}
-                      onMouseOver={e => (e.currentTarget.style.background = "#0C0F1A")}
-                      onMouseOut={e => (e.currentTarget.style.background = "#06070E")}
+                  <div className="flex flex-col gap-3">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      placeholder="Enter your email address"
+                      className="w-full px-4 py-[14px] rounded-[10px] border-0 bg-white text-[#06070E] text-[15px] font-sans outline-none box-border"
+                    />
+                    <button
+                      onClick={() => setSubmitted(true)}
+                      className="w-full flex items-center justify-center font-sans font-semibold border-0 cursor-pointer rounded-[10px] text-[15px] py-[14px] px-5 bg-[#06070E] text-white transition-colors hover:bg-[#0C0F1A]"
                     >Sign up</button>
                   </div>
                 )}
@@ -605,61 +617,69 @@ export default function Landing() {
             </div>
           </div>
         </div>
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "60%", pointerEvents: "none", background: "radial-gradient(ellipse 50% 80% at 50% 120%,rgba(42,80,76,0.20) 0%,transparent 65%)" }} />
-        <div className={`${WRAP} ${SEC}`} style={{ position: "relative" }}>
+        <div className="absolute left-0 right-0 bottom-0 h-[60%] pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 80% at 50% 120%,rgba(42,80,76,0.20) 0%,transparent 65%)" }} />
+        <div className={cn(WRAP, SEC, "relative")}>
           <div className="flex flex-col lg:flex-row lg:items-center" style={{ gap: "clamp(40px,5vw,64px)" }}>
-            <div className="lg:w-[45%]" style={{ position: "relative", display: "flex", justifyContent: "center" }}>
-              <div style={{ position: "absolute", width: "78%", height: "70%", top: "15%", borderRadius: "9999px", background: "rgba(42,80,76,0.18)", filter: "blur(60px)" }} />
-              <DeviceFrame src="/homepage-screen.png" alt="Thrive app" maxWidth={500} style={{ position: "relative", border: "1px solid rgba(255,255,255,0.10)", background: "#06070E", boxShadow: "0 36px 70px -28px rgba(0,0,0,0.8)" }} />
+            <div className="lg:w-[45%] relative flex justify-center">
+              <div className="absolute w-[78%] h-[70%] top-[15%] rounded-full blur-[60px]" style={{ background: "rgba(42,80,76,0.18)" }} />
+              <DeviceFrame
+                src="/homepage-screen.png"
+                alt="Thrive app"
+                maxWidth={500}
+                className="relative"
+                style={{ border: "1px solid rgba(255,255,255,0.10)", background: "#06070E", boxShadow: "0 36px 70px -28px rgba(0,0,0,0.8)" }}
+              />
             </div>
             <div className="lg:w-[55%]">
-              <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(34px,5.5vw,60px)", lineHeight: 1.04, letterSpacing: "-0.03em", color: "#F5F5F5", margin: "0 0 24px" }}>
-                Take your training to the <span style={{ color: "#3D7A74" }}>next level</span>
+              <h2 className="font-display font-extrabold leading-[1.04] tracking-[-0.03em] text-[#F5F5F5] mb-6" style={{ fontSize: "clamp(34px,5.5vw,60px)" }}>
+                Take your training to the <span className="text-[#3D7A74]">next level</span>
               </h2>
-              <p style={{ ...subStyle, maxWidth: "30rem", marginBottom: "30px" }}>
+              <p className="text-[#8A9287] leading-[1.65] max-w-[30rem] mb-[30px]" style={{ fontSize: "clamp(15px,1.6vw,18px)" }}>
                 Your personalised training platform with AI-powered coaching, automatic injury risk detection, and direct coach-athlete connection — all in one place.
               </p>
               <BtnTeal onClick={() => navigate("/sign-up")}>Get Started Free</BtnTeal>
-              <p style={{ color: "#8A9287", fontSize: "14px", margin: "16px 0 0" }}>First month free. Cancel anytime.</p>
+              <p className="text-[#8A9287] text-sm mt-4">First month free. Cancel anytime.</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer style={{ background: "#0C0F1A", borderTop: "1px solid #182220" }}>
-        <div className={WRAP} style={{ paddingTop: "56px", paddingBottom: "40px" }}>
-          <div className="flex flex-col lg:flex-row lg:justify-between" style={{ gap: "36px" }}>
-            <div style={{ maxWidth: "280px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px" }}>
-                <img src="/logo.svg" alt="Thrive" style={{ width: "28px", height: "28px", borderRadius: "8px" }} />
-                <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "19px", color: "#F5F5F5" }}>Thrive</span>
+      <footer className="bg-[#0C0F1A] border-t border-[#182220]">
+        <div className={cn(WRAP, "pt-14 pb-10")}>
+          <div className="flex flex-col lg:flex-row lg:justify-between gap-9">
+            <div className="max-w-[280px]">
+              <div className="flex items-center gap-[10px] mb-[14px]">
+                <img src="/logo.svg" alt="Thrive" className="w-7 h-7 rounded-[8px]" />
+                <span className="font-display font-extrabold text-[19px] text-[#F5F5F5]">Thrive</span>
               </div>
-              <p style={{ color: "#8A9287", fontSize: "14px", lineHeight: 1.6, margin: 0 }}>AI-powered training for runners and coaches.</p>
+              <p className="text-[#8A9287] text-sm leading-[1.6] m-0">AI-powered training for runners and coaches.</p>
             </div>
-            <div style={{ display: "flex", gap: "64px", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", letterSpacing: "0.16em", textTransform: "uppercase", color: "#8A9287", margin: "0 0 4px" }}>Product</p>
+            <div className="flex gap-16 flex-wrap">
+              <div className="flex flex-col gap-3">
+                <p className="font-mono text-[11px] tracking-[0.16em] uppercase text-[#8A9287] mb-1">Product</p>
                 {navLinks.map(([label, id]) => (
-                  <button key={id} onClick={() => scrollTo(id)} style={{ fontFamily: "'Inter', sans-serif", fontSize: "14px", color: "#8A9287", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left", transition: "color .2s" }}
-                    onMouseOver={e => (e.currentTarget.style.color = "#F5F5F5")}
-                    onMouseOut={e => (e.currentTarget.style.color = "#8A9287")}
+                  <button
+                    key={id}
+                    onClick={() => scrollTo(id)}
+                    className="font-sans text-sm text-[#8A9287] font-medium bg-transparent border-0 cursor-pointer p-0 text-left transition-colors hover:text-[#F5F5F5]"
                   >{label}</button>
                 ))}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", letterSpacing: "0.16em", textTransform: "uppercase", color: "#8A9287", margin: "0 0 4px" }}>Company</p>
+              <div className="flex flex-col gap-3">
+                <p className="font-mono text-[11px] tracking-[0.16em] uppercase text-[#8A9287] mb-1">Company</p>
                 {["Privacy Policy", "Terms of Service", "Contact"].map(label => (
-                  <a key={label} href="#" style={{ fontSize: "14px", color: "#8A9287", textDecoration: "none", fontWeight: 500 }}
-                    onMouseOver={e => (e.currentTarget.style.color = "#F5F5F5")}
-                    onMouseOut={e => (e.currentTarget.style.color = "#8A9287")}
+                  <a
+                    key={label}
+                    href="#"
+                    className="text-sm text-[#8A9287] no-underline font-medium transition-colors hover:text-[#F5F5F5]"
                   >{label}</a>
                 ))}
               </div>
             </div>
           </div>
-          <div style={{ borderTop: "1px solid #182220", marginTop: "40px", paddingTop: "24px", textAlign: "center" }}>
-            <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "12px", color: "#8A9287", margin: 0 }}>© 2026 Thrive · Made for runners.</p>
+          <div className="border-t border-[#182220] mt-10 pt-6 text-center">
+            <p className="font-mono text-xs text-[#8A9287] m-0">© 2026 Thrive · Made for runners.</p>
           </div>
         </div>
       </footer>
@@ -672,7 +692,7 @@ export default function Landing() {
 
 function FeatureCardShell({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ borderRadius: "22px", border: "1px solid #182220", background: "#06070E", padding: "18px", aspectRatio: "9/16", display: "flex", flexDirection: "column", gap: "12px" }}>
+    <div className="rounded-[22px] border border-[#182220] bg-[#06070E] p-[18px] aspect-[9/16] flex flex-col gap-3">
       {children}
     </div>
   );
@@ -681,24 +701,24 @@ function FeatureCardShell({ children }: { children: React.ReactNode }) {
 function FeatureDashboardCard() {
   return (
     <FeatureCardShell>
-      <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", color: "#8A9287", margin: 0 }}>Dashboard · Jun 25</p>
-      <div style={{ borderRadius: "14px", background: "#0C0F1A", border: "1px solid #182220", padding: "14px" }}>
-        <p style={{ fontSize: "12px", color: "#8A9287", margin: "0 0 4px" }}>Weekly Distance</p>
-        <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: "26px", color: "#F5F5F5", margin: 0 }}>42.3 km</p>
-        <p style={{ fontSize: "12px", color: "#3D7A74", margin: "6px 0 0" }}>↑ 12% vs last week</p>
+      <p className="font-mono text-[10px] tracking-[0.16em] uppercase text-[#8A9287] m-0">Dashboard · Jun 25</p>
+      <div className="rounded-[14px] bg-[#0C0F1A] border border-[#182220] p-[14px]">
+        <p className="text-xs text-[#8A9287] mb-1">Weekly Distance</p>
+        <p className="font-display font-bold text-[26px] text-[#F5F5F5] m-0">42.3 km</p>
+        <p className="text-xs text-[#3D7A74] mt-[6px]">↑ 12% vs last week</p>
       </div>
-      <div style={{ borderRadius: "14px", background: "#0C0F1A", border: "1px solid #182220", padding: "14px" }}>
-        <p style={{ fontSize: "12px", color: "#8A9287", margin: "0 0 4px" }}>Training Load</p>
-        <p style={{ fontSize: "17px", fontWeight: 600, color: "#F5F5F5", margin: 0 }}>Moderate</p>
-        <div style={{ marginTop: "10px", height: "6px", borderRadius: "9999px", background: "#182220" }}>
-          <div style={{ height: "6px", borderRadius: "9999px", background: "#3D7A74", width: "55%" }} />
+      <div className="rounded-[14px] bg-[#0C0F1A] border border-[#182220] p-[14px]">
+        <p className="text-xs text-[#8A9287] mb-1">Training Load</p>
+        <p className="text-[17px] font-semibold text-[#F5F5F5] m-0">Moderate</p>
+        <div className="mt-[10px] h-[6px] rounded-full bg-[#182220]">
+          <div className="h-[6px] rounded-full bg-[#3D7A74] w-[55%]" />
         </div>
       </div>
-      <div style={{ borderRadius: "14px", background: "#0C0F1A", border: "1px solid #182220", padding: "14px" }}>
-        <p style={{ fontSize: "12px", color: "#8A9287", margin: "0 0 8px" }}>Injury Risk</p>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontWeight: 600, color: "#F5F5F5" }}>LOW</span>
-          <span style={{ width: "9px", height: "9px", borderRadius: "9999px", background: "#5fbf8a" }} />
+      <div className="rounded-[14px] bg-[#0C0F1A] border border-[#182220] p-[14px]">
+        <p className="text-xs text-[#8A9287] mb-2">Injury Risk</p>
+        <div className="flex items-center justify-between">
+          <span className="font-semibold text-[#F5F5F5]">LOW</span>
+          <span className="w-[9px] h-[9px] rounded-full bg-[#5fbf8a]" />
         </div>
       </div>
     </FeatureCardShell>
@@ -709,22 +729,22 @@ function FeatureActivityCard() {
   const metrics = [["Distance", "11.02 mi"], ["Time", "1:40:38"], ["Avg Pace", "9:08/mi"], ["Avg HR", "151 bpm"], ["Cadence", "177 spm"], ["Elevation", "259 ft"]];
   return (
     <FeatureCardShell>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        <span style={{ width: "8px", height: "8px", borderRadius: "9999px", background: "#3D7A74" }} />
-        <span style={{ fontSize: "12px", color: "#3D7A74", fontWeight: 500 }}>Long Run · 11 mi</span>
+      <div className="flex items-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-[#3D7A74]" />
+        <span className="text-xs text-[#3D7A74] font-medium">Long Run · 11 mi</span>
       </div>
-      <p style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: "20px", color: "#F5F5F5", margin: 0 }}>Tuesday Morning Run</p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: "8px" }}>
+      <p className="font-display font-bold text-[20px] text-[#F5F5F5] m-0">Tuesday Morning Run</p>
+      <div className="grid grid-cols-2 gap-2 mt-2">
         {metrics.map(([label, val]) => (
-          <div key={label} style={{ borderRadius: "10px", background: "#0C0F1A", border: "1px solid #182220", padding: "9px" }}>
-            <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "9px", textTransform: "uppercase", color: "#8A9287", margin: 0 }}>{label}</p>
-            <p style={{ fontSize: "14px", fontWeight: 600, color: "#F5F5F5", margin: "2px 0 0" }}>{val}</p>
+          <div key={label} className="rounded-[10px] bg-[#0C0F1A] border border-[#182220] p-[9px]">
+            <p className="font-mono text-[9px] uppercase text-[#8A9287] m-0">{label}</p>
+            <p className="text-sm font-semibold text-[#F5F5F5] mt-0.5">{val}</p>
           </div>
         ))}
       </div>
-      <div style={{ marginTop: "auto", borderRadius: "12px", background: "#0C0F1A", border: "1px solid rgba(242,210,207,0.22)", padding: "12px" }}>
-        <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: "#F2D2CF", margin: "0 0 6px" }}>AveraAI insight</p>
-        <p style={{ fontSize: "12px", lineHeight: 1.55, color: "#F5F5F5", margin: 0 }}>"Solid effort. Your pace was 6% faster than aerobic threshold — ease back tomorrow."</p>
+      <div className="mt-auto rounded-[12px] bg-[#0C0F1A] border border-[#F2D2CF]/[22%] p-3">
+        <p className="font-mono text-[9px] tracking-[0.16em] uppercase text-[#F2D2CF] mb-[6px]">AveraAI insight</p>
+        <p className="text-xs leading-[1.55] text-[#F5F5F5] m-0">"Solid effort. Your pace was 6% faster than aerobic threshold — ease back tomorrow."</p>
       </div>
     </FeatureCardShell>
   );
@@ -741,19 +761,26 @@ function FeaturePlanCard() {
   ];
   return (
     <FeatureCardShell>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <p style={{ fontWeight: 600, color: "#F5F5F5", margin: 0 }}>Marathon Plan</p>
-        <p style={{ fontSize: "12px", color: "#8A9287", margin: 0 }}>Week 6 / 16</p>
+      <div className="flex items-center justify-between">
+        <p className="font-semibold text-[#F5F5F5] m-0">Marathon Plan</p>
+        <p className="text-xs text-[#8A9287] m-0">Week 6 / 16</p>
       </div>
-      <div style={{ height: "6px", borderRadius: "9999px", background: "#182220" }}>
-        <div style={{ height: "6px", borderRadius: "9999px", background: "#3D7A74", width: "37.5%" }} />
+      <div className="h-[6px] rounded-full bg-[#182220]">
+        <div className="h-[6px] rounded-full bg-[#3D7A74] w-[37.5%]" />
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "2px" }}>
+      <div className="flex flex-col gap-2 mt-0.5">
         {days.map(({ day, run, done }) => (
-          <div key={day} style={{ display: "flex", alignItems: "center", gap: "12px", borderRadius: "10px", padding: "10px 12px", background: done ? "rgba(61,122,116,0.10)" : "#0C0F1A", border: `1px solid ${done ? "rgba(61,122,116,0.22)" : "#182220"}` }}>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "12px", color: "#8A9287", width: "26px" }}>{day}</span>
-            <span style={{ fontSize: "13px", color: "#F5F5F5", flex: 1 }}>{run}</span>
-            {done && <span style={{ color: "#3D7A74", fontSize: "12px" }}>✓</span>}
+          <div
+            key={day}
+            className="flex items-center gap-3 rounded-[10px] px-3 py-[10px]"
+            style={{
+              background: done ? "rgba(61,122,116,0.10)" : "#0C0F1A",
+              border: `1px solid ${done ? "rgba(61,122,116,0.22)" : "#182220"}`,
+            }}
+          >
+            <span className="font-mono text-xs text-[#8A9287] w-[26px]">{day}</span>
+            <span className="text-[13px] text-[#F5F5F5] flex-1">{run}</span>
+            {done && <span className="text-[#3D7A74] text-xs">✓</span>}
           </div>
         ))}
       </div>
