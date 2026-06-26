@@ -146,14 +146,16 @@ export default function Onboarding() {
   const steps = form.role === "coach" ? COACH_STEPS : ATHLETE_STEPS;
 
   function handleBack() {
-    const currentPath = window.location.pathname;
+    const currentLoc = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (window.history.length > 1) {
-      window.history.back();
+      // Prefer go(-1) for predictable behaviour in some browsers.
+      window.history.go(-1);
       window.setTimeout(() => {
-        if (window.location.pathname === currentPath) {
+        const now = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        if (now === currentLoc) {
           navigate("/sign-in");
         }
-      }, 250);
+      }, 400);
     } else {
       navigate("/sign-in");
     }
