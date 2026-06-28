@@ -485,7 +485,7 @@ export default function Landing() {
                   <span className="w-[11px] h-[11px] rounded-full bg-[#3D7A74]" />
                 </div>
                 <img
-                  src="/homepage-screen.png"
+                  src="/homepage-dashboard.png"
                   alt="Thrive training dashboard"
                   className="w-full h-auto rounded-[11px] border border-white/[6%] block"
                 />
@@ -902,7 +902,7 @@ export default function Landing() {
                 style={{ background: "rgba(42,80,76,0.16)" }}
               />
               <DeviceFrame
-                src="/homepage-screen.png"
+                src="/homepage-dashboard.png"
                 alt="Thrive dashboard"
                 maxWidth={480}
                 className="relative"
@@ -952,7 +952,7 @@ export default function Landing() {
             </div>
             <div className="lg:w-[40%] flex justify-center">
               <DeviceFrame
-                src="/homepage-screen.png"
+                src="/homepage-dashboard.png"
                 alt="Thrive app"
                 maxWidth={520}
               />
@@ -1195,7 +1195,7 @@ export default function Landing() {
                 style={{ background: "rgba(42,80,76,0.18)" }}
               />
               <DeviceFrame
-                src="/homepage-screen.png"
+                src="/homepage-dashboard.png"
                 alt="Thrive app"
                 maxWidth={500}
                 className="relative"

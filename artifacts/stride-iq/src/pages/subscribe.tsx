@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { useClerk } from "@clerk/react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useUpdateAthleteProfile, getGetAthleteProfileQueryKey } from "@workspace/api-client-react";
 import { PaywallCard } from "@/components/PaywallCard";
 
 /**
@@ -8,6 +11,25 @@ import { PaywallCard } from "@/components/PaywallCard";
  */
 export default function Subscribe({ planType }: { planType: "athlete" | "coach" }) {
   const { signOut } = useClerk();
+  const qc = useQueryClient();
+  const updateProfile = useUpdateAthleteProfile();
+  const [switching, setSwitching] = useState(false);
+
+  const otherPlan = planType === "coach" ? "athlete" : "coach";
+
+  // Let the user switch which plan they're activating (e.g. they picked the
+  // wrong role in onboarding). Updates the saved role, then refetches the
+  // profile so this gate re-renders with the other plan.
+  async function changePlan() {
+    if (switching) return;
+    setSwitching(true);
+    try {
+      await updateProfile.mutateAsync({ data: { userRole: otherPlan } });
+      await qc.refetchQueries({ queryKey: getGetAthleteProfileQueryKey() });
+    } catch {
+      setSwitching(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#06070E] flex flex-col items-center justify-center px-4 py-12">
@@ -26,8 +48,17 @@ export default function Subscribe({ planType }: { planType: "athlete" | "coach" 
 
         <button
           type="button"
+          onClick={changePlan}
+          disabled={switching}
+          className="mt-4 w-full text-center text-xs text-slate-400 hover:text-slate-200 disabled:opacity-50 transition-colors"
+        >
+          {switching ? "Switching…" : `Change plan — switch to ${otherPlan === "coach" ? "Coach" : "Athlete"}`}
+        </button>
+
+        <button
+          type="button"
           onClick={() => signOut()}
-          className="mt-6 w-full text-center text-xs text-slate-500 hover:text-slate-300 transition-colors"
+          className="mt-3 w-full text-center text-xs text-slate-500 hover:text-slate-300 transition-colors"
         >
           Sign out
         </button>
