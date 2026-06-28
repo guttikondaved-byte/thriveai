@@ -24,6 +24,12 @@ export const athleteProfileTable = pgTable("athlete_profile", {
   prHalf: text("pr_half"),
   prMarathon: text("pr_marathon"),
   healthNotes: text("health_notes"),
+  // ── Stripe subscription state (source of truth: Stripe webhooks) ──
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  // null | 'trialing' | 'active' | 'past_due' | 'canceled' | 'incomplete' | 'unpaid'
+  subscriptionStatus: text("subscription_status"),
+  subscriptionCurrentPeriodEnd: timestamp("subscription_current_period_end", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

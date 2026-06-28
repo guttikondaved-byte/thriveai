@@ -23,6 +23,7 @@ import {
   sessionsTable,
 } from "@workspace/db";
 import { eq, inArray, sql } from "drizzle-orm";
+import { stripe } from "../lib/stripe";
 import {
   clearSession,
   getOidcConfig,
@@ -452,6 +453,37 @@ router.delete("/account", async (req: Request, res: Response): Promise<void> => 
     req.log.warn({ userId }, "Clerk user already absent during account deletion; continuing");
   }
 
+  // Gather every Stripe customer this account owns BEFORE we wipe the DB rows
+  // (the customer id lives on athlete_profile, which the transaction deletes).
+  // Includes any stale rows sharing the same email so a delete + recreate leaves
+  // no billing/subscription memory behind.
+  const stripeCustomerIds = new Set<string>();
+  try {
+    const [own] = await db
+      .select({ c: athleteProfileTable.stripeCustomerId })
+      .from(athleteProfileTable)
+      .where(eq(athleteProfileTable.userId, userId))
+      .limit(1);
+    if (own?.c) stripeCustomerIds.add(own.c);
+
+    if (clerkEmail) {
+      const sameEmailUsers = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.email, clerkEmail));
+      for (const u of sameEmailUsers) {
+        const [p] = await db
+          .select({ c: athleteProfileTable.stripeCustomerId })
+          .from(athleteProfileTable)
+          .where(eq(athleteProfileTable.userId, u.id))
+          .limit(1);
+        if (p?.c) stripeCustomerIds.add(p.c);
+      }
+    }
+  } catch (err) {
+    req.log?.warn({ err, userId }, "Failed to collect Stripe customer ids for deletion cleanup");
+  }
+
   try {
     // Run as a single transaction so a partial failure never orphans the account.
     await db.transaction(async (tx) => {
@@ -528,6 +560,21 @@ router.delete("/account", async (req: Request, res: Response): Promise<void> => 
         });
       } catch (err) {
         req.log?.warn({ err, userId, clerkEmail }, "Defensive wipe of stale email rows failed");
+      }
+    }
+
+    // Erase Stripe memory: deleting the customer immediately cancels any active
+    // trial/subscription and removes the customer record, so the email can sign
+    // up again as a brand-new payer with no leftover billing history. Best-effort
+    // — never block account deletion on a Stripe failure.
+    if (stripe && stripeCustomerIds.size > 0) {
+      for (const customerId of stripeCustomerIds) {
+        try {
+          await stripe.customers.del(customerId);
+          req.log?.info({ userId, customerId }, "Deleted Stripe customer on account deletion");
+        } catch (err) {
+          req.log?.warn({ err, userId, customerId }, "Failed to delete Stripe customer on account deletion");
+        }
       }
     }
 

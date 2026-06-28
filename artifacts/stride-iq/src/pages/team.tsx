@@ -409,7 +409,6 @@ export default function Team() {
             <span className="text-sm font-semibold text-foreground">Athletes</span>
           </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-3.5 h-3.5" alt="Strava" />
             Strava
           </div>
         </div>

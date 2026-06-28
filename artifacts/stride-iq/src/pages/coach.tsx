@@ -200,6 +200,9 @@ export default function CoachAI() {
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
+  // Set when a conversation is opened so we jump straight to its latest message
+  // once the messages have actually rendered (the data loads asynchronously).
+  const pendingScrollToBottom = useRef(false);
   const qc = useQueryClient();
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -240,10 +243,19 @@ export default function CoachAI() {
   // token updates; when a message finalises we smooth-scroll to the bottom.
   useEffect(() => {
     if (streamMessages.length === 0) return;
-    if (!shouldAutoScroll.current) return;
     const el = messagesRef.current;
     const bottomEl = bottomRef.current;
     if (!el || !bottomEl) return;
+
+    // Just opened a conversation: jump instantly to the latest message once it
+    // has rendered. Bypasses the near-bottom auto-scroll check.
+    if (pendingScrollToBottom.current) {
+      pendingScrollToBottom.current = false;
+      requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+      return;
+    }
+
+    if (!shouldAutoScroll.current) return;
 
     const last = streamMessages[streamMessages.length - 1];
 
@@ -264,11 +276,11 @@ export default function CoachAI() {
     }));
   }, [streamMessages]);
 
-  // When switching conversations, always start pinned to the bottom.
+  // When switching conversations, request a jump to the latest message. The
+  // actual scroll happens in the effect above once the messages have rendered.
   useEffect(() => {
     shouldAutoScroll.current = true;
-    const el = messagesRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    pendingScrollToBottom.current = true;
   }, [selectedId]);
 
   function handleMessagesScroll() {
@@ -471,7 +483,7 @@ export default function CoachAI() {
   }
 
   return (
-    <div className="flex h-screen bg-[#06070E]" data-testid="coach-page">
+    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden bg-[#06070E]" data-testid="coach-page">
       {/* Conversation sidebar */}
       <div className="w-56 border-r border-white/10 flex flex-col shrink-0 bg-[#06070E]">
         <div className="p-4 border-b border-white/10">
@@ -549,7 +561,7 @@ export default function CoachAI() {
         ) : (
           <>
             {/* Messages */}
-            <div ref={messagesRef} onScroll={handleMessagesScroll} className="flex-1 overflow-auto p-6 space-y-4" data-testid="messages-container">
+            <div ref={messagesRef} onScroll={handleMessagesScroll} className={`flex-1 p-6 space-y-4 ${streamMessages.length === 0 ? "overflow-hidden" : "overflow-auto"}`} data-testid="messages-container">
               {streamMessages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full">
                   <p className="text-sm text-slate-500">Ask AveraAI anything about your team or athletes.</p>

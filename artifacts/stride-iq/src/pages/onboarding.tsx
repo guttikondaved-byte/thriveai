@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useClerk } from "@clerk/react";
 import { useUpdateAthleteProfile, getGetAthleteProfileQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, ChevronLeft, Check, Upload, Users, User, LayoutDashboard, ShieldAlert, Bot, TrendingUp, Activity } from "lucide-react";
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 type Role = "athlete" | "coach";
 type FitnessLevel = "beginner" | "intermediate" | "advanced" | "elite";
@@ -140,41 +143,24 @@ export default function Onboarding() {
   });
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [, navigate] = useLocation();
+  const { signOut } = useClerk();
   const qc = useQueryClient();
   const updateProfile = useUpdateAthleteProfile();
 
   const steps = form.role === "coach" ? COACH_STEPS : ATHLETE_STEPS;
 
   function handleBack() {
-    // If the user is mid-onboarding, move back a step instead of navigating
-    // the browser history — this makes the top-left Back button behave like
-    // the previous footer Back action did.
+    // Mid-onboarding: step back one screen.
     if (step > 0) {
-      // debug: log intent and new step
-      setStep(s => {
-        const next = Math.max(0, s - 1);
-        // eslint-disable-next-line no-console
-        console.debug("onboarding: handleBack - stepping from", s, "to", next);
-        return next;
-      });
+      setStep(s => Math.max(0, s - 1));
       return;
     }
 
-    const currentLoc = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    // debug: no local step to go back to
-    // eslint-disable-next-line no-console
-    console.debug("onboarding: handleBack - no local step, history.length=", window.history.length);
-    if (window.history.length > 1) {
-      window.history.go(-1);
-      window.setTimeout(() => {
-        const now = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-        if (now === currentLoc) {
-          navigate("/sign-in");
-        }
-      }, 400);
-    } else {
-      navigate("/sign-in");
-    }
+    // First step: there's nowhere to go *inside* the app. The user is signed in
+    // without a role, and AppContent force-redirects role-less users straight
+    // back into onboarding — so any in-app navigation just loops here. The only
+    // real "back" is to sign out and return to the sign-in screen.
+    signOut({ redirectUrl: `${window.location.origin}${basePath}/sign-in` });
   }
 
   function set<K extends keyof FormData>(key: K, value: FormData[K]) {

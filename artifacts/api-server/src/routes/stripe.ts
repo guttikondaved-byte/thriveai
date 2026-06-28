@@ -12,6 +12,73 @@ const athletePriceId = process.env.STRIPE_PRICE_ID_ATHLETE ?? process.env.STRIPE
 const coachBasePriceId = process.env.STRIPE_PRICE_ID_COACH_BASE;
 const coachAdditionalPriceId = process.env.STRIPE_PRICE_ID_COACH_ADDITIONAL;
 const stripeClient = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: "2022-11-15" }) : null;
+const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+// Free-trial length for the reverse-trial onboarding flow. The user enters a
+// card at the end of onboarding but is not charged until the trial ends.
+const TRIAL_DAYS = 3;
+
+// Statuses that grant access to the app. `trialing` is included so users get in
+// immediately after starting their reverse trial. `comp` is a complimentary
+// (developer / staff) grant that bypasses Stripe entirely — see /stripe/redeem-code.
+const ACTIVE_STATUSES = new Set(["trialing", "active", "past_due", "comp"]);
+
+// Developer / staff access codes that comp the paywall without going through
+// Stripe. Configured via env (comma-separated) so nothing is hardcoded in the
+// repo. Empty in environments where it isn't set, disabling the feature.
+const devAccessCodes = (process.env.DEV_ACCESS_CODE ?? "")
+  .split(",")
+  .map((c) => c.trim())
+  .filter(Boolean);
+
+function isActiveStatus(status: string | null | undefined): boolean {
+  return !!status && ACTIVE_STATUSES.has(status);
+}
+
+/**
+ * Persist the latest Stripe subscription state onto the athlete profile.
+ * Keyed by our internal userId (carried on subscription metadata) so we never
+ * depend on email matching. Returns the number of rows updated.
+ */
+async function persistSubscription(
+  userId: string,
+  sub: Stripe.Subscription,
+): Promise<void> {
+  const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+  await db
+    .update(athleteProfileTable)
+    .set({
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: sub.id,
+      subscriptionStatus: sub.status,
+      subscriptionCurrentPeriodEnd: sub.current_period_end
+        ? new Date(sub.current_period_end * 1000)
+        : null,
+    })
+    .where(eq(athleteProfileTable.userId, userId));
+}
+
+/**
+ * Resolve the internal userId for a Stripe subscription. Prefers the
+ * `userId` we stamp on subscription metadata; falls back to the customer's
+ * metadata so older sessions still reconcile.
+ */
+async function resolveUserId(
+  sub: Stripe.Subscription,
+): Promise<string | null> {
+  if (typeof sub.metadata?.userId === "string") return sub.metadata.userId;
+  const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+  if (!stripeClient) return null;
+  try {
+    const customer = await stripeClient.customers.retrieve(customerId);
+    if (!customer.deleted && typeof customer.metadata?.userId === "string") {
+      return customer.metadata.userId;
+    }
+  } catch {
+    /* ignore — fall through to null */
+  }
+  return null;
+}
 
 /**
  * Map Stripe errors to user-friendly messages with troubleshooting info
@@ -136,10 +203,39 @@ router.post("/stripe/checkout-session", async (req: Request, res): Promise<void>
     }
   }
 
+  // Onboarding sends `fromOnboarding: true` so we return the user to the app
+  // (where the gate now sees an active trial) instead of the profile page.
+  const fromOnboarding = req.body?.fromOnboarding === true;
+  // Reverse trial is the default for subscription mode; callers can opt out.
+  const withTrial = stripePriceMode === "subscription" && req.body?.trial !== false;
+
   try {
     const baseUrl = getBaseUrl(req);
-    const successUrl = new URL("/profile?checkout=success", baseUrl).toString();
-    const cancelUrl = new URL("/profile?checkout=cancel", baseUrl).toString();
+    const successPath = fromOnboarding ? "/?checkout=success" : "/profile?checkout=success";
+    const cancelPath = fromOnboarding ? "/onboarding?checkout=cancel" : "/profile?checkout=cancel";
+    const successUrl = new URL(successPath, baseUrl).toString();
+    const cancelUrl = new URL(cancelPath, baseUrl).toString();
+
+    // Ensure a reusable Stripe customer stamped with our userId, so both the
+    // webhook and the post-checkout refresh can map back to this account.
+    const [profileForCustomer] = await db
+      .select({ stripeCustomerId: athleteProfileTable.stripeCustomerId })
+      .from(athleteProfileTable)
+      .where(eq(athleteProfileTable.userId, req.user.id))
+      .limit(1);
+
+    let customerId = profileForCustomer?.stripeCustomerId ?? null;
+    if (!customerId) {
+      const customer = await stripeClient.customers.create({
+        email: req.user.email ?? undefined,
+        metadata: { userId: req.user.id },
+      });
+      customerId = customer.id;
+      await db
+        .update(athleteProfileTable)
+        .set({ stripeCustomerId: customerId })
+        .where(eq(athleteProfileTable.userId, req.user.id));
+    }
 
     const lineItems: Array<{ price: string; quantity: number }> = [];
 
@@ -198,11 +294,21 @@ router.post("/stripe/checkout-session", async (req: Request, res): Promise<void>
       session = await stripeClient.checkout.sessions.create({
         mode: stripePriceMode,
         line_items: lineItems,
-        customer_email: req.user.email ?? undefined,
+        customer: customerId,
+        client_reference_id: req.user.id,
+        metadata: { userId: req.user.id, planType },
         billing_address_collection: "auto",
         allow_promotion_codes: true,
         success_url: successUrl,
         cancel_url: cancelUrl,
+        ...(stripePriceMode === "subscription"
+          ? {
+              subscription_data: {
+                metadata: { userId: req.user.id, planType },
+                ...(withTrial ? { trial_period_days: TRIAL_DAYS } : {}),
+              },
+            }
+          : {}),
       });
     } catch (checkoutErr: unknown) {
       logger.error(
@@ -273,6 +379,189 @@ router.get("/stripe/health", async (req: Request, res): Promise<void> => {
 
   logger.info(status, "Stripe health check");
   res.json(status);
+});
+
+/**
+ * ── Current user's subscription state ──
+ * Read straight from our DB (kept in sync by the webhook / refresh). The app
+ * gate calls this to decide whether to grant access.
+ */
+router.get("/stripe/subscription", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  res.set("Cache-Control", "no-store");
+  const [profile] = await db
+    .select({
+      status: athleteProfileTable.subscriptionStatus,
+      currentPeriodEnd: athleteProfileTable.subscriptionCurrentPeriodEnd,
+    })
+    .from(athleteProfileTable)
+    .where(eq(athleteProfileTable.userId, req.user.id))
+    .limit(1);
+
+  const status = profile?.status ?? null;
+  res.json({
+    status,
+    isActive: isActiveStatus(status),
+    currentPeriodEnd: profile?.currentPeriodEnd ? profile.currentPeriodEnd.toISOString() : null,
+  });
+});
+
+/**
+ * ── Reconcile subscription state on demand ──
+ * Called by the frontend right after returning from Stripe Checkout. Webhooks
+ * are the source of truth but can lag a few seconds (and may be unconfigured in
+ * local dev), so we pull the latest subscription for this customer and persist
+ * it immediately for a snappy, reliable gate transition.
+ */
+router.post("/stripe/refresh", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  if (!stripeClient) {
+    res.status(503).json({ error: "Payment system is not available.", code: "stripe_not_configured" });
+    return;
+  }
+
+  const [profile] = await db
+    .select({ stripeCustomerId: athleteProfileTable.stripeCustomerId })
+    .from(athleteProfileTable)
+    .where(eq(athleteProfileTable.userId, req.user.id))
+    .limit(1);
+
+  const customerId = profile?.stripeCustomerId;
+  if (!customerId) {
+    res.json({ status: null, isActive: false, currentPeriodEnd: null });
+    return;
+  }
+
+  try {
+    const subs = await stripeClient.subscriptions.list({
+      customer: customerId,
+      status: "all",
+      limit: 1,
+    });
+    const sub = subs.data[0];
+    if (!sub) {
+      res.json({ status: null, isActive: false, currentPeriodEnd: null });
+      return;
+    }
+    await persistSubscription(req.user.id, sub);
+    res.json({
+      status: sub.status,
+      isActive: isActiveStatus(sub.status),
+      currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+    });
+  } catch (err) {
+    logger.error(
+      { userId: req.user.id, err: err instanceof Error ? err.message : String(err) },
+      "Stripe subscription refresh failed",
+    );
+    res.status(500).json({ error: "Unable to refresh subscription.", code: "refresh_failed" });
+  }
+});
+
+/**
+ * ── Redeem a developer / staff access code ──
+ * Comps the paywall by marking the profile's subscription as `comp` (no Stripe
+ * involvement). Validated server-side against the DEV_ACCESS_CODE env allowlist.
+ */
+router.post("/stripe/redeem-code", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
+  if (!code || devAccessCodes.length === 0 || !devAccessCodes.includes(code)) {
+    logger.warn({ userId: req.user.id }, "Invalid developer access code attempt");
+    res.status(400).json({ error: "That code isn't valid.", code: "invalid_code" });
+    return;
+  }
+
+  // Comp access never expires; the far-future period end keeps the gate open.
+  const farFuture = new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000);
+  await db
+    .update(athleteProfileTable)
+    .set({ subscriptionStatus: "comp", subscriptionCurrentPeriodEnd: farFuture })
+    .where(eq(athleteProfileTable.userId, req.user.id));
+
+  logger.info({ userId: req.user.id }, "Developer access code redeemed (comp granted)");
+  res.json({ status: "comp", isActive: true, currentPeriodEnd: farFuture.toISOString() });
+});
+
+/**
+ * ── Stripe webhook (source of truth for subscription state) ──
+ * Mounted with a raw body parser in app.ts so the signature can be verified.
+ */
+router.post("/stripe/webhook", async (req: Request, res): Promise<void> => {
+  if (!stripeClient) {
+    res.status(503).json({ error: "stripe_not_configured" });
+    return;
+  }
+  if (!stripeWebhookSecret) {
+    logger.error({}, "Stripe webhook received but STRIPE_WEBHOOK_SECRET not configured");
+    res.status(503).json({ error: "webhook_secret_not_configured" });
+    return;
+  }
+
+  const signature = req.headers["stripe-signature"];
+  let event: Stripe.Event;
+  try {
+    event = stripeClient.webhooks.constructEvent(
+      req.body as Buffer,
+      signature as string,
+      stripeWebhookSecret,
+    );
+  } catch (err) {
+    logger.warn(
+      { err: err instanceof Error ? err.message : String(err) },
+      "Stripe webhook signature verification failed",
+    );
+    res.status(400).json({ error: "invalid_signature" });
+    return;
+  }
+
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const userId = session.metadata?.userId ?? session.client_reference_id ?? null;
+        if (userId && session.subscription) {
+          const subId = typeof session.subscription === "string" ? session.subscription : session.subscription.id;
+          const sub = await stripeClient.subscriptions.retrieve(subId);
+          await persistSubscription(userId, sub);
+          logger.info({ userId, subId, status: sub.status }, "Subscription activated via checkout");
+        }
+        break;
+      }
+      case "customer.subscription.created":
+      case "customer.subscription.updated":
+      case "customer.subscription.deleted": {
+        const sub = event.data.object as Stripe.Subscription;
+        const userId = await resolveUserId(sub);
+        if (userId) {
+          await persistSubscription(userId, sub);
+          logger.info({ userId, subId: sub.id, status: sub.status }, "Subscription state synced via webhook");
+        } else {
+          logger.warn({ subId: sub.id }, "Stripe webhook: could not resolve userId for subscription");
+        }
+        break;
+      }
+      default:
+        break;
+    }
+    res.json({ received: true });
+  } catch (err) {
+    logger.error(
+      { err: err instanceof Error ? err.message : String(err), type: event.type },
+      "Stripe webhook handler error",
+    );
+    res.status(500).json({ error: "handler_error" });
+  }
 });
 
 export default router;

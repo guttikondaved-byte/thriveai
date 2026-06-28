@@ -570,9 +570,14 @@ router.post("/openai/conversations/:id/messages", async (req: Request, res): Pro
     }
   } catch (err) {
     logger.error({ err }, "AveraAI stream error");
-    const errMsg = "Sorry, I encountered an error. Please try again.";
-    fullResponse = errMsg;
-    res.write(`data: ${JSON.stringify({ content: errMsg })}\n\n`);
+    // GLM frequently ends the stream with a "Premature close" *after* delivering
+    // the full reply. If we already have content, treat it as a normal completion
+    // and keep what we streamed — only surface an error when nothing came through.
+    if (!fullResponse) {
+      const errMsg = "Sorry, I encountered an error. Please try again.";
+      fullResponse = errMsg;
+      res.write(`data: ${JSON.stringify({ content: errMsg })}\n\n`);
+    }
   }
 
   await db.insert(messages).values({ conversationId: conv.id, role: "assistant", content: fullResponse });

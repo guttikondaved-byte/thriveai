@@ -19,12 +19,14 @@ import History from "@/pages/history";
 import Coach from "@/pages/coach";
 import Profile from "@/pages/profile";
 import Onboarding from "@/pages/onboarding";
+import Subscribe from "@/pages/subscribe";
 import CoachDashboard from "@/pages/coach-dashboard";
 import CoachPlans from "@/pages/coach-plans";
 import Team from "@/pages/team";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 import { useGetAthleteProfile, setAuthTokenGetter } from "@workspace/api-client-react";
+import { useSubscription, refreshSubscription, SUBSCRIPTION_QUERY_KEY } from "@/hooks/use-subscription";
 
 const queryClient = new QueryClient();
 
@@ -294,7 +296,17 @@ function AppContent() {
   const { data: profile, isLoading, isError, error } = useGetAthleteProfile();
   const [location, navigate] = useLocation();
   const { signOut } = useClerk();
+  const qc = useQueryClient();
   const [hasHandledAuthError, setHasHandledAuthError] = useState(false);
+  // True while we reconcile subscription state on return from Stripe Checkout,
+  // so we show a spinner instead of briefly flashing the paywall gate.
+  const [reconcilingCheckout, setReconcilingCheckout] = useState(
+    () => new URLSearchParams(window.location.search).get("checkout") === "success",
+  );
+
+  const role = profile?.userRole ?? null;
+  // Only check subscription once the user has a role (finished onboarding).
+  const { data: subscription, isLoading: subLoading } = useSubscription(!!role);
 
   function isApiError(err: unknown): err is { status: number } {
     return Boolean(
@@ -314,19 +326,63 @@ function AppContent() {
     }
   }, [error, hasHandledAuthError, isError, signOut]);
 
+  // On return from Stripe Checkout (`?checkout=success`), force a Stripe→DB
+  // reconcile so the gate flips to active without waiting on webhook delivery,
+  // then strip the query param.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") !== "success") return;
+    let cancelled = false;
+    (async () => {
+      await refreshSubscription();
+      if (cancelled) return;
+      await qc.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY });
+      params.delete("checkout");
+      const clean =
+        window.location.pathname +
+        (params.toString() ? `?${params.toString()}` : "") +
+        window.location.hash;
+      window.history.replaceState(null, "", clean);
+      setReconcilingCheckout(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [qc]);
+
   useEffect(() => {
     if (isLoading) return;
     const needsOnboarding = !profile?.userRole;
-    // Do not force-redirect signed-in users without a saved role into the
-    // onboarding flow. Some users recreate accounts (or delete+recreate) and
-    // expect to access the app immediately. We'll still redirect away from
-    // `/onboarding` once the profile exists, but don't push users into it.
-    if (!needsOnboarding && location === "/onboarding") {
+    // Force users with no saved role through the signup survey. This covers
+    // brand-new accounts AND deleted-and-recreated ones: deletion wipes the
+    // athlete_profile, so a recreated account has no role and must onboard
+    // again from scratch. Once a role exists, leave /onboarding for the app.
+    if (needsOnboarding && location !== "/onboarding") {
+      navigate("/onboarding");
+    } else if (!needsOnboarding && location === "/onboarding") {
       navigate("/");
     }
   }, [profile, isLoading, location, navigate]);
 
   if (isLoading) return <Spinner />;
+
+  const needsOnboarding = !role;
+
+  // Render the survey directly for role-less accounts so we never flash the
+  // dashboard (or the paywall) before the redirect effect above runs.
+  if (needsOnboarding) {
+    return <Onboarding />;
+  }
+
+  // ── Subscription gate ──
+  // The user has a role (finished onboarding); now require an active trial or
+  // subscription before granting access to the app. This is the payment step at
+  // the end of the signup flow. Fail open on a transient subscription-load error
+  // so a flaky check never locks out paying users.
+  if (reconcilingCheckout || subLoading) return <Spinner />;
+  if (subscription && !subscription.isActive) {
+    return <Subscribe planType={role === "coach" ? "coach" : "athlete"} />;
+  }
 
   return (
     <Switch>

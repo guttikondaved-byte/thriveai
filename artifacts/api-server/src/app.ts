@@ -39,6 +39,12 @@ app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
 app.use(cors({ credentials: true, origin: true }));
 app.use(cookieParser());
+
+// Stripe webhook needs the raw, unparsed body for signature verification, so it
+// must be registered before the global JSON parser. body-parser marks the body
+// as read, so express.json() below skips it.
+app.use("/api/stripe/webhook", express.raw({ type: "*/*" }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
