@@ -47,7 +47,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="px-6 py-5 border-b border-border flex items-center">
           <div className="flex items-center gap-2">
             <img
-              src={`${window.location.origin}${basePath || ""}/logo-mark.svg`}
+              src={`${window.location.origin}${basePath || ""}/logo.svg`}
               alt="Thrive"
               className="w-10 h-10"
             />

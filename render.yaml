@@ -22,10 +22,19 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Public origin used to build absolute URLs (Stripe redirects, Strava
+      # callback, etc.). Must be the custom domain so users land back on the
+      # real site instead of the onrender.com host.
+      - key: APP_PUBLIC_URL
+        value: https://thriveai.run
       - key: DATABASE_URL
         fromDatabase:
           name: thriveai-db
           property: connectionString
+      # Session signing secret for the legacy email/password flow. Render
+      # generates a strong random value on first deploy.
+      - key: SESSION_SECRET
+        generateValue: true
       - key: CLERK_PUBLISHABLE_KEY
         sync: false
       - key: CLERK_SECRET_KEY
@@ -37,6 +46,22 @@ services:
       - key: STRAVA_CLIENT_SECRET
         sync: false
       - key: OPENAI_API_KEY
+        sync: false
+      # ── Stripe (subscription paywall) ──
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_MODE
+        value: subscription
+      - key: STRIPE_PRICE_ID_ATHLETE
+        sync: false
+      - key: STRIPE_PRICE_ID_COACH_BASE
+        sync: false
+      - key: STRIPE_PRICE_ID_COACH_ADDITIONAL
+        sync: false
+      # Developer/staff comp code that bypasses the paywall (see /stripe/redeem-code)
+      - key: DEV_ACCESS_CODE
         sync: false
 
 databases:
