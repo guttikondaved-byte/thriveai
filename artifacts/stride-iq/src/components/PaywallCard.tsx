@@ -17,7 +17,7 @@ interface PaywallCardProps {
 const PLAN_COPY: Record<PaywallCardProps["planType"], { title: string; price: string; sub: string }> = {
   athlete: {
     title: "Athlete",
-    price: "$10/mo",
+    price: "$5/mo",
     sub: "Full access to your dashboard, AI coach, injury alerts, and training plans.",
   },
   coach: {
