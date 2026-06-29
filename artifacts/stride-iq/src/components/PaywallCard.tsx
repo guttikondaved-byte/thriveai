@@ -39,7 +39,7 @@ export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
   // Only show the paid "subscribe" path when Stripe is actually configured on the
   // backend — otherwise it just errors with "Payment system not available". This
   // auto-enables the button once the Stripe keys are set, no code change needed.
-  const [stripeAvailable, setStripeAvailable] = useState(false);
+  const [stripeAvailable, setStripeAvailable] = useState(true);
   const copy = PLAN_COPY[planType];
 
   useEffect(() => {
@@ -109,7 +109,7 @@ export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
         </p>
       </div>
       <p className="text-xs text-slate-400 mb-5">
-        No card required. Free for {TRIAL_DAYS} days, then subscribe to keep your access.
+        No card required. Free for {TRIAL_DAYS} days, or subscribe now to skip the trial.
       </p>
 
       <div className="rounded-xl bg-[#0e1a19]/60 border border-border px-4 py-3 mb-4">
@@ -139,17 +139,20 @@ export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
         )}
       </button>
 
-      {/* Secondary: pay now via Stripe (no trial). Only shown when Stripe is configured. */}
-      {stripeAvailable && (
-        <button
-          type="button"
-          onClick={subscribe}
-          disabled={subLoading}
-          className="mt-3 w-full text-center text-xs text-slate-400 hover:text-slate-200 disabled:opacity-50 transition-colors"
-        >
-          {subLoading ? "Opening checkout…" : "Or subscribe now"}
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={subscribe}
+        disabled={subLoading || !stripeAvailable}
+        className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-primary/40 bg-transparent px-4 py-3 text-sm font-semibold text-primary hover:bg-primary/10 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+      >
+        {subLoading ? (
+          <>
+            <Loader2 size={16} className="animate-spin" /> Opening checkout…
+          </>
+        ) : (
+          "Subscribe now"
+        )}
+      </button>
     </div>
   );
 }
