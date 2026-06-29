@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Check, ShieldCheck, Loader2 } from "lucide-react";
 import { SUBSCRIPTION_QUERY_KEY } from "@/hooks/use-subscription";
@@ -36,7 +36,20 @@ export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
   const [trialLoading, setTrialLoading] = useState(false);
   const [subLoading, setSubLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Only show the paid "subscribe" path when Stripe is actually configured on the
+  // backend — otherwise it just errors with "Payment system not available". This
+  // auto-enables the button once the Stripe keys are set, no code change needed.
+  const [stripeAvailable, setStripeAvailable] = useState(false);
   const copy = PLAN_COPY[planType];
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/stripe/health", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled) setStripeAvailable(Boolean(d?.configured)); })
+      .catch(() => { if (!cancelled) setStripeAvailable(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   // Free trial — granted server-side with no card. Unlock the gate by refetching.
   async function startTrial() {
@@ -126,15 +139,17 @@ export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
         )}
       </button>
 
-      {/* Secondary: pay now via Stripe (no trial). */}
-      <button
-        type="button"
-        onClick={subscribe}
-        disabled={subLoading}
-        className="mt-3 w-full text-center text-xs text-slate-400 hover:text-slate-200 disabled:opacity-50 transition-colors"
-      >
-        {subLoading ? "Opening checkout…" : "Or subscribe now"}
-      </button>
+      {/* Secondary: pay now via Stripe (no trial). Only shown when Stripe is configured. */}
+      {stripeAvailable && (
+        <button
+          type="button"
+          onClick={subscribe}
+          disabled={subLoading}
+          className="mt-3 w-full text-center text-xs text-slate-400 hover:text-slate-200 disabled:opacity-50 transition-colors"
+        >
+          {subLoading ? "Opening checkout…" : "Or subscribe now"}
+        </button>
+      )}
     </div>
   );
 }
