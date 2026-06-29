@@ -102,12 +102,12 @@ export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
         No charge today. Cancel anytime before your trial ends and you won't be billed.
       </p>
 
-      <div className="flex items-baseline justify-between rounded-xl bg-[#0e1a19]/60 border border-border px-4 py-3 mb-4">
-        <div>
+      <div className="rounded-xl bg-[#0e1a19]/60 border border-border px-4 py-3 mb-4">
+        <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-semibold text-white">{copy.title} plan</p>
-          <p className="text-xs text-slate-400 mt-0.5 max-w-sm">{copy.sub}</p>
+          <p className="text-sm font-bold text-white whitespace-nowrap">{copy.price}</p>
         </div>
-        <p className="text-sm font-bold text-white whitespace-nowrap ml-3">{copy.price}</p>
+        <p className="text-xs text-slate-400 mt-1">{copy.sub}</p>
       </div>
 
       {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
