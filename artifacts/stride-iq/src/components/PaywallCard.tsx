@@ -142,7 +142,7 @@ export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
       <button
         type="button"
         onClick={subscribe}
-        disabled={subLoading || !stripeAvailable}
+        disabled={subLoading}
         className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-primary/40 bg-transparent px-4 py-3 text-sm font-semibold text-primary hover:bg-primary/10 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
       >
         {subLoading ? (
