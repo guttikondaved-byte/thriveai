@@ -22,6 +22,9 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Pin Node so the build doesn't fall back to an older default.
+      - key: NODE_VERSION
+        value: "20"
       # Public origin used to build absolute URLs (Stripe redirects, Strava
       # callback, etc.). Must be the custom domain so users land back on the
       # real site instead of the onrender.com host.

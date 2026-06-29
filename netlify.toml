@@ -2,6 +2,11 @@
   command = "pnpm install && pnpm --filter ./artifacts/stride-iq run build"
   publish = "artifacts/stride-iq/dist/public"
 
+# Vite 7 requires Node 20.19+. Pin it so Netlify doesn't fall back to an older
+# default Node (which fails the build and leaves the site on a stale deploy).
+[build.environment]
+  NODE_VERSION = "20"
+
 #[[redirects]]
 #  If your API will be deployed on Render (or any other host), set the
 #  API_HOST environment variable in your Netlify site settings to the API
