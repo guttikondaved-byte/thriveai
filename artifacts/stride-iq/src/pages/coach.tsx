@@ -484,8 +484,8 @@ export default function CoachAI() {
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden bg-[#06070E]" data-testid="coach-page">
-      {/* Conversation sidebar */}
-      <div className="w-56 border-r border-white/10 flex flex-col shrink-0 bg-[#06070E]">
+      {/* Conversation sidebar — hidden on mobile; new chats start from the empty state */}
+      <div className="hidden md:flex w-56 border-r border-white/10 flex-col shrink-0 bg-[#06070E]">
         <div className="p-4 border-b border-white/10">
           <div className="flex items-center gap-2 mb-3">
             <Bot className="w-4 h-4 text-primary" />

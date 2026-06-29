@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard,
@@ -9,6 +10,8 @@ import {
   HeartPulse,
   Users,
   LogOut,
+  Menu,
+  X,
 } from "lucide-react";
 import { useUser, useClerk } from "@clerk/react";
 import NotificationBell from "./NotificationBell";
@@ -31,6 +34,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user } = useUser();
   const { signOut } = useClerk();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location]);
 
   const initials = user
     ? `${user.firstName?.charAt(0) ?? ""}${user.lastName?.charAt(0) ?? ""}`.toUpperCase() ||
@@ -39,21 +48,37 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      {/* Sidebar */}
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 z-30 bg-black/60 lg:hidden"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar — static on desktop, slide-in drawer on mobile */}
       <aside
-        className="w-60 shrink-0 border-r border-border flex flex-col"
+        className={`fixed inset-y-0 left-0 z-40 w-64 max-w-[80vw] border-r border-border bg-background flex flex-col transform transition-transform duration-200 lg:static lg:w-60 lg:translate-x-0 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
         data-testid="sidebar"
       >
-        <div className="px-6 py-5 border-b border-border flex items-center">
-          <div className="flex items-center gap-2">
-            <img
-              src={`${window.location.origin}${basePath || ""}/logo.svg`}
-              alt="Thrive"
-              className="w-10 h-10"
-            />
-          </div>
+        <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+          <img
+            src={`${window.location.origin}${basePath || ""}/logo.svg`}
+            alt="Thrive"
+            className="w-10 h-10"
+          />
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="lg:hidden text-muted-foreground hover:text-foreground"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        <nav className="flex-1 py-4 px-3 space-y-0.5">
+        <nav className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto">
           {navItems.map(({ href, label, icon: Icon }) => {
             const active =
               href === "/" ? location === "/" : location.startsWith(href);
@@ -61,6 +86,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Link
                 key={href}
                 href={href}
+                onClick={() => setMobileOpen(false)}
                 data-testid={`nav-${label.toLowerCase().replace(/\s+/g, "-")}`}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   active
@@ -108,9 +134,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Main content test */}
-      <main className="flex-1 overflow-auto" data-testid="main-content">
-        <header className="sticky top-0 z-20 h-14 border-b border-border bg-background/80 backdrop-blur flex items-center justify-end px-6">
+      {/* Main content */}
+      <main className="flex-1 min-w-0 overflow-auto" data-testid="main-content">
+        <header className="sticky top-0 z-20 h-14 border-b border-border bg-background/80 backdrop-blur flex items-center justify-between gap-3 px-4 lg:px-6">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="lg:hidden text-muted-foreground hover:text-foreground"
+            aria-label="Open menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          <div className="flex-1" />
           <NotificationBell />
         </header>
         {children}

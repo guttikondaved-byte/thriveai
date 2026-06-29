@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, Bot, Settings, LogOut, Calendar, X, Check } from "lucide-react";
+import { LayoutDashboard, Users, Bot, Settings, LogOut, Calendar, X, Check, Menu } from "lucide-react";
 import { useUser, useClerk } from "@clerk/react";
 import { useGetAthleteProfile } from "@workspace/api-client-react";
 import NotificationBell from "./NotificationBell";
@@ -269,6 +269,12 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
   const logoutRedirectUrl = `${window.location.origin}${basePath || "/"}`;
   const { data: profile } = useGetAthleteProfile();
   const focus = getFocusConfig(profile?.primaryGoal);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location]);
 
   const initials = user
     ? `${user.firstName?.charAt(0) ?? ""}${user.lastName?.charAt(0) ?? ""}`.toUpperCase() || "C"
@@ -276,10 +282,28 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      <aside className="w-60 flex-shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border">
+      {mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 z-30 bg-black/60 lg:hidden"
+          aria-hidden="true"
+        />
+      )}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-64 max-w-[80vw] flex-shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border transform transition-transform duration-200 lg:static lg:w-60 lg:translate-x-0 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
         <div className="px-5 py-5 border-b border-sidebar-border flex items-center gap-3">
           <img src="/logo.svg" alt="Thrive" className="h-7 w-auto" />
           <div className={`text-[10px] font-bold uppercase tracking-[0.15em] ${focus.accentText}`}>{focus.label} Coach</div>
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="lg:hidden ml-auto text-muted-foreground hover:text-foreground"
+            aria-label="Close menu"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
@@ -289,6 +313,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
               <Link
                 key={href}
                 href={href}
+                onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
                   ${active
                     ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
@@ -326,8 +351,16 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto">
-        <header className="sticky top-0 z-20 h-14 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-end px-6">
+      <main className="flex-1 min-w-0 overflow-y-auto">
+        <header className="sticky top-0 z-20 h-14 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-between gap-3 px-4 lg:px-6">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="lg:hidden text-muted-foreground hover:text-foreground"
+            aria-label="Open menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          <div className="flex-1" />
           <NotificationBell />
         </header>
         {children}
