@@ -288,8 +288,6 @@ export default function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -1130,53 +1128,6 @@ export default function Landing() {
 
       {/* EMAIL CAPTURE + FINAL CTA */}
       <section id="cta" className="relative overflow-hidden bg-[#0C0F1A]">
-        <div className={WRAP} style={{ paddingTop: "clamp(48px,7vw,88px)" }}>
-          <div
-            className="bg-[#2A504C] rounded-[20px]"
-            style={{ padding: "clamp(28px,4vw,56px)" }}
-          >
-            <div
-              className="flex flex-col lg:flex-row lg:items-center"
-              style={{ gap: "clamp(28px,5vw,72px)" }}
-            >
-              <div className="flex-1">
-                <h2
-                  className="font-display font-bold leading-[1.1] text-white mb-3"
-                  style={{ fontSize: "clamp(24px,3.4vw,40px)" }}
-                >
-                  Get training tips & injury prevention insights in your inbox.
-                </h2>
-                <p className="text-[rgba(255,255,255,0.72)] text-sm leading-[1.6] m-0">
-                  Join athletes and coaches getting smarter every week.
-                  Unsubscribe anytime. We respect your privacy.
-                </p>
-              </div>
-              <div className="flex-1">
-                {submitted ? (
-                  <p className="text-white text-lg font-semibold m-0">
-                    You're in! We'll be in touch soon.
-                  </p>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email address"
-                      className="w-full px-4 py-[14px] rounded-[10px] border-0 bg-white text-[#06070E] text-[15px] font-sans outline-none box-border"
-                    />
-                    <button
-                      onClick={() => setSubmitted(true)}
-                      className="w-full flex items-center justify-center font-sans font-semibold border-0 cursor-pointer rounded-[10px] text-[15px] py-[14px] px-5 bg-[#06070E] text-white transition-colors hover:bg-[#0C0F1A]"
-                    >
-                      Sign up
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
         <div
           className="absolute left-0 right-0 bottom-0 h-[60%] pointer-events-none"
           style={{
