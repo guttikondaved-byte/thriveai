@@ -16,12 +16,20 @@ const router: IRouter = Router();
 
 // ── OAuth: redirect user to Strava ─────────────────────────────────────────
 
+function getPublicBase(): string {
+  // APP_PUBLIC_URL is the user-facing origin (Netlify in production, vite dev
+  // server locally). Strava validates the redirect_uri against the app's
+  // configured callback domain, so this MUST be the real domain. If the env
+  // var is missing, fall back to the production domain in prod (never localhost,
+  // which Strava rejects) and to the local dev server otherwise.
+  const explicit = process.env.APP_PUBLIC_URL?.replace(/\/$/, "");
+  if (explicit) return explicit;
+  if (process.env.NODE_ENV === "production") return "https://thriveai.run";
+  return "http://localhost:3000";
+}
+
 function getCallbackUrl(): string {
-  // APP_PUBLIC_URL is the user-facing origin (Netlify in production, vite
-  // dev server locally). Strava redirects the browser to this URL, which
-  // hits Netlify's /api/* proxy and forwards to the api-server.
-  const base = process.env.APP_PUBLIC_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
-  return `${base}/api/strava/callback`;
+  return `${getPublicBase()}/api/strava/callback`;
 }
 
 router.get("/strava/connect", (req, res): void => {

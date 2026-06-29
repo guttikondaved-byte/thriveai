@@ -223,7 +223,8 @@ export async function syncStravaActivity(
 export function getWebhookCallbackUrl(): string {
   // Strava POSTs activity events to this URL. Must be publicly reachable
   // (Netlify in prod proxies /api/strava/webhook → api-server).
-  const base = process.env.APP_PUBLIC_URL?.replace(/\/$/, "");
+  const explicit = process.env.APP_PUBLIC_URL?.replace(/\/$/, "");
+  const base = explicit ?? (process.env.NODE_ENV === "production" ? "https://thriveai.run" : undefined);
   if (!base) {
     throw new Error("APP_PUBLIC_URL must be set to register a Strava webhook");
   }
