@@ -7,10 +7,7 @@ const TRIAL_DAYS = 3;
 
 interface PaywallCardProps {
   planType: "athlete" | "coach";
-  /**
-   * When true, Stripe Checkout returns to the app (`/?checkout=success`) instead
-   * of the profile page — used by onboarding and the access gate.
-   */
+  /** Reserved for the Stripe Checkout return URL once paid subscriptions are enabled. */
   fromOnboarding?: boolean;
 }
 
@@ -31,10 +28,9 @@ const PLAN_COPY: Record<PaywallCardProps["planType"], { title: string; price: st
  * Activation card: a free trial granted directly (no card), with a paid Stripe
  * subscription as the secondary path.
  */
-export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
+export function PaywallCard({ planType }: PaywallCardProps) {
   const qc = useQueryClient();
   const [trialLoading, setTrialLoading] = useState(false);
-  const [subLoading, setSubLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const copy = PLAN_COPY[planType];
 
@@ -59,31 +55,6 @@ export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
     } catch {
       setError("Something went wrong. Please try again.");
       setTrialLoading(false);
-    }
-  }
-
-  // Paid subscription via Stripe Checkout (no trial).
-  async function subscribe() {
-    if (subLoading) return;
-    setSubLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/stripe/checkout-session", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planType, fromOnboarding: !!fromOnboarding }),
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.url) {
-        setError(data?.error ?? "Unable to start checkout. Please try again.");
-        setSubLoading(false);
-        return;
-      }
-      window.location.href = data.url as string;
-    } catch {
-      setError("Something went wrong starting checkout. Please try again.");
-      setSubLoading(false);
     }
   }
 
@@ -124,16 +95,6 @@ export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
             Start free trial <Check size={16} />
           </>
         )}
-      </button>
-
-      {/* Secondary: pay now via Stripe (no trial). */}
-      <button
-        type="button"
-        onClick={subscribe}
-        disabled={subLoading}
-        className="mt-3 w-full text-center text-xs text-slate-400 hover:text-slate-200 disabled:opacity-50 transition-colors"
-      >
-        {subLoading ? "Opening checkout…" : "Or subscribe now"}
       </button>
     </div>
   );
