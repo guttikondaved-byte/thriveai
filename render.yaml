@@ -60,9 +60,6 @@ services:
         sync: false
       - key: STRIPE_PRICE_ID_COACH_ADDITIONAL
         sync: false
-      # Developer/staff comp code that bypasses the paywall (see /stripe/redeem-code)
-      - key: DEV_ACCESS_CODE
-        sync: false
 
 databases:
   - name: thriveai-db

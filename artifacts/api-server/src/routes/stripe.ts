@@ -14,25 +14,30 @@ const coachAdditionalPriceId = process.env.STRIPE_PRICE_ID_COACH_ADDITIONAL;
 const stripeClient = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: "2022-11-15" }) : null;
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-// Free-trial length for the reverse-trial onboarding flow. The user enters a
-// card at the end of onboarding but is not charged until the trial ends.
+// Free-trial length. The trial is granted directly (no card, no Stripe) via
+// /stripe/start-trial; Stripe checkout is a straight paid subscription.
 const TRIAL_DAYS = 3;
 
-// Statuses that grant access to the app. `trialing` is included so users get in
-// immediately after starting their reverse trial. `comp` is a complimentary
-// (developer / staff) grant that bypasses Stripe entirely — see /stripe/redeem-code.
+// Statuses that grant access to the app. `trialing` covers the free trial and
+// `comp` is a legacy permanent grant. Access is also gated on the period end
+// (see isAccessActive) so a free trial actually expires.
 const ACTIVE_STATUSES = new Set(["trialing", "active", "past_due", "comp"]);
-
-// Developer / staff access codes that comp the paywall without going through
-// Stripe. Configured via env (comma-separated) so nothing is hardcoded in the
-// repo. Empty in environments where it isn't set, disabling the feature.
-const devAccessCodes = (process.env.DEV_ACCESS_CODE ?? "")
-  .split(",")
-  .map((c) => c.trim())
-  .filter(Boolean);
 
 function isActiveStatus(status: string | null | undefined): boolean {
   return !!status && ACTIVE_STATUSES.has(status);
+}
+
+/**
+ * Whether the stored subscription grants access right now. Active status AND
+ * not past its period end (a null period end = never expires, e.g. comp).
+ */
+function isAccessActive(
+  status: string | null | undefined,
+  periodEnd: Date | null | undefined,
+): boolean {
+  if (!isActiveStatus(status)) return false;
+  if (!periodEnd) return true;
+  return periodEnd.getTime() > Date.now();
 }
 
 /**
@@ -206,8 +211,6 @@ router.post("/stripe/checkout-session", async (req: Request, res): Promise<void>
   // Onboarding sends `fromOnboarding: true` so we return the user to the app
   // (where the gate now sees an active trial) instead of the profile page.
   const fromOnboarding = req.body?.fromOnboarding === true;
-  // Reverse trial is the default for subscription mode; callers can opt out.
-  const withTrial = stripePriceMode === "subscription" && req.body?.trial !== false;
 
   try {
     const baseUrl = getBaseUrl(req);
@@ -302,12 +305,7 @@ router.post("/stripe/checkout-session", async (req: Request, res): Promise<void>
         success_url: successUrl,
         cancel_url: cancelUrl,
         ...(stripePriceMode === "subscription"
-          ? {
-              subscription_data: {
-                metadata: { userId: req.user.id, planType },
-                ...(withTrial ? { trial_period_days: TRIAL_DAYS } : {}),
-              },
-            }
+          ? { subscription_data: { metadata: { userId: req.user.id, planType } } }
           : {}),
       });
     } catch (checkoutErr: unknown) {
@@ -404,7 +402,7 @@ router.get("/stripe/subscription", async (req: Request, res): Promise<void> => {
   const status = profile?.status ?? null;
   res.json({
     status,
-    isActive: isActiveStatus(status),
+    isActive: isAccessActive(status, profile?.currentPeriodEnd),
     currentPeriodEnd: profile?.currentPeriodEnd ? profile.currentPeriodEnd.toISOString() : null,
   });
 });
@@ -465,32 +463,53 @@ router.post("/stripe/refresh", async (req: Request, res): Promise<void> => {
 });
 
 /**
- * ── Redeem a developer / staff access code ──
- * Comps the paywall by marking the profile's subscription as `comp` (no Stripe
- * involvement). Validated server-side against the DEV_ACCESS_CODE env allowlist.
+ * ── Start the free trial ──
+ * Grants a time-limited trial directly (no card, no Stripe) so users can get
+ * into the app immediately. Idempotent for an already-active trial; once a
+ * trial has been used and expired, the user must subscribe instead.
  */
-router.post("/stripe/redeem-code", async (req: Request, res): Promise<void> => {
+router.post("/stripe/start-trial", async (req: Request, res): Promise<void> => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
-  const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
-  if (!code || devAccessCodes.length === 0 || !devAccessCodes.includes(code)) {
-    logger.warn({ userId: req.user.id }, "Invalid developer access code attempt");
-    res.status(400).json({ error: "That code isn't valid.", code: "invalid_code" });
+  const [profile] = await db
+    .select({
+      status: athleteProfileTable.subscriptionStatus,
+      currentPeriodEnd: athleteProfileTable.subscriptionCurrentPeriodEnd,
+    })
+    .from(athleteProfileTable)
+    .where(eq(athleteProfileTable.userId, req.user.id))
+    .limit(1);
+
+  // Already have access (active trial/subscription) — nothing to do.
+  if (isAccessActive(profile?.status, profile?.currentPeriodEnd)) {
+    res.json({
+      status: profile!.status,
+      isActive: true,
+      currentPeriodEnd: profile?.currentPeriodEnd ? profile.currentPeriodEnd.toISOString() : null,
+    });
     return;
   }
 
-  // Comp access never expires; the far-future period end keeps the gate open.
-  const farFuture = new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000);
+  // A previously-used (now expired) trial can't be restarted — they must subscribe.
+  if (profile?.status === "trialing" && profile?.currentPeriodEnd) {
+    res.status(409).json({
+      error: "Your free trial has already been used. Please subscribe to continue.",
+      code: "trial_used",
+    });
+    return;
+  }
+
+  const end = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
   await db
     .update(athleteProfileTable)
-    .set({ subscriptionStatus: "comp", subscriptionCurrentPeriodEnd: farFuture })
+    .set({ subscriptionStatus: "trialing", subscriptionCurrentPeriodEnd: end })
     .where(eq(athleteProfileTable.userId, req.user.id));
 
-  logger.info({ userId: req.user.id }, "Developer access code redeemed (comp granted)");
-  res.json({ status: "comp", isActive: true, currentPeriodEnd: farFuture.toISOString() });
+  logger.info({ userId: req.user.id, trialEnds: end.toISOString() }, "Free trial started");
+  res.json({ status: "trialing", isActive: true, currentPeriodEnd: end.toISOString() });
 });
 
 /**

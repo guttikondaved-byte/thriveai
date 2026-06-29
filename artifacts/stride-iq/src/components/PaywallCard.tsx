@@ -8,8 +8,8 @@ const TRIAL_DAYS = 3;
 interface PaywallCardProps {
   planType: "athlete" | "coach";
   /**
-   * When true, Checkout returns to the app (`/?checkout=success`) instead of the
-   * profile page — used by onboarding and the access gate.
+   * When true, Stripe Checkout returns to the app (`/?checkout=success`) instead
+   * of the profile page — used by onboarding and the access gate.
    */
   fromOnboarding?: boolean;
 }
@@ -28,65 +28,62 @@ const PLAN_COPY: Record<PaywallCardProps["planType"], { title: string; price: st
 };
 
 /**
- * Reverse-trial CTA: collect a card now, start a 14-day free trial, charge later.
- * Shared by the onboarding "Activate" step and the subscription gate.
+ * Activation card: a free trial granted directly (no card), with a paid Stripe
+ * subscription as the secondary path.
  */
 export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
   const qc = useQueryClient();
-  const [loading, setLoading] = useState(false);
+  const [trialLoading, setTrialLoading] = useState(false);
+  const [subLoading, setSubLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showCode, setShowCode] = useState(false);
-  const [code, setCode] = useState("");
-  const [redeeming, setRedeeming] = useState(false);
-  const [codeError, setCodeError] = useState<string | null>(null);
   const copy = PLAN_COPY[planType];
 
-  async function redeemCode() {
-    if (redeeming || !code.trim()) return;
-    setRedeeming(true);
-    setCodeError(null);
+  // Free trial — granted server-side with no card. Unlock the gate by refetching.
+  async function startTrial() {
+    if (trialLoading) return;
+    setTrialLoading(true);
+    setError(null);
     try {
-      const res = await fetch("/api/stripe/redeem-code", {
+      const res = await fetch("/api/stripe/start-trial", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: code.trim() }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.isActive) {
-        setCodeError(data?.error ?? "That code isn't valid.");
-        setRedeeming(false);
+        setError(data?.error ?? "Couldn't start your free trial. Please try again.");
+        setTrialLoading(false);
         return;
       }
-      // Unlock the gate: refetch subscription state so AppContent re-renders.
       await qc.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY });
     } catch {
-      setCodeError("Couldn't redeem that code. Please try again.");
-      setRedeeming(false);
+      setError("Something went wrong. Please try again.");
+      setTrialLoading(false);
     }
   }
 
-  async function startTrial() {
-    if (loading) return;
-    setLoading(true);
+  // Paid subscription via Stripe Checkout (no trial).
+  async function subscribe() {
+    if (subLoading) return;
+    setSubLoading(true);
     setError(null);
     try {
       const res = await fetch("/api/stripe/checkout-session", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planType, trial: true, fromOnboarding: !!fromOnboarding }),
+        body: JSON.stringify({ planType, fromOnboarding: !!fromOnboarding }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.url) {
         setError(data?.error ?? "Unable to start checkout. Please try again.");
-        setLoading(false);
+        setSubLoading(false);
         return;
       }
       window.location.href = data.url as string;
     } catch {
       setError("Something went wrong starting checkout. Please try again.");
-      setLoading(false);
+      setSubLoading(false);
     }
   }
 
@@ -99,7 +96,7 @@ export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
         </p>
       </div>
       <p className="text-xs text-slate-400 mb-5">
-        No charge today. Cancel anytime before your trial ends and you won't be billed.
+        No card required. Free for {TRIAL_DAYS} days, then subscribe to keep your access.
       </p>
 
       <div className="rounded-xl bg-[#0e1a19]/60 border border-border px-4 py-3 mb-4">
@@ -115,12 +112,12 @@ export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
       <button
         type="button"
         onClick={startTrial}
-        disabled={loading}
+        disabled={trialLoading}
         className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-[#F5F5F5] hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
       >
-        {loading ? (
+        {trialLoading ? (
           <>
-            <Loader2 size={16} className="animate-spin" /> Opening checkout…
+            <Loader2 size={16} className="animate-spin" /> Starting…
           </>
         ) : (
           <>
@@ -128,44 +125,16 @@ export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
           </>
         )}
       </button>
-      <p className="text-[11px] text-slate-600 mt-3 text-center">
-        Secured by Stripe. You'll enter your card on the next screen.
-      </p>
 
-      {/* Developer / staff access code — comps the paywall without Stripe. */}
-      <div className="mt-4 border-t border-border/60 pt-3">
-        {!showCode ? (
-          <button
-            type="button"
-            onClick={() => setShowCode(true)}
-            className="w-full text-center text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
-          >
-            Have an access code?
-          </button>
-        ) : (
-          <div>
-            <div className="flex gap-2">
-              <input
-                value={code}
-                onChange={(e) => { setCode(e.target.value); setCodeError(null); }}
-                onKeyDown={(e) => { if (e.key === "Enter") redeemCode(); }}
-                placeholder="Access code"
-                autoFocus
-                className="flex-1 bg-[#0e1a19]/60 border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-              <button
-                type="button"
-                onClick={redeemCode}
-                disabled={redeeming || !code.trim()}
-                className="inline-flex items-center justify-center rounded-lg bg-secondary/70 border border-border px-4 py-2 text-sm font-semibold text-white hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {redeeming ? <Loader2 size={15} className="animate-spin" /> : "Apply"}
-              </button>
-            </div>
-            {codeError && <p className="text-red-400 text-xs mt-2">{codeError}</p>}
-          </div>
-        )}
-      </div>
+      {/* Secondary: pay now via Stripe (no trial). */}
+      <button
+        type="button"
+        onClick={subscribe}
+        disabled={subLoading}
+        className="mt-3 w-full text-center text-xs text-slate-400 hover:text-slate-200 disabled:opacity-50 transition-colors"
+      >
+        {subLoading ? "Opening checkout…" : "Or subscribe now"}
+      </button>
     </div>
   );
 }
