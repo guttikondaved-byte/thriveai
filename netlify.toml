@@ -24,7 +24,7 @@
 ### Proxy API requests to the Render API so PATCH and other methods are forwarded.
 [[redirects]]
   from = "/api/*"
-  to = "https://thriveai-hxfw.onrender.com/api/:splat"
+  to = "https://thriveai.onrender.com/api/:splat"
   status = 200
   force = true
 
