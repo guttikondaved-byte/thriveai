@@ -139,7 +139,7 @@ export default function CoachDashboard() {
               <span className="text-[10px] text-muted-foreground">·</span>
               <span className="text-[11px] text-muted-foreground">Portal tuned for your {focus.athleteNoun}</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{focus.tagline}</p>
+            <p className="text-sm text-foreground mt-1 leading-relaxed">{focus.tagline}</p>
             <p className={`text-[11px] italic mt-1 ${focus.accentText} opacity-80`}>"{focus.philosophy}"</p>
             <div className="mt-3 space-y-2">
               <div className="flex flex-wrap gap-2">
@@ -201,11 +201,11 @@ export default function CoachDashboard() {
                       <div className="text-xs text-muted-foreground truncate">{athlete.primaryGoal ?? (athlete.fitnessLevel ? `${athlete.fitnessLevel} runner` : "Athlete")}</div>
                     </div>
                     <div className="text-right hidden sm:block">
-                      <div className="text-xs text-muted-foreground font-medium">{athlete.weeklyDistanceKm.toFixed(1)} mi</div>
+                      <div className="text-xs text-foreground font-medium">{athlete.weeklyDistanceKm.toFixed(1)} mi</div>
                       <div className="text-[10px] text-muted-foreground">this week</div>
                     </div>
                     <div className="text-right hidden md:block">
-                      <div className="text-xs text-muted-foreground font-medium">{athlete.restingHeartRate != null ? `HR ${athlete.restingHeartRate}` : "HR —"}</div>
+                      <div className="text-xs text-foreground font-medium">{athlete.restingHeartRate != null ? `HR ${athlete.restingHeartRate}` : "HR —"}</div>
                       <div className="text-[10px] text-muted-foreground">{athlete.hrv != null ? `HRV ${athlete.hrv.toFixed(0)}` : "HRV —"}</div>
                     </div>
                     <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium flex-shrink-0 ${badge.badge}`}>

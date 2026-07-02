@@ -29,6 +29,8 @@ tags:
     description: Coach team management and athlete invites
   - name: notifications
     description: In-app notifications
+  - name: injury-risk
+    description: Aggregated injury risk dashboard and soreness tracking
 paths:
   /healthz:
     get:
@@ -84,6 +86,11 @@ paths:
           schema:
             type: integer
             default: 20
+        - name: date
+          in: query
+          description: Filter to activities on this date (YYYY-MM-DD).
+          schema:
+            type: string
       responses:
         "200":
           description: List of activities
@@ -246,6 +253,57 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DashboardSummary"
+
+  /injury-risk/dashboard:
+    get:
+      operationId: getInjuryRiskDashboard
+      tags: [injury-risk]
+      summary: Get the aggregated injury risk dashboard for the current athlete
+      responses:
+        "200":
+          description: Injury risk dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InjuryRiskDashboard"
+
+  /injury-risk/intensity-map:
+    get:
+      operationId: getInjuryRiskIntensityMap
+      tags: [injury-risk]
+      summary: Get the calendar-month training intensity map for a given month
+      parameters:
+        - name: month
+          in: query
+          description: Target month as YYYY-MM. Defaults to the current month.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Monthly intensity map
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntensityMap"
+
+  /injury-risk/soreness:
+    post:
+      operationId: createSorenessEntry
+      tags: [injury-risk]
+      summary: Log a self-reported soreness entry for a body part
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSorenessBody"
+      responses:
+        "201":
+          description: Created soreness entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SorenessEntry"
 
   /openai/conversations:
     get:
@@ -1245,6 +1303,251 @@ components:
         - activeAlerts
         - recentActivities
         - trainingLoad
+
+    SorenessEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        bodyPart:
+          type: string
+        painScore:
+          type: integer
+        loggedDate:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - bodyPart
+        - painScore
+        - loggedDate
+        - createdAt
+
+    CreateSorenessBody:
+      type: object
+      properties:
+        bodyPart:
+          type: string
+        painScore:
+          type: integer
+          minimum: 0
+          maximum: 10
+      required:
+        - bodyPart
+        - painScore
+
+    WorkloadDailyLoad:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        day:
+          type: string
+        load:
+          type: number
+        baseline:
+          type: number
+      required:
+        - date
+        - day
+        - load
+        - baseline
+
+    IntensityMap:
+      type: object
+      properties:
+        month:
+          type: string
+        label:
+          type: string
+        days:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              day:
+                type: string
+              intensity:
+                type: integer
+              score:
+                type: integer
+              activityIds:
+                type: array
+                items:
+                  type: integer
+            required:
+              - date
+              - day
+              - intensity
+              - score
+              - activityIds
+      required:
+        - month
+        - label
+        - days
+
+    InjuryRiskDashboard:
+      type: object
+      properties:
+        riskScore:
+          type: integer
+        riskBand:
+          type: string
+          enum: [low, moderate, high, critical]
+        riskLabel:
+          type: string
+        insight:
+          type: string
+        lastUpdated:
+          type: string
+          format: date-time
+        workload:
+          type: object
+          properties:
+            daily:
+              type: array
+              items:
+                $ref: "#/components/schemas/WorkloadDailyLoad"
+            acuteLoad:
+              type: number
+            chronicWeeklyAvg:
+              type: number
+            ratio:
+              type: ["number", "null"]
+          required:
+            - daily
+            - acuteLoad
+            - chronicWeeklyAvg
+            - ratio
+        hrvCurrent:
+          type: ["number", "null"]
+        intensityMap:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              day:
+                type: string
+              intensity:
+                type: integer
+              score:
+                type: integer
+              activityIds:
+                type: array
+                items:
+                  type: integer
+            required:
+              - date
+              - day
+              - intensity
+              - score
+              - activityIds
+        weeklyRelativeEffort:
+          type: object
+          properties:
+            total:
+              type: integer
+            band:
+              type: string
+              enum: [low, moderate, high]
+          required:
+            - total
+            - band
+        activityConsistency:
+          type: object
+          properties:
+            daysActive:
+              type: integer
+            totalDays:
+              type: integer
+            pct:
+              type: integer
+          required:
+            - daysActive
+            - totalDays
+            - pct
+        fitnessTrend:
+          type: object
+          properties:
+            series:
+              type: array
+              items:
+                type: number
+            changePct:
+              type: integer
+          required:
+            - series
+            - changePct
+        heartRateZones:
+          type: array
+          items:
+            type: object
+            properties:
+              zone:
+                type: integer
+              label:
+                type: string
+              seconds:
+                type: integer
+            required:
+              - zone
+              - label
+              - seconds
+        segments:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              currentTimeSeconds:
+                type: integer
+              prTimeSeconds:
+                type: integer
+              distanceM:
+                type: number
+              isPr:
+                type: boolean
+            required:
+              - name
+              - currentTimeSeconds
+              - prTimeSeconds
+              - distanceM
+              - isPr
+        alerts:
+          type: array
+          items:
+            $ref: "#/components/schemas/InjuryAlert"
+        soreness:
+          type: array
+          items:
+            $ref: "#/components/schemas/SorenessEntry"
+      required:
+        - riskScore
+        - riskBand
+        - riskLabel
+        - insight
+        - lastUpdated
+        - workload
+        - hrvCurrent
+        - intensityMap
+        - weeklyRelativeEffort
+        - activityConsistency
+        - fitnessTrend
+        - heartRateZones
+        - segments
+        - alerts
+        - soreness
 
     OpenaiConversation:
       type: object

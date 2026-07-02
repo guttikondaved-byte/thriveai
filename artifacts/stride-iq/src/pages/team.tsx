@@ -310,7 +310,7 @@ export default function Team() {
                 <button
                   onClick={leaveTeam}
                   disabled={leaving}
-                  className="flex-1 py-2 rounded-lg bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-2 rounded-lg bg-destructive text-foreground text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {leaving ? <><div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />Leaving…</> : "Leave team"}
                 </button>
@@ -497,7 +497,7 @@ export default function Team() {
               <button
                 onClick={deleteTeam}
                 disabled={deleting}
-                className="flex-1 py-2 rounded-lg bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 py-2 rounded-lg bg-destructive text-foreground text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {deleting ? <><div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />Deleting…</> : "Delete team"}
               </button>

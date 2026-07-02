@@ -97,7 +97,8 @@ export const UpdateAthleteProfileResponse = zod.object({
 export const listActivitiesQueryLimitDefault = 20;
 
 export const ListActivitiesQueryParams = zod.object({
-  "limit": zod.coerce.number().default(listActivitiesQueryLimitDefault)
+  "limit": zod.coerce.number().default(listActivitiesQueryLimitDefault),
+  "date": zod.coerce.string().optional().describe('Filter to activities on this date (YYYY-MM-DD).')
 })
 
 export const ListActivitiesResponseItem = zod.object({
@@ -390,6 +391,112 @@ export const GetDashboardSummaryResponse = zod.object({
 })),
   "hrvTrend": zod.number().nullish(),
   "trainingLoad": zod.enum(['low', 'moderate', 'high', 'very_high'])
+})
+
+
+/**
+ * @summary Get the aggregated injury risk dashboard for the current athlete
+ */
+export const GetInjuryRiskDashboardResponse = zod.object({
+  "riskScore": zod.number(),
+  "riskBand": zod.enum(['low', 'moderate', 'high', 'critical']),
+  "riskLabel": zod.string(),
+  "insight": zod.string(),
+  "lastUpdated": zod.coerce.date(),
+  "workload": zod.object({
+  "daily": zod.array(zod.object({
+  "date": zod.coerce.date(),
+  "day": zod.string(),
+  "load": zod.number(),
+  "baseline": zod.number()
+})),
+  "acuteLoad": zod.number(),
+  "chronicWeeklyAvg": zod.number(),
+  "ratio": zod.number().nullable()
+}),
+  "hrvCurrent": zod.number().nullable(),
+  "intensityMap": zod.array(zod.object({
+  "date": zod.coerce.date(),
+  "day": zod.string(),
+  "intensity": zod.number(),
+  "score": zod.number(),
+  "activityIds": zod.array(zod.number())
+})),
+  "weeklyRelativeEffort": zod.object({
+  "total": zod.number(),
+  "band": zod.enum(['low', 'moderate', 'high'])
+}),
+  "activityConsistency": zod.object({
+  "daysActive": zod.number(),
+  "totalDays": zod.number(),
+  "pct": zod.number()
+}),
+  "fitnessTrend": zod.object({
+  "series": zod.array(zod.number()),
+  "changePct": zod.number()
+}),
+  "heartRateZones": zod.array(zod.object({
+  "zone": zod.number(),
+  "label": zod.string(),
+  "seconds": zod.number()
+})),
+  "segments": zod.array(zod.object({
+  "name": zod.string(),
+  "currentTimeSeconds": zod.number(),
+  "prTimeSeconds": zod.number(),
+  "distanceM": zod.number(),
+  "isPr": zod.boolean()
+})),
+  "alerts": zod.array(zod.object({
+  "id": zod.number(),
+  "riskLevel": zod.enum(['low', 'medium', 'high', 'critical']),
+  "bodyPart": zod.string(),
+  "message": zod.string(),
+  "recommendation": zod.string(),
+  "acknowledged": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})),
+  "soreness": zod.array(zod.object({
+  "id": zod.number(),
+  "bodyPart": zod.string(),
+  "painScore": zod.number(),
+  "loggedDate": zod.coerce.date(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Get the calendar-month training intensity map for a given month
+ */
+export const GetInjuryRiskIntensityMapQueryParams = zod.object({
+  "month": zod.coerce.string().optional().describe('Target month as YYYY-MM. Defaults to the current month.')
+})
+
+export const GetInjuryRiskIntensityMapResponse = zod.object({
+  "month": zod.string(),
+  "label": zod.string(),
+  "days": zod.array(zod.object({
+  "date": zod.coerce.date(),
+  "day": zod.string(),
+  "intensity": zod.number(),
+  "score": zod.number(),
+  "activityIds": zod.array(zod.number())
+}))
+})
+
+
+/**
+ * @summary Log a self-reported soreness entry for a body part
+ */
+export const createSorenessEntryBodyPainScoreMin = 0;
+export const createSorenessEntryBodyPainScoreMax = 10;
+
+
+
+export const CreateSorenessEntryBody = zod.object({
+  "bodyPart": zod.string(),
+  "painScore": zod.number().min(createSorenessEntryBodyPainScoreMin).max(createSorenessEntryBodyPainScoreMax)
 })
 
 

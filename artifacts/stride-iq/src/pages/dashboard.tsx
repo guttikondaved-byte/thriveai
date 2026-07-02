@@ -73,7 +73,7 @@ function StravaBanner() {
         href="/api/strava/connect"
         target="_blank"
         rel="noopener noreferrer"
-        className="shrink-0 px-4 py-2 rounded-lg bg-[#FC4C02] hover:bg-[#e34400] text-white text-xs font-bold transition-colors"
+        className="shrink-0 px-4 py-2 rounded-lg bg-[#FC4C02] hover:bg-[#e34400] text-foreground text-xs font-bold transition-colors"
       >
         Connect Strava
       </a>

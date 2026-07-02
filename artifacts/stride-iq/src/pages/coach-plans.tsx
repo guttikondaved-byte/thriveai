@@ -229,7 +229,7 @@ export default function CoachPlans() {
             </div>
             <button
               onClick={() => { setAveraFlow("idle"); setAveraProposal(null); setAveraError(""); }}
-              className="text-muted-foreground hover:text-muted-foreground transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -301,7 +301,7 @@ export default function CoachPlans() {
                   <button
                     onClick={buildWithAvera}
                     disabled={averaFlow === "applying"}
-                    className="text-xs text-muted-foreground hover:text-muted-foreground transition-colors"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Generate different plan
                   </button>
@@ -418,7 +418,7 @@ export default function CoachPlans() {
                       <div className="bg-background border border-primary/20 rounded-lg p-4 space-y-3">
                         <div className="flex items-center justify-between mb-1">
                           <p className="text-xs font-semibold text-primary uppercase tracking-wider">New Plan for {athlete.name}</p>
-                          <button onClick={() => setShowFormFor(null)} className="text-muted-foreground hover:text-muted-foreground">
+                          <button onClick={() => setShowFormFor(null)} className="text-muted-foreground hover:text-foreground">
                             <X className="w-4 h-4" />
                           </button>
                         </div>

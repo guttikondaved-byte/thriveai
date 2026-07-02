@@ -56,7 +56,7 @@ export default function Subscribe({ planType }: { planType: "athlete" | "coach" 
             type="button"
             onClick={changePlan}
             disabled={switching}
-            className="hover:text-muted-foreground disabled:opacity-50 transition-colors"
+            className="hover:text-foreground disabled:opacity-50 transition-colors"
           >
             {switching ? "Switching…" : `Switch to ${otherPlan === "coach" ? "Coach" : "Athlete"}`}
           </button>
@@ -64,7 +64,7 @@ export default function Subscribe({ planType }: { planType: "athlete" | "coach" 
           <button
             type="button"
             onClick={() => navigate("/onboarding")}
-            className="hover:text-muted-foreground transition-colors"
+            className="hover:text-foreground transition-colors"
           >
             Redo survey
           </button>
@@ -72,7 +72,7 @@ export default function Subscribe({ planType }: { planType: "athlete" | "coach" 
           <button
             type="button"
             onClick={() => signOut()}
-            className="hover:text-muted-foreground transition-colors"
+            className="hover:text-foreground transition-colors"
           >
             Sign out
           </button>

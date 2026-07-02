@@ -143,14 +143,14 @@ function AveraTipPopup() {
           <span className="text-xs font-semibold text-primary">AveraAI has a suggestion</span>
           <button
             onClick={() => { setDismissed(true); setVisible(false); }}
-            className="ml-auto text-muted-foreground hover:text-muted-foreground transition-colors"
+            className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
         <div className="px-4 py-3">
-          <p className="text-sm text-muted-foreground leading-relaxed">{tip}</p>
+          <p className="text-sm text-foreground leading-relaxed">{tip}</p>
         </div>
 
         {flow === "proposal" && proposal && (

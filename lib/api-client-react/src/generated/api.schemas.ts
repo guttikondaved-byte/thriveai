@@ -427,6 +427,128 @@ export interface DashboardSummary {
   trainingLoad: DashboardSummaryTrainingLoad;
 }
 
+export interface SorenessEntry {
+  id: number;
+  bodyPart: string;
+  painScore: number;
+  loggedDate: string;
+  createdAt: string;
+}
+
+export interface CreateSorenessBody {
+  bodyPart: string;
+  /**
+     * @minimum 0
+     * @maximum 10
+     */
+  painScore: number;
+}
+
+export interface WorkloadDailyLoad {
+  date: string;
+  day: string;
+  load: number;
+  baseline: number;
+}
+
+export type IntensityMapDaysItem = {
+  date: string;
+  day: string;
+  intensity: number;
+  score: number;
+  activityIds: number[];
+};
+
+export interface IntensityMap {
+  month: string;
+  label: string;
+  days: IntensityMapDaysItem[];
+}
+
+export type InjuryRiskDashboardRiskBand = typeof InjuryRiskDashboardRiskBand[keyof typeof InjuryRiskDashboardRiskBand];
+
+
+export const InjuryRiskDashboardRiskBand = {
+  low: 'low',
+  moderate: 'moderate',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
+export type InjuryRiskDashboardWorkload = {
+  daily: WorkloadDailyLoad[];
+  acuteLoad: number;
+  chronicWeeklyAvg: number;
+  /** @nullable */
+  ratio: number | null;
+};
+
+export type InjuryRiskDashboardIntensityMapItem = {
+  date: string;
+  day: string;
+  intensity: number;
+  score: number;
+  activityIds: number[];
+};
+
+export type InjuryRiskDashboardWeeklyRelativeEffortBand = typeof InjuryRiskDashboardWeeklyRelativeEffortBand[keyof typeof InjuryRiskDashboardWeeklyRelativeEffortBand];
+
+
+export const InjuryRiskDashboardWeeklyRelativeEffortBand = {
+  low: 'low',
+  moderate: 'moderate',
+  high: 'high',
+} as const;
+
+export type InjuryRiskDashboardWeeklyRelativeEffort = {
+  total: number;
+  band: InjuryRiskDashboardWeeklyRelativeEffortBand;
+};
+
+export type InjuryRiskDashboardActivityConsistency = {
+  daysActive: number;
+  totalDays: number;
+  pct: number;
+};
+
+export type InjuryRiskDashboardFitnessTrend = {
+  series: number[];
+  changePct: number;
+};
+
+export type InjuryRiskDashboardHeartRateZonesItem = {
+  zone: number;
+  label: string;
+  seconds: number;
+};
+
+export type InjuryRiskDashboardSegmentsItem = {
+  name: string;
+  currentTimeSeconds: number;
+  prTimeSeconds: number;
+  distanceM: number;
+  isPr: boolean;
+};
+
+export interface InjuryRiskDashboard {
+  riskScore: number;
+  riskBand: InjuryRiskDashboardRiskBand;
+  riskLabel: string;
+  insight: string;
+  lastUpdated: string;
+  workload: InjuryRiskDashboardWorkload;
+  /** @nullable */
+  hrvCurrent: number | null;
+  intensityMap: InjuryRiskDashboardIntensityMapItem[];
+  weeklyRelativeEffort: InjuryRiskDashboardWeeklyRelativeEffort;
+  activityConsistency: InjuryRiskDashboardActivityConsistency;
+  fitnessTrend: InjuryRiskDashboardFitnessTrend;
+  heartRateZones: InjuryRiskDashboardHeartRateZonesItem[];
+  segments: InjuryRiskDashboardSegmentsItem[];
+  alerts: InjuryAlert[];
+  soreness: SorenessEntry[];
+}
+
 export interface OpenaiConversation {
   id: number;
   title: string;
@@ -552,6 +674,17 @@ export type AuthorizationSessionHeaderParameter = string;
 
 export type ListActivitiesParams = {
 limit?: number;
+/**
+ * Filter to activities on this date (YYYY-MM-DD).
+ */
+date?: string;
+};
+
+export type GetInjuryRiskIntensityMapParams = {
+/**
+ * Target month as YYYY-MM. Defaults to the current month.
+ */
+month?: string;
 };
 
 export type BeginBrowserLoginParams = {

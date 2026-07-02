@@ -15,6 +15,7 @@ import ActivityDetail from "@/pages/activity-detail";
 import Plans from "@/pages/plans";
 import PlanDetail from "@/pages/plan-detail";
 import Alerts from "@/pages/alerts";
+import Intensity from "@/pages/intensity";
 import History from "@/pages/history";
 import Coach from "@/pages/coach";
 import Profile from "@/pages/profile";
@@ -256,7 +257,7 @@ function SignUpPage() {
         </div>
         <button
           onClick={clearRole}
-          className="text-xs text-muted-foreground hover:text-muted-foreground transition-colors underline underline-offset-2"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
         >
           Change
         </button>
@@ -276,6 +277,7 @@ function AthleteRouter() {
         <Route path="/plans" component={Plans} />
         <Route path="/plans/:id" component={PlanDetail} />
         <Route path="/alerts" component={Alerts} />
+        <Route path="/intensity" component={Intensity} />
         <Route path="/history" component={History} />
         <Route path="/coach" component={Coach} />
         <Route path="/team" component={Team} />

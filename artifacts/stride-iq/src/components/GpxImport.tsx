@@ -79,7 +79,7 @@ export default function GpxImport({ onImport, onClose }: Props) {
         >
           <Upload size={28} className={dragging ? "text-primary" : "text-muted-foreground"} />
           <div className="text-center">
-            <p className="text-sm text-muted-foreground font-medium">Drop your .gpx file here</p>
+            <p className="text-sm text-foreground font-medium">Drop your .gpx file here</p>
             <p className="text-xs text-muted-foreground mt-1">or click to browse</p>
           </div>
           <input ref={inputRef} type="file" accept=".gpx" className="hidden" onChange={onFileChange} />

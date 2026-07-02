@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   X,
+  Flame,
 } from "lucide-react";
 import { useUser, useClerk } from "@clerk/react";
 import NotificationBell from "./NotificationBell";
@@ -20,7 +21,8 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/activities", label: "Activities", icon: Activity },
   { href: "/plans", label: "Training Plans", icon: Calendar },
-  { href: "/alerts", label: "Injury Alerts", icon: AlertTriangle },
+  { href: "/alerts", label: "Injury Risk", icon: AlertTriangle },
+  { href: "/intensity", label: "Intensity Map", icon: Flame },
   { href: "/history", label: "Health & History", icon: HeartPulse },
   { href: "/coach", label: "AveraAI", icon: Bot },
   { href: "/team", label: "My Team", icon: Users },
@@ -47,7 +49,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     : "A";
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
+    <div className="flex min-h-screen bg-transparent text-foreground">
       {/* Mobile backdrop */}
       {mobileOpen && (
         <div

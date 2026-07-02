@@ -6,10 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListActivitiesParams = {
-limit?: number;
-/**
- * Filter to activities on this date (YYYY-MM-DD).
- */
-date?: string;
-};
+export interface CreateSorenessBody {
+  bodyPart: string;
+  /**
+     * @minimum 0
+     * @maximum 10
+     */
+  painScore: number;
+}
