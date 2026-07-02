@@ -28,9 +28,9 @@ const LOAD_COLORS: Record<string, string> = {
 };
 
 const RISK_COLORS: Record<string, string> = {
-  low: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  medium: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  high: "bg-red-500/10 text-red-400 border-red-500/20",
+  low: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+  medium: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+  high: "bg-red-500/10 text-red-600 border-red-500/20",
   critical: "bg-red-600/20 text-red-300 border-red-600/30",
 };
 
@@ -64,7 +64,7 @@ function StravaBanner() {
     <div className={`mb-6 flex items-center gap-4 rounded-xl border px-5 py-4 ${autoPrompt ? "border-[#FC4C02]/30 bg-[#FC4C02]/5" : "border-border bg-secondary"}`}>
       <Activity className="w-6 h-6 shrink-0 text-[#FC4C02]" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white">
+        <p className="text-sm font-medium text-foreground">
           {autoPrompt ? "One more step — connect Strava" : "Connect Strava for automatic run syncing"}
         </p>
         <p className="text-xs text-muted-foreground mt-0.5">Every run will appear in Thrive automatically. No imports needed.</p>
@@ -163,7 +163,7 @@ export default function Dashboard() {
                 <Link href="/alerts" className="text-xs text-primary hover:underline" data-testid="link-view-alerts">View all</Link>
               </div>
               <p className="text-sm text-foreground">
-                <span className="text-red-400 font-semibold">{data.activeAlerts}</span> active risk {data.activeAlerts === 1 ? "alert" : "alerts"}
+                <span className="text-red-600 font-semibold">{data.activeAlerts}</span> active risk {data.activeAlerts === 1 ? "alert" : "alerts"}
               </p>
             </div>
           )}

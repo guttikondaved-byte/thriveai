@@ -1,0 +1,113 @@
+<svg viewBox="0 0 1553 950" xmlns="http://www.w3.org/2000/svg" font-family="Arial, Helvetica, sans-serif">
+  <!-- page background -->
+  <rect x="0" y="0" width="1553" height="950" fill="#FFFFFF" />
+
+  <!-- sidebar -->
+  <rect x="0" y="0" width="297" height="950" fill="#FBFAF6" />
+  <line x1="297" y1="0" x2="297" y2="950" stroke="#D9E2DC" stroke-width="1" />
+
+  <!-- logo mark -->
+  <rect x="24" y="28" width="48" height="48" rx="12" fill="#2E90D9" />
+  <path d="M36 62 Q48 38 60 62" stroke="#FFFFFF" stroke-width="3" fill="none" stroke-linecap="round" />
+  <path d="M40 62 Q48 46 56 62" stroke="#FFFFFF" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.7" />
+
+  <!-- nav items -->
+  <g>
+    <rect x="16" y="140" width="265" height="48" rx="10" fill="#2E90D9" fill-opacity="0.12" />
+    <rect x="34" y="157" width="14" height="14" rx="3" fill="#2E90D9" />
+    <text x="64" y="170" font-size="15" font-weight="700" fill="#2E90D9">Dashboard</text>
+  </g>
+  <g>
+    <rect x="34" y="221" width="14" height="14" rx="3" fill="#8A9690" />
+    <text x="64" y="234" font-size="15" fill="#5C6B63">Activities</text>
+  </g>
+  <g>
+    <rect x="34" y="285" width="14" height="14" rx="3" fill="#8A9690" />
+    <text x="64" y="298" font-size="15" fill="#5C6B63">Training Plans</text>
+  </g>
+  <g>
+    <rect x="34" y="349" width="14" height="14" rx="3" fill="#8A9690" />
+    <text x="64" y="362" font-size="15" fill="#5C6B63">Injury Alerts</text>
+  </g>
+  <g>
+    <rect x="34" y="413" width="14" height="14" rx="3" fill="#8A9690" />
+    <text x="64" y="426" font-size="15" fill="#5C6B63">Health &amp; History</text>
+  </g>
+  <g>
+    <rect x="34" y="477" width="14" height="14" rx="3" fill="#8A9690" />
+    <text x="64" y="490" font-size="15" fill="#5C6B63">AveraAI</text>
+  </g>
+  <g>
+    <rect x="34" y="541" width="14" height="14" rx="3" fill="#8A9690" />
+    <text x="64" y="554" font-size="15" fill="#5C6B63">My Team</text>
+  </g>
+  <g>
+    <rect x="34" y="605" width="14" height="14" rx="3" fill="#8A9690" />
+    <text x="64" y="618" font-size="15" fill="#5C6B63">Profile</text>
+  </g>
+
+  <!-- top bar -->
+  <line x1="297" y1="90" x2="1553" y2="90" stroke="#EDF1EE" stroke-width="1" />
+  <path d="M1502 30 a7 8 0 0 1 14 0 v6 l4 6 h-22 l4 -6 z" fill="none" stroke="#5C6B63" stroke-width="2" />
+
+  <!-- header -->
+  <text x="338" y="167" font-size="34" font-weight="800" fill="#1B2A24">Dashboard</text>
+  <text x="338" y="200" font-size="15" fill="#5C6B63">Thursday, June 25</text>
+
+  <!-- stat card: Weekly Distance -->
+  <rect x="338" y="235" width="580" height="190" rx="14" fill="#FFFFFF" stroke="#E3E8E4" stroke-width="1.5" />
+  <text x="366" y="273" font-size="12" font-weight="700" letter-spacing="1.8" fill="#8A9690">WEEKLY DISTANCE</text>
+  <text x="366" y="336" font-size="34" font-weight="800" fill="#1B2A24">0 mi</text>
+  <text x="366" y="366" font-size="13" fill="#8A9690">last 7 days</text>
+
+  <!-- stat card: Weekly Runs -->
+  <rect x="940" y="235" width="580" height="190" rx="14" fill="#FFFFFF" stroke="#E3E8E4" stroke-width="1.5" />
+  <text x="968" y="273" font-size="12" font-weight="700" letter-spacing="1.8" fill="#8A9690">WEEKLY RUNS</text>
+  <text x="968" y="336" font-size="34" font-weight="800" fill="#1B2A24">0</text>
+  <text x="968" y="366" font-size="13" fill="#8A9690">this week</text>
+
+  <!-- stat card: Avg Pace -->
+  <rect x="338" y="449" width="580" height="165" rx="14" fill="#FFFFFF" stroke="#E3E8E4" stroke-width="1.5" />
+  <text x="366" y="487" font-size="12" font-weight="700" letter-spacing="1.8" fill="#8A9690">AVG PACE</text>
+  <text x="366" y="546" font-size="30" font-weight="800" fill="#1B2A24">—</text>
+  <text x="366" y="576" font-size="13" fill="#8A9690">per mi</text>
+
+  <!-- stat card: Injury Alerts -->
+  <rect x="940" y="449" width="580" height="165" rx="14" fill="#FFFFFF" stroke="#E3E8E4" stroke-width="1.5" />
+  <text x="968" y="487" font-size="12" font-weight="700" letter-spacing="1.8" fill="#8A9690">INJURY ALERTS</text>
+  <text x="968" y="546" font-size="30" font-weight="800" fill="#1B2A24">0</text>
+  <text x="968" y="576" font-size="13" fill="#8A9690">active</text>
+
+  <!-- training load card -->
+  <rect x="338" y="638" width="373" height="280" rx="14" fill="#FFFFFF" stroke="#E3E8E4" stroke-width="1.5" />
+  <text x="366" y="678" font-size="12" font-weight="700" letter-spacing="1.8" fill="#8A9690">TRAINING LOAD</text>
+  <text x="366" y="750" font-size="26" font-weight="800" fill="#2E90D9">Low</text>
+  <rect x="366" y="782" width="317" height="9" rx="4.5" fill="#E3E8E4" />
+  <rect x="366" y="782" width="70" height="9" rx="4.5" fill="#2E90D9" />
+
+  <!-- recent activity card -->
+  <rect x="743" y="638" width="772" height="280" rx="14" fill="#FFFFFF" stroke="#E3E8E4" stroke-width="1.5" />
+  <text x="771" y="678" font-size="12" font-weight="700" letter-spacing="1.8" fill="#8A9690">RECENT ACTIVITY</text>
+  <text x="1487" y="678" font-size="13" font-weight="700" fill="#2E90D9" text-anchor="end">View all</text>
+  <line x1="771" y1="701" x2="1487" y2="701" stroke="#EDF1EE" stroke-width="1" />
+
+  <text x="771" y="742" font-size="15" font-weight="700" fill="#1B2A24">Easy Run</text>
+  <text x="872" y="742" font-size="13" fill="#8A9690">Apr 27</text>
+  <text x="1220" y="742" font-size="14" font-weight="700" fill="#1B2A24" text-anchor="end">1.75 mi</text>
+  <text x="1330" y="742" font-size="14" fill="#5C6B63" text-anchor="end">14 min</text>
+  <text x="1487" y="742" font-size="14" fill="#5C6B63" text-anchor="end">176 bpm</text>
+  <line x1="771" y1="780" x2="1487" y2="780" stroke="#EDF1EE" stroke-width="1" />
+
+  <text x="771" y="820" font-size="15" font-weight="700" fill="#1B2A24">Easy Run</text>
+  <text x="872" y="820" font-size="13" fill="#8A9690">May 3</text>
+  <text x="1220" y="820" font-size="14" font-weight="700" fill="#1B2A24" text-anchor="end">2.65 mi</text>
+  <text x="1330" y="820" font-size="14" fill="#5C6B63" text-anchor="end">24 min</text>
+  <text x="1487" y="820" font-size="14" fill="#5C6B63" text-anchor="end">165 bpm</text>
+  <line x1="771" y1="858" x2="1487" y2="858" stroke="#EDF1EE" stroke-width="1" />
+
+  <text x="771" y="898" font-size="15" font-weight="700" fill="#1B2A24">Easy Run</text>
+  <text x="872" y="898" font-size="13" fill="#8A9690">May 7</text>
+  <text x="1220" y="898" font-size="14" font-weight="700" fill="#1B2A24" text-anchor="end">1.29 mi</text>
+  <text x="1330" y="898" font-size="14" fill="#5C6B63" text-anchor="end">13 min</text>
+  <text x="1487" y="898" font-size="14" fill="#5C6B63" text-anchor="end">167 bpm</text>
+</svg>

@@ -52,7 +52,7 @@ function PRCard({ label, value, onChange }: { label: string; value: string; onCh
             autoFocus
             onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") cancel(); }}
           />
-          <button onClick={commit} className="text-emerald-400 hover:text-emerald-300 p-1.5 bg-emerald-400/10 rounded-md transition-colors"><Check className="w-4 h-4" /></button>
+          <button onClick={commit} className="text-emerald-600 hover:text-emerald-300 p-1.5 bg-emerald-400/10 rounded-md transition-colors"><Check className="w-4 h-4" /></button>
           <button onClick={cancel} className="text-muted-foreground hover:text-foreground p-1.5 bg-secondary rounded-md transition-colors"><X className="w-4 h-4" /></button>
         </div>
       ) : (
@@ -339,8 +339,8 @@ export default function History() {
                           <span className="text-sm text-muted-foreground">{injury.bodyPart}</span>
                           <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                             injury.status === "active"
-                              ? "bg-red-500/15 text-red-400 border border-red-500/20"
-                              : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+                              ? "bg-red-500/15 text-red-600 border border-red-500/20"
+                              : "bg-emerald-500/15 text-emerald-600 border border-emerald-500/20"
                           }`}>
                             {injury.status === "active" ? "Active" : "Recovered"}
                           </span>
@@ -366,7 +366,7 @@ export default function History() {
                               deleteInjury.mutate({ id: injury.id });
                             }
                           }}
-                          className="text-muted-foreground hover:text-red-400 transition-colors"
+                          className="text-muted-foreground hover:text-red-600 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

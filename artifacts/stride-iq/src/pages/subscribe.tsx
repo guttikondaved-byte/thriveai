@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useClerk } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
+import { Footprints } from "lucide-react";
 import { useUpdateAthleteProfile, getGetAthleteProfileQueryKey } from "@workspace/api-client-react";
 import { PaywallCard } from "@/components/PaywallCard";
 
@@ -12,7 +13,7 @@ import { PaywallCard } from "@/components/PaywallCard";
  */
 export default function Subscribe({ planType }: { planType: "athlete" | "coach" }) {
   const { signOut } = useClerk();
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   const qc = useQueryClient();
   const updateProfile = useUpdateAthleteProfile();
   const [switching, setSwitching] = useState(false);
@@ -34,44 +35,48 @@ export default function Subscribe({ planType }: { planType: "athlete" | "coach" 
   }
 
   return (
-    <div className="min-h-screen bg-[#06070E] flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="flex items-center gap-2 mb-8">
-          <img src="/logo.svg" alt="Thrive" className="h-8 w-auto" />
+        <div className="flex flex-col items-center text-center mb-8">
+          <div className="w-14 h-14 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center mb-4">
+            <Footprints className="w-7 h-7 text-primary" />
+          </div>
+          <img src="/logo.svg" alt="Thrive" className="h-7 w-auto mb-5" />
+          <h1 className="text-2xl font-bold text-foreground mb-2">Activate your account</h1>
+          <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
+            Start your free trial to unlock your {planType === "coach" ? "coach portal" : "training dashboard"}.
+            You won't be charged until the trial ends.
+          </p>
         </div>
-
-        <h1 className="text-2xl font-bold text-white mb-1">Activate your account</h1>
-        <p className="text-slate-400 text-sm mb-6">
-          Start your free trial to unlock your {planType === "coach" ? "coach portal" : "training dashboard"}.
-          You won't be charged until the trial ends.
-        </p>
 
         <PaywallCard planType={planType} fromOnboarding />
 
-        <button
-          type="button"
-          onClick={changePlan}
-          disabled={switching}
-          className="mt-4 w-full text-center text-xs text-slate-400 hover:text-slate-200 disabled:opacity-50 transition-colors"
-        >
-          {switching ? "Switching…" : `Change plan — switch to ${otherPlan === "coach" ? "Coach" : "Athlete"}`}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => navigate("/onboarding")}
-          className="mt-3 w-full text-center text-xs text-slate-400 hover:text-slate-200 transition-colors"
-        >
-          Redo survey
-        </button>
-
-        <button
-          type="button"
-          onClick={() => signOut()}
-          className="mt-3 w-full text-center text-xs text-slate-500 hover:text-slate-300 transition-colors"
-        >
-          Sign out
-        </button>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+          <button
+            type="button"
+            onClick={changePlan}
+            disabled={switching}
+            className="hover:text-muted-foreground disabled:opacity-50 transition-colors"
+          >
+            {switching ? "Switching…" : `Switch to ${otherPlan === "coach" ? "Coach" : "Athlete"}`}
+          </button>
+          <span className="text-foreground">•</span>
+          <button
+            type="button"
+            onClick={() => navigate("/onboarding")}
+            className="hover:text-muted-foreground transition-colors"
+          >
+            Redo survey
+          </button>
+          <span className="text-foreground">•</span>
+          <button
+            type="button"
+            onClick={() => signOut()}
+            className="hover:text-muted-foreground transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
     </div>
   );

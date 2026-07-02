@@ -24,6 +24,15 @@ import CoachDashboard from "@/pages/coach-dashboard";
 import CoachPlans from "@/pages/coach-plans";
 import Team from "@/pages/team";
 import Login from "@/pages/login";
+import DemoLayout from "@/components/DemoLayout";
+import DemoDashboard from "@/pages/demo/dashboard";
+import DemoActivities from "@/pages/demo/activities";
+import DemoPlans from "@/pages/demo/plans";
+import DemoAlerts from "@/pages/demo/alerts";
+import DemoHistory from "@/pages/demo/history";
+import DemoCoach from "@/pages/demo/coach";
+import DemoTeam from "@/pages/demo/team";
+import DemoProfile from "@/pages/demo/profile";
 import NotFound from "@/pages/not-found";
 import { useGetAthleteProfile, setAuthTokenGetter } from "@workspace/api-client-react";
 import { useSubscription, refreshSubscription, SUBSCRIPTION_QUERY_KEY } from "@/hooks/use-subscription";
@@ -72,14 +81,14 @@ const clerkAppearance = {
     socialButtonsVariant: "blockButton" as const,
   },
   variables: {
-    colorPrimary: "#2A504C",
-    colorForeground: "#f8fafc",
-    colorMutedForeground: "#94a3b8",
+    colorPrimary: "#2E90D9",
+    colorForeground: "#1b2a24",
+    colorMutedForeground: "#5f6b63",
     colorDanger: "#ef4444",
-    colorBackground: "#06070E",
-    colorInput: "#0e1a19",
-    colorInputForeground: "#f8fafc",
-    colorNeutral: "#2A504C",
+    colorBackground: "#ffffff",
+    colorInput: "#ffffff",
+    colorInputForeground: "#1b2a24",
+    colorNeutral: "#1b2a24",
     fontFamily: "Inter, sans-serif",
     borderRadius: "0.75rem",
   },
@@ -90,29 +99,29 @@ const clerkAppearance = {
     footer: "!shadow-none !border-0 !bg-transparent !rounded-none !hidden",
     footerAction: "!hidden",
     footerActionLink: "!hidden",
-    headerTitle: "text-white font-bold",
-    headerSubtitle: "text-slate-400",
-    socialButtonsBlockButtonText: "text-slate-200 font-medium",
-    formFieldLabel: "text-slate-300 font-medium",
-    dividerText: "text-slate-600",
+    headerTitle: "text-foreground font-bold",
+    headerSubtitle: "text-muted-foreground",
+    socialButtonsBlockButtonText: "text-foreground font-medium",
+    formFieldLabel: "text-muted-foreground font-medium",
+    dividerText: "text-muted-foreground",
     identityPreviewEditButton: "text-primary",
-    formFieldSuccessText: "text-emerald-400",
-    alertText: "text-white",
+    formFieldSuccessText: "text-emerald-600",
+    alertText: "text-foreground",
     logoBox: "justify-center",
     logoImage: "rounded-xl",
-    socialButtonsBlockButton: "border-border bg-[#0e1a19]/50 hover:bg-[#0e1a19]",
+    socialButtonsBlockButton: "border-border bg-card/50 hover:bg-card",
     formButtonPrimary: "bg-primary hover:bg-primary/80 text-[#F5F5F5] font-semibold",
-    formFieldInput: "bg-[#0e1a19]/50 border-border text-white",
+    formFieldInput: "bg-card/50 border-border text-foreground",
     dividerLine: "bg-border",
     alert: "bg-red-500/10 border-red-500/20",
-    otpCodeFieldInput: "bg-[#0e1a19]/50 border-border text-white",
+    otpCodeFieldInput: "bg-card/50 border-border text-foreground",
     formFieldRow: "",
     main: "",
   },
 };
 
 const Spinner = () => (
-  <div className="min-h-screen bg-[#06070E] flex items-center justify-center">
+  <div className="min-h-screen bg-background flex items-center justify-center">
     <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
   </div>
 );
@@ -120,10 +129,10 @@ const Spinner = () => (
 function SignInPage() {
   const [, navigate] = useLocation();
   return (
-    <div className="min-h-screen bg-[#06070E] flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
       <button
         onClick={() => navigate("/")}
-        className="absolute top-6 left-6 flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+        className="absolute top-6 left-6 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft size={16} />
         Back
@@ -160,41 +169,41 @@ function SignUpPage() {
 
   if (!role) {
     return (
-      <div className="min-h-screen bg-[#06070E] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="w-full max-w-md">
           <div className="mb-6 flex items-center justify-between">
             <button
               onClick={() => navigate("/")}
-              className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft size={16} />
               Back
             </button>
-            <span className="text-sm text-slate-500">Select your role to continue</span>
+            <span className="text-sm text-muted-foreground">Select your role to continue</span>
           </div>
           <div className="flex justify-center mb-8">
             <img src="/logo.svg" alt="Thrive" className="h-14 w-auto" />
           </div>
 
-          <h1 className="text-2xl font-bold text-white text-center mb-2">I'm joining as a…</h1>
-          <p className="text-slate-400 text-sm text-center mb-8">Choose your role to get started. You can update this later.</p>
+          <h1 className="text-2xl font-bold text-foreground text-center mb-2">I'm joining as a…</h1>
+          <p className="text-muted-foreground text-sm text-center mb-8">Choose your role to get started. You can update this later.</p>
 
           <div className="space-y-3 mb-6">
             <button
               onClick={() => handleSelectRole("athlete")}
               className="w-full text-left rounded-2xl border border-primary/40 p-5 transition-all group hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10"
-              style={{ background: "linear-gradient(135deg, rgba(42,80,76,0.08) 0%, rgba(42,80,76,0.03) 100%)" }}
+              style={{ background: "linear-gradient(135deg, rgba(46,144,217,0.08) 0%, rgba(46,144,217,0.03) 100%)" }}
             >
               <div className="flex items-center gap-4">
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: "linear-gradient(135deg, rgba(42,80,76,0.25) 0%, rgba(61,122,116,0.15) 100%)", border: "1px solid rgba(42,80,76,0.4)" }}
+                  style={{ background: "linear-gradient(135deg, rgba(46,144,217,0.25) 0%, rgba(46,144,217,0.15) 100%)", border: "1px solid rgba(46,144,217,0.4)" }}
                 >
                   <User className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-white group-hover:text-primary transition-colors">Athlete</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Personal training log · AI coach · Injury alerts · Plans</p>
+                  <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Athlete</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Personal training log · AI coach · Injury alerts · Plans</p>
                 </div>
                 <svg className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
               </div>
@@ -202,21 +211,21 @@ function SignUpPage() {
 
             <button
               onClick={() => handleSelectRole("coach")}
-              className="w-full text-left rounded-2xl border border-[#F2D2CF]/40 p-5 transition-all group hover:border-[#F2D2CF]/60 hover:shadow-lg hover:shadow-[#F2D2CF]/10"
-              style={{ background: "linear-gradient(135deg, rgba(242,210,207,0.08) 0%, rgba(242,210,207,0.03) 100%)" }}
+              className="w-full text-left rounded-2xl border border-primary/40 p-5 transition-all group hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10"
+              style={{ background: "linear-gradient(135deg, rgba(46,144,217,0.08) 0%, rgba(46,144,217,0.03) 100%)" }}
             >
               <div className="flex items-center gap-4">
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: "linear-gradient(135deg, rgba(242,210,207,0.25) 0%, rgba(242,210,207,0.15) 100%)", border: "1px solid rgba(242,210,207,0.4)" }}
+                  style={{ background: "linear-gradient(135deg, rgba(46,144,217,0.25) 0%, rgba(46,144,217,0.15) 100%)", border: "1px solid rgba(46,144,217,0.4)" }}
                 >
-                  <Users className="w-5 h-5 text-[#F2D2CF]" />
+                  <Users className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-white group-hover:text-[#F2D2CF] transition-colors">Coach</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Team roster · Workload monitoring · Risk dashboard · Alerts</p>
+                  <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Coach</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Team roster · Workload monitoring · Risk dashboard · Alerts</p>
                 </div>
-                <svg className="w-4 h-4 text-[#F2D2CF]/60 group-hover:text-[#F2D2CF] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
+                <svg className="w-4 h-4 text-primary/60 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
               </div>
             </button>
           </div>
@@ -227,14 +236,14 @@ function SignUpPage() {
   }
 
   const roleLabel = role === "athlete" ? "Athlete" : "Coach";
-  const roleColor = role === "athlete" ? "text-primary border-primary/30 bg-primary/10" : "text-[#F2D2CF] border-[#F2D2CF]/30 bg-[#F2D2CF]/10";
+  const roleColor = role === "athlete" ? "text-primary border-primary/30 bg-primary/10" : "text-primary border-primary/30 bg-primary/10";
 
   return (
-    <div className="min-h-screen bg-[#06070E] flex flex-col items-center justify-center px-4 gap-5">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 gap-5">
       <div className="w-full max-w-3xl px-4">
         <button
           onClick={clearRole}
-          className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft size={16} />
           Back
@@ -247,7 +256,7 @@ function SignUpPage() {
         </div>
         <button
           onClick={clearRole}
-          className="text-xs text-slate-500 hover:text-slate-300 transition-colors underline underline-offset-2"
+          className="text-xs text-muted-foreground hover:text-muted-foreground transition-colors underline underline-offset-2"
         >
           Change
         </button>
@@ -274,6 +283,24 @@ function AthleteRouter() {
         <Route component={NotFound} />
       </Switch>
     </Layout>
+  );
+}
+
+function DemoRouter() {
+  return (
+    <DemoLayout>
+      <Switch>
+        <Route path="/demo" component={DemoDashboard} />
+        <Route path="/demo/activities" component={DemoActivities} />
+        <Route path="/demo/plans" component={DemoPlans} />
+        <Route path="/demo/alerts" component={DemoAlerts} />
+        <Route path="/demo/history" component={DemoHistory} />
+        <Route path="/demo/coach" component={DemoCoach} />
+        <Route path="/demo/team" component={DemoTeam} />
+        <Route path="/demo/profile" component={DemoProfile} />
+        <Route component={DemoDashboard} />
+      </Switch>
+    </DemoLayout>
   );
 }
 
@@ -461,6 +488,8 @@ function ClerkProviderWithRoutes() {
         <Route path="/sign-in/*" component={SignInPage} />
         <Route path="/sign-up" component={SignUpPage} />
         <Route path="/sign-up/*" component={SignUpPage} />
+        <Route path="/demo" component={DemoRouter} />
+        <Route path="/demo/*" component={DemoRouter} />
         <Route component={HomeContent} />
       </Switch>
     </ClerkProvider>

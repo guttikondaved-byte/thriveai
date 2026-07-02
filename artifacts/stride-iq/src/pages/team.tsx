@@ -385,14 +385,14 @@ export default function Team() {
         <div className={`flex items-center gap-3 rounded-xl px-5 py-3.5 border ${
           connectedCount === totalMembers
             ? "bg-[#FC4C02]/10 border-[#FC4C02]/30"
-            : "bg-slate-800/50 border-slate-700/60"
+            : "bg-muted/50 border-border/60"
         }`}>
           <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-4 h-4 shrink-0" alt="Strava" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-white">
+            <p className="text-sm font-semibold text-foreground">
               {connectedCount} / {totalMembers} athlete{totalMembers !== 1 ? "s" : ""} connected to Strava
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted-foreground">
               {connectedCount < totalMembers
                 ? "Athletes without Strava need to connect from their Activities page."
                 : "All athletes are syncing runs automatically."}

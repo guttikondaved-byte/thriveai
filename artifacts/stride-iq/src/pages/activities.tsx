@@ -24,12 +24,12 @@ const ACTIVITY_LABELS: Record<string, string> = {
 
 const ACTIVITY_COLORS: Record<string, string> = {
   easy_run: "text-[#10b981] bg-[#10b981]/10 border-[#10b981]/20", // Emerald
-  tempo_run: "text-[#A2AE98] bg-[#A2AE98]/10 border-[#A2AE98]/20",
-  interval: "text-[#F2D2CF] bg-[#F2D2CF]/10 border-[#F2D2CF]/20",
+  tempo_run: "text-accent bg-accent/10 border-accent/20",
+  interval: "text-primary bg-primary/10 border-primary/20",
   long_run: "text-[#f59e0b] bg-[#f59e0b]/10 border-[#f59e0b]/20", // Amber
   race: "text-[#ef4444] bg-[#ef4444]/10 border-[#ef4444]/20", // Red
   cross_training: "text-primary bg-primary/10 border-primary/20",
-  rest: "text-slate-400 bg-secondary border-border",
+  rest: "text-muted-foreground bg-secondary border-border",
 };
 
 const schema = z.object({
@@ -194,8 +194,8 @@ export default function Activities() {
           <div className="flex items-center gap-3">
             <CheckCircle2 size={18} className="text-[#FC4C02] shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-white">Strava connected</p>
-              <p className="text-xs text-slate-400">New runs sync automatically via webhook.</p>
+              <p className="text-sm font-semibold text-foreground">Strava connected</p>
+              <p className="text-xs text-muted-foreground">New runs sync automatically via webhook.</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

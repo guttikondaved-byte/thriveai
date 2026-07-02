@@ -1,0 +1,87 @@
+export const ACTIVITY_LABELS: Record<string, string> = {
+  easy_run: "Easy Run",
+  tempo_run: "Tempo",
+  interval: "Interval",
+  long_run: "Long Run",
+  race: "Race",
+};
+
+export const DEMO_DATA = {
+  name: "Jordan",
+  weeklyDistanceKm: 24.5,
+  weeklyRuns: 4,
+  avgPaceMinPerKm: 8.2,
+  trainingLoad: "moderate" as const,
+  currentPlanName: "Half Marathon Base Build — Week 6",
+  fitnessLevel: "Intermediate",
+  primaryGoal: "Complete a half marathon",
+  weeklyMileageGoal: 30,
+  restingHeartRate: 52,
+  hrv: 68,
+  pr5k: "22:14",
+  pr10k: "46:50",
+  prHalf: "1:47:32",
+  recentActivities: [
+    { id: 1, type: "tempo_run", activityDate: "2026-06-29", distanceKm: 6.2, durationMinutes: 42, avgHeartRate: 168 },
+    { id: 2, type: "easy_run", activityDate: "2026-06-27", distanceKm: 4.1, durationMinutes: 34, avgHeartRate: 148 },
+    { id: 3, type: "long_run", activityDate: "2026-06-25", distanceKm: 12.8, durationMinutes: 96, avgHeartRate: 159 },
+    { id: 4, type: "easy_run", activityDate: "2026-06-23", distanceKm: 3.4, durationMinutes: 29, avgHeartRate: 144 },
+    { id: 5, type: "interval", activityDate: "2026-06-20", distanceKm: 5.5, durationMinutes: 38, avgHeartRate: 174 },
+    { id: 6, type: "easy_run", activityDate: "2026-06-18", distanceKm: 4.8, durationMinutes: 39, avgHeartRate: 146 },
+    { id: 7, type: "long_run", activityDate: "2026-06-16", distanceKm: 11.3, durationMinutes: 88, avgHeartRate: 156 },
+    { id: 8, type: "easy_run", activityDate: "2026-06-13", distanceKm: 4.0, durationMinutes: 33, avgHeartRate: 149 },
+  ],
+  activeAlerts: [
+    {
+      id: 1,
+      riskLevel: "medium" as const,
+      bodyPart: "Right knee",
+      createdAt: "2026-06-29",
+      message: "Your weekly mileage increased 24% this week, above the recommended 20% threshold.",
+      recommendation: "Consider an easy or rest day before your next long run, and keep an eye on any knee discomfort.",
+    },
+  ],
+  dismissedAlerts: [
+    { id: 2, bodyPart: "Left calf", riskLevel: "low" as const, createdAt: "2026-06-15" },
+    { id: 3, bodyPart: "Right hip", riskLevel: "low" as const, createdAt: "2026-06-02" },
+  ],
+  weeklyPlan: [
+    { day: "Monday", label: "Rest", detail: "Full recovery day" },
+    { day: "Tuesday", label: "Easy Run", detail: "5 mi @ conversational pace" },
+    { day: "Wednesday", label: "Tempo Run", detail: "4 mi @ threshold pace" },
+    { day: "Thursday", label: "Easy Run", detail: "4 mi @ conversational pace" },
+    { day: "Friday", label: "Rest", detail: "Full recovery day" },
+    { day: "Saturday", label: "Long Run", detail: "9 mi @ easy pace" },
+    { day: "Sunday", label: "Cross Training", detail: "30 min cycling or swim" },
+  ],
+  weeklyHrv: [
+    { day: "Mon", value: 71 },
+    { day: "Tue", value: 68 },
+    { day: "Wed", value: 65 },
+    { day: "Thu", value: 69 },
+    { day: "Fri", value: 70 },
+    { day: "Sat", value: 62 },
+    { day: "Sun", value: 68 },
+  ],
+  coachConversation: [
+    { role: "user" as const, text: "My right knee has felt a little tight after my last two runs. Should I be worried?" },
+    {
+      role: "assistant" as const,
+      text: "Mild tightness after a mileage increase is common — your weekly volume is up 24% this week, which is above the usual 20% guideline. I'd suggest an easy or rest day next, ice for 10–15 minutes after runs, and some quad/IT band mobility work. If the tightness turns into sharp pain or doesn't ease within 48 hours, it's worth seeing a physio.",
+    },
+    { role: "user" as const, text: "Got it. Should I still do my long run this Saturday?" },
+    {
+      role: "assistant" as const,
+      text: "I'd keep it, but drop the pace to fully conversational and cut the distance by about 20% if the knee still feels off on Thursday. Listening to how it feels day-to-day matters more than sticking rigidly to the plan.",
+    },
+  ],
+  team: {
+    coachName: "Coach Alicia Chen",
+    teamName: "Riverside Running Club",
+    teammates: [
+      { name: "Sam R.", weeklyMiles: 28 },
+      { name: "Priya N.", weeklyMiles: 19 },
+      { name: "Marcus T.", weeklyMiles: 33 },
+    ],
+  },
+};

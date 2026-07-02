@@ -168,20 +168,20 @@ function AssistantMarkdown({ content }: { content: string }) {
             </a>
           ),
           code: ({ children }) => (
-            <code className="rounded bg-white/10 px-1.5 py-0.5 text-[0.85em] font-mono text-[#F5F5F5]">{children}</code>
+            <code className="rounded bg-muted px-1.5 py-0.5 text-[0.85em] font-mono text-foreground">{children}</code>
           ),
           pre: ({ children }) => (
-            <pre className="overflow-x-auto rounded-lg bg-black/30 border border-white/10 p-3 text-xs font-mono">{children}</pre>
+            <pre className="overflow-x-auto rounded-lg bg-black/30 border border-border p-3 text-xs font-mono">{children}</pre>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-2 border-primary/40 pl-3 italic text-slate-300">{children}</blockquote>
+            <blockquote className="border-l-2 border-primary/40 pl-3 italic text-muted-foreground">{children}</blockquote>
           ),
-          hr: () => <hr className="border-white/10" />,
+          hr: () => <hr className="border-border" />,
           table: ({ children }) => (
             <div className="overflow-x-auto"><table className="w-full text-xs border-collapse">{children}</table></div>
           ),
-          th: ({ children }) => <th className="border border-white/10 px-2 py-1 text-left font-semibold">{children}</th>,
-          td: ({ children }) => <td className="border border-white/10 px-2 py-1">{children}</td>,
+          th: ({ children }) => <th className="border border-border px-2 py-1 text-left font-semibold">{children}</th>,
+          td: ({ children }) => <td className="border border-border px-2 py-1">{children}</td>,
         }}
       >
         {content}
@@ -483,14 +483,14 @@ export default function CoachAI() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden bg-[#06070E]" data-testid="coach-page">
+    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden bg-background" data-testid="coach-page">
       {/* Conversation sidebar — hidden on mobile; new chats start from the empty state */}
-      <div className="hidden md:flex w-56 border-r border-white/10 flex-col shrink-0 bg-[#06070E]">
-        <div className="p-4 border-b border-white/10">
+      <div className="hidden md:flex w-56 border-r border-border flex-col shrink-0 bg-background">
+        <div className="p-4 border-b border-border">
           <div className="flex items-center gap-2 mb-3">
             <Bot className="w-4 h-4 text-primary" />
-            <span className="text-sm font-semibold text-white">AveraAI</span>
-            <span className="text-xs text-slate-400">Coach Advisor</span>
+            <span className="text-sm font-semibold text-foreground">AveraAI</span>
+            <span className="text-xs text-muted-foreground">Coach Advisor</span>
           </div>
           <Button
             onClick={startNewConversation}
@@ -506,10 +506,10 @@ export default function CoachAI() {
         <div className="flex-1 overflow-auto py-2">
           {convsLoading ? (
             <div className="px-3 space-y-1.5">
-              {[...Array(4)].map((_, i) => <div key={i} className="h-9 bg-white/5 rounded animate-pulse" />)}
+              {[...Array(4)].map((_, i) => <div key={i} className="h-9 bg-muted rounded animate-pulse" />)}
             </div>
           ) : !conversations?.length ? (
-            <p className="text-xs text-slate-500 px-4 py-3">No conversations yet</p>
+            <p className="text-xs text-muted-foreground px-4 py-3">No conversations yet</p>
           ) : (
             conversations.map(conv => (
               <div key={conv.id} className="group relative mx-1">
@@ -519,16 +519,16 @@ export default function CoachAI() {
                   className={`w-full text-left px-3 py-2 pr-8 text-xs rounded transition-colors ${
                     selectedId === conv.id
                       ? "bg-primary/15 text-primary"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   }`}
                 >
                   <div className="font-medium truncate">{conv.title}</div>
-                  <div className="text-slate-500 mt-0.5">{format(new Date(conv.createdAt), "MMM d")}</div>
+                  <div className="text-muted-foreground mt-0.5">{format(new Date(conv.createdAt), "MMM d")}</div>
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(conv.id); }}
                   aria-label="Delete conversation"
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-all"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 transition-all"
                 >
                   <Trash2 size={12} />
                 </button>
@@ -545,8 +545,8 @@ export default function CoachAI() {
             <div className="w-14 h-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mb-5">
               <Bot className="w-7 h-7 text-primary" />
             </div>
-            <h2 className="text-xl font-semibold text-white mb-2">AveraAI — Coaching Advisor</h2>
-            <p className="text-sm text-slate-400 text-center max-w-sm mb-6">
+            <h2 className="text-xl font-semibold text-foreground mb-2">AveraAI — Coaching Advisor</h2>
+            <p className="text-sm text-muted-foreground text-center max-w-sm mb-6">
               Ask about athlete load management, team injury risk, training periodization, or how to approach an athlete concern.
             </p>
             <Button
@@ -564,7 +564,7 @@ export default function CoachAI() {
             <div ref={messagesRef} onScroll={handleMessagesScroll} className={`flex-1 p-6 space-y-4 ${streamMessages.length === 0 ? "overflow-hidden" : "overflow-auto"}`} data-testid="messages-container">
               {streamMessages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full">
-                  <p className="text-sm text-slate-500">Ask AveraAI anything about your team or athletes.</p>
+                  <p className="text-sm text-muted-foreground">Ask AveraAI anything about your team or athletes.</p>
                 </div>
               )}
               {streamMessages.map((msg, i) => (
@@ -608,7 +608,7 @@ export default function CoachAI() {
             </div>
 
             {/* Input */}
-            <div className="border-t border-white/10 p-4 bg-[#06070E]">
+            <div className="border-t border-border p-4 bg-background">
               <div className="flex gap-2">
                 <Input
                   value={input}
@@ -617,7 +617,7 @@ export default function CoachAI() {
                   placeholder="Ask AveraAI about your team or athletes..."
                   disabled={isStreaming}
                   data-testid="input-message"
-                  className="flex-1 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus-visible:ring-primary/50"
+                  className="flex-1 bg-muted border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/50"
                 />
                 <Button
                   onClick={sendMessage}
@@ -643,7 +643,7 @@ export default function CoachAI() {
               <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteId(null)} className="text-muted-foreground">
                 Cancel
               </Button>
-              <Button size="sm" onClick={handleDeleteConfirm} className="bg-red-500 hover:bg-red-600 text-white">
+              <Button size="sm" onClick={handleDeleteConfirm} className="bg-red-500 hover:bg-red-600 text-foreground">
                 Delete
               </Button>
             </div>

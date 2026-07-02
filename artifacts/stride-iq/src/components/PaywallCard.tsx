@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, ShieldCheck, Loader2 } from "lucide-react";
+import { ShieldCheck, Sparkles, Loader2, ChevronRight } from "lucide-react";
 import { SUBSCRIPTION_QUERY_KEY } from "@/hooks/use-subscription";
 
 const TRIAL_DAYS = 3;
@@ -101,58 +101,73 @@ export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-primary/30 bg-primary/5 p-6">
-      <div className="flex items-center gap-2 mb-1">
-        <ShieldCheck className="w-5 h-5 text-primary" />
-        <p className="text-sm font-semibold text-primary">
-          Start your {TRIAL_DAYS}-day free trial
-        </p>
-      </div>
-      <p className="text-xs text-slate-400 mb-5">
-        No card required. Free for {TRIAL_DAYS} days, or subscribe now to skip the trial.
-      </p>
-
-      <div className="rounded-xl bg-[#0e1a19]/60 border border-border px-4 py-3 mb-4">
+    <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+      <div className="rounded-xl bg-muted border border-border px-4 py-3 mb-5">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-white">{copy.title} plan</p>
-          <p className="text-sm font-bold text-white whitespace-nowrap">{copy.price}</p>
+          <p className="text-sm font-semibold text-foreground">{copy.title} plan</p>
+          <p className="text-sm font-bold text-foreground whitespace-nowrap">{copy.price}</p>
         </div>
-        <p className="text-xs text-slate-400 mt-1">{copy.sub}</p>
+        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{copy.sub}</p>
       </div>
 
-      {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
+      {error && (
+        <div className="rounded-lg bg-destructive/10 border border-destructive/30 px-3 py-2 mb-4">
+          <p className="text-destructive text-xs leading-relaxed">{error}</p>
+        </div>
+      )}
 
-      <button
-        type="button"
-        onClick={startTrial}
-        disabled={trialLoading}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-[#F5F5F5] hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
-      >
-        {trialLoading ? (
-          <>
-            <Loader2 size={16} className="animate-spin" /> Starting…
-          </>
-        ) : (
-          <>
-            Start free trial <Check size={16} />
-          </>
-        )}
-      </button>
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={startTrial}
+          disabled={trialLoading}
+          className="w-full flex items-center gap-4 rounded-xl border-2 border-primary bg-primary/10 px-4 py-4 text-left hover:bg-primary/15 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+        >
+          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-sm font-bold text-foreground">Start free for {TRIAL_DAYS} days</p>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-primary bg-primary/15 px-2 py-0.5 rounded-full">
+                No card
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">Full access today, cancel any time.</p>
+          </div>
+          {trialLoading ? (
+            <Loader2 size={18} className="animate-spin text-primary shrink-0" />
+          ) : (
+            <ChevronRight size={18} className="text-primary shrink-0" />
+          )}
+        </button>
 
-      <button
-        type="button"
-        onClick={subscribe}
-        disabled={subLoading}
-        className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-primary/40 bg-transparent px-4 py-3 text-sm font-semibold text-primary hover:bg-primary/10 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-      >
-        {subLoading ? (
-          <>
-            <Loader2 size={16} className="animate-spin" /> Opening checkout…
-          </>
-        ) : (
-          "Subscribe now"
-        )}
-      </button>
+        <div className="flex items-center gap-3 py-0.5">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">or</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        <button
+          type="button"
+          onClick={subscribe}
+          disabled={subLoading}
+          className="w-full flex items-center gap-4 rounded-xl border border-border bg-transparent px-4 py-4 text-left hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        >
+          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+            <Sparkles className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-foreground">Subscribe now</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Skip the trial, {copy.price}</p>
+          </div>
+          {subLoading ? (
+            <Loader2 size={18} className="animate-spin text-muted-foreground shrink-0" />
+          ) : (
+            <ChevronRight size={18} className="text-muted-foreground shrink-0" />
+          )}
+        </button>
+      </div>
     </div>
   );
 }

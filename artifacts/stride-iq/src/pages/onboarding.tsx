@@ -86,7 +86,7 @@ const DATA_SOURCES = [
     subtitle: "Log runs by hand",
     desc: "Enter distance, duration, heart rate, and effort directly — no GPS required.",
     badge: "Always available",
-    badgeColor: "bg-transparent text-slate-400 border-slate-600/40",
+    badgeColor: "bg-transparent text-muted-foreground border-border/40",
   },
 ];
 
@@ -117,7 +117,7 @@ function StepIndicator({ step, steps }: { step: number; steps: string[] }) {
 }
 
 const inputCls = (error?: string) =>
-  `w-full bg-[#0e1a19]/80 border rounded-lg px-4 py-2.5 text-white placeholder-[#A2AE98]/40 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition ${
+  `w-full bg-card/80 border rounded-lg px-4 py-2.5 text-foreground placeholder-muted-foreground/60 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition ${
     error ? "border-red-500" : "border-border focus:border-primary"
   }`;
 
@@ -263,12 +263,12 @@ export default function Onboarding() {
   const isLastStep = step === steps.length - 1;
 
   return (
-    <div className="min-h-screen bg-[#06070E] flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-2xl relative pt-10">
         <button
           type="button"
           onClick={handleBack}
-          className="absolute left-0 top-0 flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
+          className="absolute left-0 top-0 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft size={16} /> Back
         </button>
@@ -284,8 +284,8 @@ export default function Onboarding() {
         {step === 0 && (
           <div>
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-white mb-1">Welcome to Thrive</h1>
-              <p className="text-slate-400">Tell us how you'll be using the platform.</p>
+              <h1 className="text-3xl font-bold text-foreground mb-1">Welcome to Thrive</h1>
+              <p className="text-muted-foreground">Tell us how you'll be using the platform.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
@@ -312,7 +312,7 @@ export default function Onboarding() {
                     className={`relative text-left rounded-xl border p-6 transition-all duration-200
                       ${selected
                         ? "border-primary bg-primary/5 shadow-sm scale-[1.01]"
-                        : "border-border bg-[#0e1a19]/50 hover:border-primary/40 hover:bg-[#0e1a19]"}`}
+                        : "border-border bg-card/50 hover:border-primary/40 hover:bg-card"}`}
                   >
                     {selected && (
                       <div className="absolute top-4 right-4 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
@@ -320,15 +320,15 @@ export default function Onboarding() {
                       </div>
                     )}
                     <div className="flex items-center gap-4 mb-4">
-                      <div className="w-10 h-10 rounded-lg bg-[#0e1a19] border border-border flex items-center justify-center shrink-0">
-                        <role.Icon className="w-5 h-5 text-slate-400" />
+                      <div className="w-10 h-10 rounded-lg bg-card border border-border flex items-center justify-center shrink-0">
+                        <role.Icon className="w-5 h-5 text-muted-foreground" />
                       </div>
-                      <h2 className="text-lg font-medium text-white">{role.label}</h2>
+                      <h2 className="text-lg font-medium text-foreground">{role.label}</h2>
                     </div>
-                    <p className="text-slate-400 text-sm leading-relaxed mb-4">{role.desc}</p>
+                    <p className="text-muted-foreground text-sm leading-relaxed mb-4">{role.desc}</p>
                     <ul className="space-y-1.5">
                       {role.features.map(f => (
-                        <li key={f} className="flex items-center gap-2 text-sm text-slate-300">
+                        <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
                           <svg className="w-3.5 h-3.5 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
@@ -340,7 +340,7 @@ export default function Onboarding() {
                 );
               })}
             </div>
-            {errors.role && <p className="text-red-400 text-xs mt-3 text-center">{errors.role}</p>}
+            {errors.role && <p className="text-red-600 text-xs mt-3 text-center">{errors.role}</p>}
           </div>
         )}
 
@@ -348,89 +348,89 @@ export default function Onboarding() {
         {step === 1 && form.role === "athlete" && (
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold text-white mb-1">Tell us about yourself</h1>
-              <p className="text-slate-400">We'll personalise your training and AI coaching based on this.</p>
+              <h1 className="text-3xl font-bold text-foreground mb-1">Tell us about yourself</h1>
+              <p className="text-muted-foreground">We'll personalise your training and AI coaching based on this.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Full Name <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Full Name <span className="text-red-600">*</span></label>
                 <input
                   value={form.name}
                   onChange={e => set("name", e.target.value)}
                   placeholder="Alex Johnson"
                   className={inputCls(errors.name)}
                 />
-                {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
+                {errors.name && <p className="text-red-600 text-xs mt-1">{errors.name}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Age <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Age <span className="text-red-600">*</span></label>
                 <input
                   type="number" value={form.age} onChange={e => set("age", e.target.value)}
                   placeholder="17"
                   className={inputCls(errors.age)}
                 />
-                {errors.age && <p className="text-red-400 text-xs mt-1">{errors.age}</p>}
+                {errors.age && <p className="text-red-600 text-xs mt-1">{errors.age}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Weekly Distance Goal (mi) <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Weekly Distance Goal (mi) <span className="text-red-600">*</span></label>
                 <input
                   type="number" step="0.1" value={form.weeklyMileageGoal} onChange={e => set("weeklyMileageGoal", e.target.value)}
                   placeholder="50"
                   className={inputCls(errors.weeklyMileageGoal)}
                 />
-                {errors.weeklyMileageGoal && <p className="text-red-400 text-xs mt-1">{errors.weeklyMileageGoal}</p>}
+                {errors.weeklyMileageGoal && <p className="text-red-600 text-xs mt-1">{errors.weeklyMileageGoal}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Country <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Country <span className="text-red-600">*</span></label>
                 <input
                   value={form.country} onChange={e => set("country", e.target.value)}
                   placeholder="United States"
                   className={inputCls(errors.country)}
                 />
-                {errors.country && <p className="text-red-400 text-xs mt-1">{errors.country}</p>}
+                {errors.country && <p className="text-red-600 text-xs mt-1">{errors.country}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">State / Region <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">State / Region <span className="text-red-600">*</span></label>
                 <input
                   value={form.state} onChange={e => set("state", e.target.value)}
                   placeholder="California"
                   className={inputCls(errors.state)}
                 />
-                {errors.state && <p className="text-red-400 text-xs mt-1">{errors.state}</p>}
+                {errors.state && <p className="text-red-600 text-xs mt-1">{errors.state}</p>}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Fitness Level</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-2">Fitness Level</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {FITNESS_LEVELS.map(fl => (
                   <button key={fl.value} onClick={() => set("fitnessLevel", fl.value)}
                     className={`text-left p-3 rounded-xl border-2 transition-all
                       ${form.fitnessLevel === fl.value
                         ? "border-primary bg-primary/10"
-                        : "border-border hover:border-primary/50 bg-[#0e1a19]/40"}`}
+                        : "border-border hover:border-primary/50 bg-card/40"}`}
                   >
-                    <p className={`text-sm font-semibold ${form.fitnessLevel === fl.value ? "text-primary" : "text-white"}`}>{fl.label}</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">{fl.desc}</p>
+                    <p className={`text-sm font-semibold ${form.fitnessLevel === fl.value ? "text-primary" : "text-foreground"}`}>{fl.label}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{fl.desc}</p>
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Primary Goal <span className="text-red-400">*</span></label>
+              <label className="block text-sm font-medium text-muted-foreground mb-2">Primary Goal <span className="text-red-600">*</span></label>
               <div className="flex flex-wrap gap-2 mb-2.5">
                 {ATHLETE_GOALS.map(g => (
                   <button key={g} onClick={() => set("primaryGoal", g)}
                     className={`text-sm px-3 py-1.5 rounded-full border transition-all
                       ${form.primaryGoal === g
                         ? "border-primary bg-primary/15 text-primary"
-                        : "border-border text-muted-foreground hover:border-primary/50 hover:text-slate-200"}`}
+                        : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"}`}
                   >
                     {g}
                   </button>
@@ -442,7 +442,7 @@ export default function Onboarding() {
                 placeholder="Or type your own goal…"
                 className={inputCls(errors.primaryGoal)}
               />
-              {errors.primaryGoal && <p className="text-red-400 text-xs mt-1">{errors.primaryGoal}</p>}
+              {errors.primaryGoal && <p className="text-red-600 text-xs mt-1">{errors.primaryGoal}</p>}
             </div>
           </div>
         )}
@@ -451,98 +451,98 @@ export default function Onboarding() {
         {step === 1 && form.role === "coach" && (
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold text-white mb-1">Tell us about your coaching</h1>
-              <p className="text-slate-400">We'll customise your coach portal and team tools.</p>
+              <h1 className="text-3xl font-bold text-foreground mb-1">Tell us about your coaching</h1>
+              <p className="text-muted-foreground">We'll customise your coach portal and team tools.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Your Name <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Your Name <span className="text-red-600">*</span></label>
                 <input
                   value={form.name}
                   onChange={e => set("name", e.target.value)}
                   placeholder="Coach Taylor"
                   className={inputCls(errors.name)}
                 />
-                {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
+                {errors.name && <p className="text-red-600 text-xs mt-1">{errors.name}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Team / Club Name <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Team / Club Name <span className="text-red-600">*</span></label>
                 <input
                   value={form.teamName}
                   onChange={e => set("teamName", e.target.value)}
                   placeholder="Westview Track & Field"
                   className={inputCls(errors.teamName)}
                 />
-                {errors.teamName && <p className="text-red-400 text-xs mt-1">{errors.teamName}</p>}
+                {errors.teamName && <p className="text-red-600 text-xs mt-1">{errors.teamName}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Number of Athletes <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Number of Athletes <span className="text-red-600">*</span></label>
                 <input
                   type="number" min="1" value={form.athleteCount}
                   onChange={e => set("athleteCount", e.target.value)}
                   placeholder="24"
                   className={inputCls(errors.athleteCount)}
                 />
-                {errors.athleteCount && <p className="text-red-400 text-xs mt-1">{errors.athleteCount}</p>}
+                {errors.athleteCount && <p className="text-red-600 text-xs mt-1">{errors.athleteCount}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Country <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Country <span className="text-red-600">*</span></label>
                 <input
                   value={form.country} onChange={e => set("country", e.target.value)}
                   placeholder="United States"
                   className={inputCls(errors.country)}
                 />
-                {errors.country && <p className="text-red-400 text-xs mt-1">{errors.country}</p>}
+                {errors.country && <p className="text-red-600 text-xs mt-1">{errors.country}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">State / Region <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">State / Region <span className="text-red-600">*</span></label>
                 <input
                   value={form.state} onChange={e => set("state", e.target.value)}
                   placeholder="California"
                   className={inputCls(errors.state)}
                 />
-                {errors.state && <p className="text-red-400 text-xs mt-1">{errors.state}</p>}
+                {errors.state && <p className="text-red-600 text-xs mt-1">{errors.state}</p>}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Coaching Experience <span className="text-red-400">*</span></label>
+              <label className="block text-sm font-medium text-muted-foreground mb-2">Coaching Experience <span className="text-red-600">*</span></label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {COACHING_EXP.map(exp => (
                   <button key={exp.value} onClick={() => set("coachingExp", exp.value)}
                     className={`text-left p-3 rounded-xl border-2 transition-all
                       ${form.coachingExp === exp.value
                         ? "border-primary bg-primary/10"
-                        : "border-border hover:border-primary/50 bg-[#0e1a19]/40"}`}
+                        : "border-border hover:border-primary/50 bg-card/40"}`}
                   >
-                    <p className={`text-sm font-semibold ${form.coachingExp === exp.value ? "text-primary" : "text-white"}`}>{exp.label}</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">{exp.desc}</p>
+                    <p className={`text-sm font-semibold ${form.coachingExp === exp.value ? "text-primary" : "text-foreground"}`}>{exp.label}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{exp.desc}</p>
                   </button>
                 ))}
               </div>
-              {errors.coachingExp && <p className="text-red-400 text-xs mt-2">{errors.coachingExp}</p>}
+              {errors.coachingExp && <p className="text-red-600 text-xs mt-2">{errors.coachingExp}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Coaching Focus <span className="text-red-400">*</span></label>
+              <label className="block text-sm font-medium text-muted-foreground mb-2">Coaching Focus <span className="text-red-600">*</span></label>
               <div className="flex flex-wrap gap-2">
                 {COACH_FOCUSES.map(f => (
                   <button key={f} onClick={() => set("coachFocus", form.coachFocus === f ? "" : f)}
                     className={`text-sm px-3 py-1.5 rounded-full border transition-all
                       ${form.coachFocus === f
                         ? "border-primary bg-primary/15 text-primary"
-                        : "border-border text-muted-foreground hover:border-primary/50 hover:text-slate-200"}`}
+                        : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"}`}
                   >
                     {f}
                   </button>
                 ))}
               </div>
-              {errors.coachFocus && <p className="text-red-400 text-xs mt-2">{errors.coachFocus}</p>}
+              {errors.coachFocus && <p className="text-red-600 text-xs mt-2">{errors.coachFocus}</p>}
             </div>
           </div>
         )}
@@ -551,8 +551,8 @@ export default function Onboarding() {
         {step === 2 && form.role === "athlete" && (
           <div>
             <div className="mb-7">
-              <h1 className="text-3xl font-bold text-white mb-1">How will you import runs?</h1>
-              <p className="text-slate-400">You can always change this later or use both methods.</p>
+              <h1 className="text-3xl font-bold text-foreground mb-1">How will you import runs?</h1>
+              <p className="text-muted-foreground">You can always change this later or use both methods.</p>
             </div>
 
             <div className="space-y-3 mb-6">
@@ -563,20 +563,20 @@ export default function Onboarding() {
                     className={`w-full text-left rounded-xl border-2 p-5 transition-all
                       ${selected
                         ? "border-primary bg-primary/10"
-                        : "border-border bg-[#0e1a19]/30 hover:border-primary/50"}`}
+                        : "border-border bg-card/30 hover:border-primary/50"}`}
                   >
                     <div className="flex items-start gap-4">
-                      <src.Icon className="w-6 h-6 text-slate-300 shrink-0 mt-0.5" />
+                      <src.Icon className="w-6 h-6 text-muted-foreground shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <span className="font-semibold text-white">{src.title}</span>
+                          <span className="font-semibold text-foreground">{src.title}</span>
                           <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${src.badgeColor}`}>{src.badge}</span>
                         </div>
-                        <p className="text-xs text-slate-500 mb-1">{src.subtitle}</p>
-                        <p className="text-sm text-slate-400 leading-relaxed">{src.desc}</p>
+                        <p className="text-xs text-muted-foreground mb-1">{src.subtitle}</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{src.desc}</p>
                       </div>
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all
-                        ${selected ? "border-primary bg-primary" : "border-slate-600"}`}>
+                        ${selected ? "border-primary bg-primary" : "border-border"}`}>
                         {selected && <Check size={11} className="text-[#F5F5F5]" />}
                       </div>
                     </div>
@@ -585,7 +585,7 @@ export default function Onboarding() {
               })}
             </div>
 
-            <p className="text-xs text-slate-600 mt-4 text-center">
+            <p className="text-xs text-muted-foreground mt-4 text-center">
               You can skip this — connect Strava or import files from the Activities page any time.
             </p>
           </div>
@@ -595,8 +595,8 @@ export default function Onboarding() {
         {step === 2 && form.role === "coach" && (
           <div>
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-white mb-1">You're all set, Coach!</h1>
-              <p className="text-slate-400">Here's what's waiting for you in the portal.</p>
+              <h1 className="text-3xl font-bold text-foreground mb-1">You're all set, Coach!</h1>
+              <p className="text-muted-foreground">Here's what's waiting for you in the portal.</p>
             </div>
 
             <div className="space-y-3 mb-8">
@@ -606,19 +606,19 @@ export default function Onboarding() {
                 { Icon: Bot, title: "AveraAI Assistant", desc: "Ask AveraAI for advice on periodisation, athlete management, and recovery decisions." },
                 { Icon: TrendingUp, title: "Load Analytics", desc: "Track team-wide training load trends week by week to keep everyone healthy." },
               ].map(({ Icon, title, desc }) => (
-                <div key={title} className="flex gap-4 rounded-xl bg-[#0e1a19]/40 border border-border p-4">
-                  <Icon className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
+                <div key={title} className="flex gap-4 rounded-xl bg-card/40 border border-border p-4">
+                  <Icon className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-semibold text-white mb-0.5">{title}</p>
-                    <p className="text-sm text-slate-400 leading-relaxed">{desc}</p>
+                    <p className="text-sm font-semibold text-foreground mb-0.5">{title}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="rounded-xl bg-[#F2D2CF]/10 border border-[#F2D2CF]/30 px-5 py-4">
-              <p className="text-sm text-[#F2D2CF] font-medium mb-1">Your invite code is ready</p>
-              <p className="text-xs text-slate-400 leading-relaxed">
+            <div className="rounded-xl bg-primary/10 border border-primary/30 px-5 py-4">
+              <p className="text-sm text-primary font-medium mb-1">Your invite code is ready</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 Once you're in the portal, go to Athlete Roster to create your team and get an invite code to share with your athletes.
               </p>
             </div>

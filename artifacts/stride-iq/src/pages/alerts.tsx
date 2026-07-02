@@ -47,7 +47,7 @@ export default function Alerts() {
         <>
           {active.length === 0 && dismissed.length === 0 && (
             <div className="bg-card border border-border rounded-lg py-16 text-center">
-              <Shield className="w-8 h-8 text-emerald-400 mx-auto mb-3" />
+              <Shield className="w-8 h-8 text-emerald-600 mx-auto mb-3" />
               <p className="text-sm font-medium text-foreground mb-1">All clear</p>
               <p className="text-xs text-muted-foreground">No injury risks detected. Keep training smart.</p>
             </div>

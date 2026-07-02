@@ -225,9 +225,9 @@ export default function AthleteProfileModal({ teamId, userId, onClose }: Props) 
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold text-foreground capitalize">{a.bodyPart}</span>
                         <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                          a.riskLevel === "high" ? "bg-red-500/15 text-red-400" :
-                          a.riskLevel === "medium" ? "bg-amber-500/15 text-amber-400" :
-                          "bg-yellow-500/15 text-yellow-400"
+                          a.riskLevel === "high" ? "bg-red-500/15 text-red-600" :
+                          a.riskLevel === "medium" ? "bg-amber-500/15 text-amber-600" :
+                          "bg-yellow-500/15 text-yellow-600"
                         }`}>{a.riskLevel}</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">{a.message}</p>
