@@ -7,6 +7,7 @@ import {
   useDeleteOpenaiConversation,
   getListOpenaiConversationsQueryKey,
   getGetOpenaiConversationQueryKey,
+  getListTrainingPlansQueryKey,
 } from "@workspace/api-client-react";
 import { useGetAthleteProfile } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,6 +15,7 @@ import { Plus, Send, Bot, User, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { format } from "date-fns";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -344,6 +346,7 @@ export default function CoachAI() {
       let buffer = "";
       let fullContent = "";
       let newTitle: string | null = null;
+      let planCreated = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -357,6 +360,7 @@ export default function CoachAI() {
               const data = JSON.parse(line.slice(6));
               if (data.done) {
                 if (typeof data.title === "string") newTitle = data.title;
+                if (data.planCreated) planCreated = true;
               } else if (data.content) {
                 fullContent += data.content;
                 setStreamMessages(prev => {
@@ -388,6 +392,18 @@ export default function CoachAI() {
         });
       }
       qc.invalidateQueries({ queryKey: getListOpenaiConversationsQueryKey() });
+      if (planCreated) {
+        qc.invalidateQueries({ queryKey: getListTrainingPlansQueryKey() });
+        toast({
+          title: "Training plan added",
+          description: "AveraAI saved it to your Training Plans tab.",
+          action: (
+            <ToastAction altText="View plans" onClick={() => navigate("/plans")}>
+              View
+            </ToastAction>
+          ),
+        });
+      }
     } catch {
       toast({ title: "Error", description: "Failed to send message", variant: "destructive" });
       setStreamMessages(prev => prev.slice(0, -1));

@@ -36,6 +36,148 @@ const openaiClient = apiKey
   ? new OpenAI({ apiKey, baseURL: "https://open.bigmodel.cn/api/paas/v4/" })
   : null;
 
+// Model is overridable via env so you can point coaching/plan generation at a
+// stronger model (e.g. GLM_COACH_MODEL=glm-4.6) WITHOUT a code change — but the
+// default stays on glm-4-flash, the model already proven to work on this account.
+// (glm-4.6 is only served on some GLM plans; opt in via env once you've confirmed
+// your key has access.) Titles always use the cheap/fast model.
+const COACH_MODEL = process.env.GLM_COACH_MODEL ?? "glm-4-flash";
+const TITLE_MODEL = process.env.GLM_TITLE_MODEL ?? "glm-4-flash";
+// Slightly warm so coaching reads human, not templated — but low enough to keep
+// the numbers/advice grounded in the data we feed it.
+const COACH_TEMPERATURE = 0.6;
+
+// ── Training metrics ─────────────────────────────────────────────────────────
+// Turns raw activities into the numbers a coach actually reasons about, so the
+// model isn't left to eyeball a list of rows. NOTE: distanceKm is stored but the
+// app treats the value as MILES throughout (see .toFixed(1)+"mi" usages), so we
+// follow that same convention here.
+
+type ActivityRow = typeof activitiesTable.$inferSelect;
+
+type TrainingMetrics = {
+  hasData: boolean;
+  runCount: number;
+  weeklyMiles: number[]; // last 4 weeks, oldest → newest ([wk-3, wk-2, wk-1, current])
+  wowChangePct: number | null; // week-over-week % change, current vs previous
+  acwr: number | null; // acute (7d) : chronic (28d avg) workload ratio
+  avgPaceMinPerMile: number | null;
+  longestRunMiles: number;
+  daysSinceLastRun: number | null;
+  flags: string[];
+};
+
+function startOfDay(d: Date): Date {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function formatPace(minPerMile: number): string {
+  const m = Math.floor(minPerMile);
+  const s = Math.round((minPerMile - m) * 60);
+  const ss = s === 60 ? "00" : String(s).padStart(2, "0");
+  return `${s === 60 ? m + 1 : m}:${ss}/mi`;
+}
+
+function computeTrainingMetrics(activities: ActivityRow[]): TrainingMetrics {
+  const empty: TrainingMetrics = {
+    hasData: false, runCount: 0, weeklyMiles: [0, 0, 0, 0], wowChangePct: null,
+    acwr: null, avgPaceMinPerMile: null, longestRunMiles: 0, daysSinceLastRun: null, flags: [],
+  };
+
+  const runs = activities.filter((a) => a.activityDate && Number(a.distanceKm ?? 0) > 0);
+  if (runs.length === 0) return empty;
+
+  const today = startOfDay(new Date());
+  const dayMs = 86_400_000;
+
+  const weekMiles = [0, 0, 0, 0]; // week 0 = last 7 days, week 1 = 8–14 days ago, …
+  let longestRunMiles = 0;
+  let paceNum = 0; // distance-weighted pace accumulator
+  let paceDenomMiles = 0;
+  let mostRecent: Date | null = null;
+
+  for (const a of runs) {
+    const d = startOfDay(new Date(a.activityDate as unknown as string));
+    const miles = Number(a.distanceKm ?? 0);
+    const mins = a.durationMinutes != null ? Number(a.durationMinutes) : null;
+    const daysAgo = Math.floor((today.getTime() - d.getTime()) / dayMs);
+
+    if (daysAgo >= 0 && daysAgo < 28) {
+      const wk = Math.floor(daysAgo / 7);
+      if (wk >= 0 && wk < 4) weekMiles[wk] += miles;
+    }
+    if (miles > longestRunMiles) longestRunMiles = miles;
+    if (mins && mins > 0 && miles > 0) {
+      paceNum += (mins / miles) * miles; // = mins; weighted by miles below
+      paceDenomMiles += miles;
+    }
+    if (!mostRecent || d.getTime() > mostRecent.getTime()) mostRecent = d;
+  }
+
+  const weeklyMiles = [weekMiles[3], weekMiles[2], weekMiles[1], weekMiles[0]].map((n) => Number(n.toFixed(1)));
+  const current = weekMiles[0];
+  const previous = weekMiles[1];
+  const wowChangePct = previous > 0 ? Math.round(((current - previous) / previous) * 100) : null;
+
+  const acute = weekMiles[0];
+  const chronic = (weekMiles[0] + weekMiles[1] + weekMiles[2] + weekMiles[3]) / 4;
+  const acwr = chronic > 0 ? Number((acute / chronic).toFixed(2)) : null;
+
+  const avgPaceMinPerMile = paceDenomMiles > 0 ? Number((paceNum / paceDenomMiles).toFixed(2)) : null;
+  const daysSinceLastRun = mostRecent ? Math.floor((today.getTime() - mostRecent.getTime()) / dayMs) : null;
+
+  const flags: string[] = [];
+  if (wowChangePct != null && wowChangePct > 10) {
+    flags.push(`Weekly mileage jumped ${wowChangePct}% (safe progression is ~10%/week) — elevated injury risk.`);
+  }
+  if (acwr != null && acwr > 1.5) {
+    flags.push(`ACWR is ${acwr} (>1.5) — high acute load vs recent baseline, back off this week.`);
+  } else if (acwr != null && acwr < 0.8 && chronic > 0) {
+    flags.push(`ACWR is ${acwr} (<0.8) — training load has dropped, room to build back gradually.`);
+  }
+  if (daysSinceLastRun != null && daysSinceLastRun >= 10) {
+    flags.push(`No logged run in ${daysSinceLastRun} days — ease back in rather than resuming at previous volume.`);
+  }
+
+  return {
+    hasData: true,
+    runCount: runs.length,
+    weeklyMiles,
+    wowChangePct,
+    acwr,
+    avgPaceMinPerMile,
+    longestRunMiles: Number(longestRunMiles.toFixed(1)),
+    daysSinceLastRun,
+    flags,
+  };
+}
+
+// Render metrics as a compact block for the system prompt.
+function formatMetricsBlock(m: TrainingMetrics): string {
+  if (!m.hasData) {
+    return "=== TRAINING METRICS ===\nInsufficient activity data to compute trends. Ask the athlete to log recent runs (distance + duration) so analysis can improve.\n========================";
+  }
+  const lines: string[] = ["=== TRAINING METRICS (computed) ==="];
+  lines.push(`Runs analyzed: ${m.runCount}`);
+  lines.push(`Weekly miles [wk-3 → current]: ${m.weeklyMiles.join(" → ")}`);
+  if (m.wowChangePct != null) lines.push(`Week-over-week change: ${m.wowChangePct > 0 ? "+" : ""}${m.wowChangePct}%`);
+  if (m.acwr != null) {
+    const zone = m.acwr > 1.5 ? "HIGH RISK" : m.acwr < 0.8 ? "detraining" : "sweet spot";
+    lines.push(`Acute:Chronic workload ratio: ${m.acwr} (${zone})`);
+  }
+  if (m.avgPaceMinPerMile != null) lines.push(`Avg pace (distance-weighted): ${formatPace(m.avgPaceMinPerMile)}`);
+  lines.push(`Longest recent run: ${m.longestRunMiles}mi`);
+  if (m.daysSinceLastRun != null) lines.push(`Days since last run: ${m.daysSinceLastRun}`);
+  if (m.flags.length > 0) {
+    lines.push("FLAGS:");
+    for (const f of m.flags) lines.push(`  ⚠ ${f}`);
+  }
+  lines.push("========================");
+  return lines.join("\n");
+}
+
 const RESPONSE_STRATEGY = `You are an AI chatbot response strategist supporting coaches and athletes on the Thrive platform.
 
 RESPONSE GUIDELINES
@@ -91,7 +233,13 @@ Your focus areas:
 - Athlete communication strategies: how to talk to athletes about rest, load modification, injury risk
 - Race preparation, meet scheduling, and peaking strategies
 
-When a coach describes a team situation or individual athlete concern, ask clarifying questions about their event, weekly mileage, and recent training history if relevant. Be direct, specific, and coach-to-coach in tone. Coaches are experienced — don't over-explain basics.`;
+When a coach describes a team situation or individual athlete concern, ask clarifying questions about their event, weekly mileage, and recent training history if relevant. Be direct, specific, and coach-to-coach in tone. Coaches are experienced — don't over-explain basics.
+
+USING THE DATA
+- The COACHING CONTEXT block gives you per-athlete COMPUTED metrics: weekly mileage trend, acute:chronic workload ratio (ACWR), average pace, and auto-generated FLAGS. Reason from these — don't ask the coach for numbers you've already been given.
+- ACWR is the headline injury signal: 0.8–1.3 is the safe zone, >1.5 is a red flag, <0.8 suggests detraining. Prioritise athletes whose ratio is outside that range.
+- Cite the specific athlete's numbers ("Sarah's ACWR is 1.7 and her mileage jumped 40% — pull her back to an easy week"). Never give advice that would read the same for any team.
+- If an athlete's metrics say "insufficient data", tell the coach exactly what's missing rather than guessing.`;
 
 const COACH_PROMPTS: Record<string, string> = {
   avera: `You are Avera, a balanced AI running coach in the Thrive app. You specialize in injury prevention, smart training progression, and long-term athlete development. Your tone is warm, analytical, and encouraging.
@@ -104,7 +252,13 @@ const COACH_PROMPTS: Record<string, string> = {
 - Explain the biomechanical or physiological reason behind any injury risk
 - Suggest concrete, actionable steps
 
-Lead with the most important information. Keep responses focused.`,
+USING THE DATA (this is what separates you from a generic chatbot)
+- You are given a COMPUTED TRAINING METRICS block (weekly mileage trend, week-over-week change, ACWR, average pace, longest recent run, days since last run) plus recent activities. Ground every recommendation in those specific numbers and quote them back.
+- Reason from the data, don't restate it. Don't say "your mileage went up" — say "your mileage jumped from 18 to 26mi (+44%) in one week, past the ~10% safe-progression guideline, so let's hold at ~28mi this week and add a rest day."
+- ACWR is your headline injury signal: <0.8 detraining, 0.8–1.3 sweet spot, >1.5 red flag. Call it out explicitly when it's outside the safe zone.
+- If a metric says "insufficient data", say so plainly and tell the athlete what to log. Never invent numbers.
+
+Lead with the single most important observation from their data, then give concrete next steps.`,
 
   kai: `You are Kai, a high-performance speed coach in the Thrive app. You specialize in race-specific training, VO2 max development, lactate threshold work, and breaking personal records. Your tone is energetic, data-driven, and competitive.
 
@@ -153,7 +307,7 @@ function serializeConversation(c: typeof conversations.$inferSelect) {
 async function generateConversationTitle(client: OpenAI, userMessage: string): Promise<string | null> {
   try {
     const completion = await client.chat.completions.create({
-      model: "glm-4-flash",
+      model: TITLE_MODEL,
       max_tokens: 24,
       messages: [
         {
@@ -214,7 +368,7 @@ async function buildCoachContext(userId: string): Promise<string> {
     db.select().from(activitiesTable)
       .where(inArray(activitiesTable.userId, memberIds))
       .orderBy(desc(activitiesTable.activityDate))
-      .limit(memberIds.length * 8),
+      .limit(memberIds.length * 40),
     db.select().from(injuryAlertsTable)
       .where(and(inArray(injuryAlertsTable.userId, memberIds), eq(injuryAlertsTable.acknowledged, false)))
       .orderBy(desc(injuryAlertsTable.createdAt))
@@ -226,11 +380,19 @@ async function buildCoachContext(userId: string): Promise<string> {
 
   const profileByUser = new Map(athleteProfiles.map(p => [p.userId, p]));
   const userByUser = new Map(userRows.map(u => [u.id, u]));
-  const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const weeklyByUser = new Map<string, number>();
+
+  // Per-athlete computed metrics (weekly trend, ACWR, pace, flags) so the coach
+  // model reasons over the same signals the athlete side gets.
+  const activitiesByUser = new Map<string, ActivityRow[]>();
   for (const a of recentActivities) {
-    if (!a.userId || !a.activityDate || new Date(a.activityDate) < sevenDaysAgo) continue;
-    weeklyByUser.set(a.userId, (weeklyByUser.get(a.userId) ?? 0) + Number(a.distanceKm ?? 0));
+    if (!a.userId) continue;
+    const arr = activitiesByUser.get(a.userId) ?? [];
+    arr.push(a);
+    activitiesByUser.set(a.userId, arr);
+  }
+  const metricsByUser = new Map<string, TrainingMetrics>();
+  for (const mid of memberIds) {
+    metricsByUser.set(mid, computeTrainingMetrics(activitiesByUser.get(mid) ?? []));
   }
   const alertsByUser = new Map<string, typeof teamAlerts>();
   for (const al of teamAlerts) {
@@ -253,17 +415,23 @@ async function buildCoachContext(userId: string): Promise<string> {
     const p = profileByUser.get(mid);
     const u = userByUser.get(mid);
     const name = (p?.name ?? `${u?.firstName ?? ""} ${u?.lastName ?? ""}`.trim()) || "Athlete";
-    const weeklyMi = (weeklyByUser.get(mid) ?? 0).toFixed(1);
+    const met = metricsByUser.get(mid);
+    const weeklyMi = met?.hasData ? met.weeklyMiles[met.weeklyMiles.length - 1].toFixed(1) : "0.0";
     const parts = [
       `Name: ${name}`,
       (p?.state || p?.country) ? `Location: ${[p?.state, p?.country].filter(Boolean).join(", ")}` : null,
       p?.fitnessLevel ? `Level: ${p.fitnessLevel}` : null,
       p?.primaryGoal ? `Goal: ${p.primaryGoal}` : null,
       `Weekly: ${weeklyMi}mi (last 7 days)`,
+      met?.acwr != null ? `ACWR: ${met.acwr}` : null,
+      met?.avgPaceMinPerMile != null ? `Pace: ${formatPace(met.avgPaceMinPerMile)}` : null,
       p?.restingHeartRate ? `RHR: ${p.restingHeartRate}bpm` : null,
       p?.hrv ? `HRV: ${Number(p.hrv).toFixed(0)}ms` : null,
     ].filter(Boolean).join(" | ");
     lines.push(`• ${parts}`);
+    for (const f of (met?.flags ?? [])) {
+      lines.push(`  ⚠ ${f}`);
+    }
     const alerts = alertsByUser.get(mid) ?? [];
     for (const al of alerts) {
       lines.push(`  ⚠ ${al.riskLevel.toUpperCase()} RISK — ${al.bodyPart}: ${al.message}`);
@@ -287,13 +455,15 @@ async function buildCoachContext(userId: string): Promise<string> {
 async function buildAthleteContext(userId: string): Promise<string> {
   const [profileRows, recentActivities, activePlan, openAlerts] = await Promise.all([
     db.select().from(athleteProfileTable).where(eq(athleteProfileTable.userId, userId)).limit(1),
-    db.select().from(activitiesTable).where(eq(activitiesTable.userId, userId)).orderBy(desc(activitiesTable.activityDate)).limit(10),
+    db.select().from(activitiesTable).where(eq(activitiesTable.userId, userId)).orderBy(desc(activitiesTable.activityDate)).limit(40),
     db.select().from(trainingPlansTable).where(and(eq(trainingPlansTable.userId, userId), eq(trainingPlansTable.status, "active"))).limit(1),
     db.select().from(injuryAlertsTable).where(and(eq(injuryAlertsTable.userId, userId), eq(injuryAlertsTable.acknowledged, false))).limit(5),
   ]);
 
   const profile = profileRows[0];
   if (!profile) return "";
+
+  const metrics = computeTrainingMetrics(recentActivities);
 
   const lines: string[] = [];
   lines.push("=== ATHLETE PROFILE ===");
@@ -310,9 +480,11 @@ async function buildAthleteContext(userId: string): Promise<string> {
     ].filter(Boolean).join(" | "),
   );
 
+  lines.push("\n" + formatMetricsBlock(metrics));
+
   if (recentActivities.length > 0) {
-    lines.push("\nRecent Activities (newest first):");
-    for (const a of recentActivities) {
+    lines.push("\nRecent Activities (newest first, up to 10 shown):");
+    for (const a of recentActivities.slice(0, 10)) {
       const parts = [
         a.activityDate,
         a.type.replace(/_/g, " "),
@@ -478,6 +650,119 @@ router.get("/openai/conversations/:id/messages", async (req: Request, res): Prom
 
 // ── Send a message + stream AI reply ───────────────────────────────────────
 
+// ── Athlete plan-from-chat ───────────────────────────────────────────────────
+
+// Heuristic: does this message ask us to BUILD a training plan (as opposed to
+// asking about an existing one)? Kept deliberately specific so it doesn't hijack
+// normal chat like "what's on my plan today".
+function isPlanRequest(text: string): boolean {
+  const t = text.toLowerCase();
+  if (/\b(build|make|create|generate|design|put together|draw up|give me|write me|set up|plan out|prepare)\b[^.?!]*\bplan\b/.test(t)) return true;
+  if (/\b(training|marathon|half[- ]?marathon|10k|5k|race|running|week|weekly)\b[^.?!]{0,24}\bplan\b/.test(t)) return true;
+  if (/\bplan\b[^.?!]{0,24}\b(for|to)\b[^.?!]{0,30}\b(race|marathon|5k|10k|half|faster|weeks?)\b/.test(t)) return true;
+  return false;
+}
+
+type PlanSessionOut = { weekNumber: number; dayOfWeek: number; sessionType: string; description: string; distanceMiles: number; durationMinutes: number };
+type AthletePlan = { name: string; goal: string; startDate: string; endDate: string; weeklyMileage: number; rationale: string; sessions: PlanSessionOut[] };
+
+// Ask the model for a structured 4-week plan for THIS athlete, grounded in their
+// computed metrics, and validate/clamp it into a shape safe to persist.
+async function generateAthletePlan(client: OpenAI, userMessage: string, contextStr: string): Promise<AthletePlan | null> {
+  const startDate = nextMondayISO();
+  const endDate = addDaysISO(startDate, 27); // 4-week plan
+  const systemPrompt = `You are AveraAI, an expert running coach. Based on the athlete's request and their training data, design a 4-week training plan for THIS athlete. All distances are in MILES.
+
+Ground the plan in the athlete's recent metrics (weekly mileage, ACWR, pace) from the context. Respect safe progression (~10%/week) and keep it realistic for their current volume. If they have an injury flag, keep volume conservative and bias toward easy_run, cross_training, and rest.
+
+Respond with ONLY a valid JSON object (no markdown, no prose) of this exact shape:
+{
+  "name": "<short plan name>",
+  "goal": "<one-line goal>",
+  "weeklyMileage": <number, target miles per week>,
+  "rationale": "<1-2 sentence why this plan fits them>",
+  "sessions": [
+    { "weekNumber": 1, "dayOfWeek": 1, "sessionType": "<one of: ${VALID_SESSION_TYPES.join(", ")}>", "description": "<short>", "distanceMiles": <number, 0 for rest>, "durationMinutes": <integer> }
+  ]
+}
+Provide exactly 28 sessions: weeks 1–4, dayOfWeek 1 (Mon) through 7 (Sun) for each. dayOfWeek: 1=Mon … 7=Sun.`;
+
+  const completion = await client.chat.completions.create({
+    model: COACH_MODEL,
+    max_tokens: 2600,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `${contextStr}\n\nAthlete request: "${userMessage}"\nPlan dates: ${startDate} to ${endDate}. Design the plan now.` },
+    ],
+  });
+  const rawOut = completion.choices[0]?.message?.content ?? "";
+  const jsonStr = rawOut.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch {
+    logger.error({ rawOut }, "athlete plan: failed to parse model JSON");
+    return null;
+  }
+
+  const rawSessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
+  const sessions: PlanSessionOut[] = rawSessions.map((s) => {
+    const o = s as Record<string, unknown>;
+    const type = String(o.sessionType ?? "easy_run");
+    return {
+      weekNumber: Math.min(4, Math.max(1, Number(o.weekNumber) || 1)),
+      dayOfWeek: Math.min(7, Math.max(1, Number(o.dayOfWeek) || 1)),
+      sessionType: VALID_SESSION_TYPES.includes(type) ? type : "easy_run",
+      description: String(o.description ?? "").slice(0, 280) || "Run",
+      distanceMiles: Math.max(0, Number(o.distanceMiles) || 0),
+      durationMinutes: Math.max(0, Math.round(Number(o.durationMinutes) || 0)),
+    };
+  }).filter((s) => s.sessionType === "rest" || s.distanceMiles > 0 || s.durationMinutes > 0);
+
+  if (sessions.length === 0) return null;
+
+  return {
+    name: String(parsed.name ?? "Training Plan").slice(0, 120),
+    goal: String(parsed.goal ?? "General fitness").slice(0, 200),
+    startDate,
+    endDate,
+    weeklyMileage: Math.max(0, Number(parsed.weeklyMileage) || 0),
+    rationale: String(parsed.rationale ?? "").slice(0, 400),
+    sessions,
+  };
+}
+
+const PLAN_DAY_NAMES = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+// Human-readable confirmation streamed back into the chat after saving a plan.
+function buildPlanSummaryMarkdown(p: AthletePlan): string {
+  const lines: string[] = [];
+  lines.push("✅ **Added to your Training Plans tab.**");
+  lines.push("");
+  lines.push(`### ${p.name}`);
+  if (p.rationale) lines.push(p.rationale);
+  lines.push("");
+  lines.push(`**Goal:** ${p.goal}  \n**Dates:** ${p.startDate} → ${p.endDate}  \n**Target volume:** ~${p.weeklyMileage} mi/week`);
+
+  const byWeek = new Map<number, PlanSessionOut[]>();
+  for (const s of p.sessions) {
+    const arr = byWeek.get(s.weekNumber) ?? [];
+    arr.push(s);
+    byWeek.set(s.weekNumber, arr);
+  }
+  for (const wk of [...byWeek.keys()].sort((a, b) => a - b)) {
+    lines.push("");
+    lines.push(`**Week ${wk}**`);
+    for (const s of byWeek.get(wk)!.sort((a, b) => a.dayOfWeek - b.dayOfWeek)) {
+      const dist = s.distanceMiles > 0 ? ` — ${s.distanceMiles}mi` : "";
+      lines.push(`- ${PLAN_DAY_NAMES[s.dayOfWeek]}: ${s.sessionType.replace(/_/g, " ")}${dist} — ${s.description}`);
+    }
+  }
+  lines.push("");
+  lines.push("_Open the **Training Plans** tab to see it, tweak sessions, or mark them complete._");
+  return lines.join("\n");
+}
+
 router.post("/openai/conversations/:id/messages", async (req: Request, res): Promise<void> => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
@@ -510,7 +795,7 @@ router.post("/openai/conversations/:id/messages", async (req: Request, res): Pro
 
   const client = openaiClient;
   if (!client) {
-    const fallbackContent = "AveraAI is not yet configured. Please add your GLM_API_KEY to Replit Secrets.";
+    const fallbackContent = "AveraAI isn't configured yet — the GLM_API_KEY environment variable is missing on the server.";
     await db.insert(messages).values({ conversationId: conv.id, role: "assistant", content: fallbackContent });
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
@@ -563,36 +848,88 @@ router.post("/openai/conversations/:id/messages", async (req: Request, res): Pro
   res.setHeader("Connection", "keep-alive");
 
   let fullResponse = "";
-  try {
-    const stream = await client.chat.completions.create({
-      model: "glm-4-flash",
-      max_tokens: 2048,
-      messages: [{ role: "system", content: systemPrompt }, ...chatMessages],
-      stream: true,
-    });
+  let planCreatedId: number | null = null;
 
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content;
-      if (content) {
-        fullResponse += content;
-        res.write(`data: ${JSON.stringify({ content })}\n\n`);
+  // If an ATHLETE asks us to build a training plan, generate a full structured
+  // plan, save it (plan + all sessions) to their account, and stream a
+  // confirmation instead of the normal chat reply. Coaches keep their existing
+  // suggest/apply flow. Any failure falls through to a normal chat answer.
+  if (profile?.userRole !== "coach" && isPlanRequest(parsed.data.content)) {
+    try {
+      const proposal = await generateAthletePlan(client, parsed.data.content, userContext);
+      if (proposal) {
+        const [plan] = await db
+          .insert(trainingPlansTable)
+          .values({
+            userId,
+            name: proposal.name,
+            goal: proposal.goal,
+            startDate: proposal.startDate,
+            endDate: proposal.endDate,
+            status: "active",
+            weeklyMileage: proposal.weeklyMileage > 0 ? String(proposal.weeklyMileage) : null,
+          })
+          .returning();
+        await db.insert(planSessionsTable).values(
+          proposal.sessions.map((s) => ({
+            planId: plan.id,
+            weekNumber: s.weekNumber,
+            dayOfWeek: s.dayOfWeek,
+            sessionType: s.sessionType,
+            description: s.description,
+            distanceKm: s.distanceMiles > 0 ? String(s.distanceMiles) : null,
+            durationMinutes: s.durationMinutes > 0 ? s.durationMinutes : null,
+            completed: false,
+          })),
+        );
+        planCreatedId = plan.id;
+        fullResponse = buildPlanSummaryMarkdown(proposal);
+        res.write(`data: ${JSON.stringify({ content: fullResponse })}\n\n`);
       }
+    } catch (err) {
+      logger.error({ err, userId }, "athlete plan auto-create failed; falling back to chat");
     }
-  } catch (err) {
-    logger.error({ err }, "AveraAI stream error");
-    // GLM frequently ends the stream with a "Premature close" *after* delivering
-    // the full reply. If we already have content, treat it as a normal completion
-    // and keep what we streamed — only surface an error when nothing came through.
-    if (!fullResponse) {
-      const errMsg = "Sorry, I encountered an error. Please try again.";
-      fullResponse = errMsg;
-      res.write(`data: ${JSON.stringify({ content: errMsg })}\n\n`);
+  }
+
+  if (!planCreatedId) {
+    try {
+      const stream = await client.chat.completions.create({
+        model: COACH_MODEL,
+        temperature: COACH_TEMPERATURE,
+        max_tokens: 2048,
+        messages: [{ role: "system", content: systemPrompt }, ...chatMessages],
+        stream: true,
+      });
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          fullResponse += content;
+          res.write(`data: ${JSON.stringify({ content })}\n\n`);
+        }
+      }
+    } catch (err) {
+      logger.error({ err }, "AveraAI stream error");
+      // GLM frequently ends the stream with a "Premature close" *after* delivering
+      // the full reply. If we already have content, treat it as a normal completion
+      // and keep what we streamed — only surface an error when nothing came through.
+      if (!fullResponse) {
+        const errMsg = "Sorry, I encountered an error. Please try again.";
+        fullResponse = errMsg;
+        res.write(`data: ${JSON.stringify({ content: errMsg })}\n\n`);
+      }
     }
   }
 
   await db.insert(messages).values({ conversationId: conv.id, role: "assistant", content: fullResponse });
   await titlePromise;
-  res.write(`data: ${JSON.stringify(generatedTitle ? { done: true, title: generatedTitle } : { done: true })}\n\n`);
+  const doneEvent: Record<string, unknown> = { done: true };
+  if (generatedTitle) doneEvent.title = generatedTitle;
+  if (planCreatedId) {
+    doneEvent.planCreated = true;
+    doneEvent.planId = planCreatedId;
+  }
+  res.write(`data: ${JSON.stringify(doneEvent)}\n\n`);
   res.end();
 });
 
@@ -617,7 +954,8 @@ router.get("/openai/coach-tip", async (req: Request, res): Promise<void> => {
   try {
     const context = await buildCoachContext(userId);
     const completion = await openaiClient.chat.completions.create({
-      model: "glm-4-flash",
+      model: COACH_MODEL,
+      temperature: COACH_TEMPERATURE,
       max_tokens: 100,
       messages: [
         {
@@ -770,7 +1108,7 @@ Respond with ONLY a valid JSON object (no markdown, no prose) of this exact shap
 Provide exactly 14 sessions: weeks 1 and 2, dayOfWeek 1 (Mon) through 7 (Sun) for each. Use realistic mileage based on the athlete's recent weekly volume. dayOfWeek: 1=Mon ... 7=Sun.`;
 
     const completion = await openaiClient.chat.completions.create({
-      model: "glm-4-flash",
+      model: COACH_MODEL,
       max_tokens: 1800,
       messages: [
         { role: "system", content: systemPrompt },
