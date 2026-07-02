@@ -467,7 +467,7 @@ export default function Landing() {
                 <BtnTeal onClick={() => navigate("/sign-up")}>
                   Get Started
                 </BtnTeal>
-                <BtnGhost onClick={() => navigate("/demo")}>
+                <BtnGhost onClick={() => navigate("/demo/choose")}>
                   Try the demo
                 </BtnGhost>
               </div>

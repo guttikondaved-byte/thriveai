@@ -26,6 +26,7 @@ import CoachPlans from "@/pages/coach-plans";
 import Team from "@/pages/team";
 import Login from "@/pages/login";
 import DemoLayout from "@/components/DemoLayout";
+import DemoChoose from "@/pages/demo/choose";
 import DemoDashboard from "@/pages/demo/dashboard";
 import DemoActivities from "@/pages/demo/activities";
 import DemoPlans from "@/pages/demo/plans";
@@ -35,6 +36,12 @@ import DemoHistory from "@/pages/demo/history";
 import DemoCoach from "@/pages/demo/coach";
 import DemoTeam from "@/pages/demo/team";
 import DemoProfile from "@/pages/demo/profile";
+import DemoCoachLayout from "@/components/DemoCoachLayout";
+import DemoCoachDashboard from "@/pages/demo-coach/dashboard";
+import DemoCoachTeam from "@/pages/demo-coach/team";
+import DemoCoachPlans from "@/pages/demo-coach/plans";
+import DemoCoachChat from "@/pages/demo-coach/coach";
+import DemoCoachProfile from "@/pages/demo-coach/profile";
 import NotFound from "@/pages/not-found";
 import { useGetAthleteProfile, setAuthTokenGetter } from "@workspace/api-client-react";
 import { useSubscription, refreshSubscription, SUBSCRIPTION_QUERY_KEY } from "@/hooks/use-subscription";
@@ -308,6 +315,21 @@ function DemoRouter() {
   );
 }
 
+function DemoCoachRouter() {
+  return (
+    <DemoCoachLayout>
+      <Switch>
+        <Route path="/demo-coach" component={DemoCoachDashboard} />
+        <Route path="/demo-coach/team" component={DemoCoachTeam} />
+        <Route path="/demo-coach/plans" component={DemoCoachPlans} />
+        <Route path="/demo-coach/coach" component={DemoCoachChat} />
+        <Route path="/demo-coach/profile" component={DemoCoachProfile} />
+        <Route component={DemoCoachDashboard} />
+      </Switch>
+    </DemoCoachLayout>
+  );
+}
+
 function CoachRouter() {
   return (
     <CoachLayout>
@@ -492,8 +514,11 @@ function ClerkProviderWithRoutes() {
         <Route path="/sign-in/*" component={SignInPage} />
         <Route path="/sign-up" component={SignUpPage} />
         <Route path="/sign-up/*" component={SignUpPage} />
+        <Route path="/demo/choose" component={DemoChoose} />
         <Route path="/demo" component={DemoRouter} />
         <Route path="/demo/*" component={DemoRouter} />
+        <Route path="/demo-coach" component={DemoCoachRouter} />
+        <Route path="/demo-coach/*" component={DemoCoachRouter} />
         <Route component={HomeContent} />
       </Switch>
     </ClerkProvider>

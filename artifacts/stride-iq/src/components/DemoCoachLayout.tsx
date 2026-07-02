@@ -1,30 +1,15 @@
 import { Link, useLocation } from "wouter";
-import {
-  LayoutDashboard,
-  Activity,
-  Calendar,
-  AlertTriangle,
-  Flame,
-  Bot,
-  User,
-  HeartPulse,
-  Users,
-  ArrowLeft,
-} from "lucide-react";
+import { LayoutDashboard, Users, Bot, Settings, Calendar, ArrowLeft } from "lucide-react";
 
 const navItems = [
-  { href: "/demo", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/demo/activities", label: "Activities", icon: Activity },
-  { href: "/demo/plans", label: "Training Plans", icon: Calendar },
-  { href: "/demo/alerts", label: "Injury Alerts", icon: AlertTriangle },
-  { href: "/demo/intensity", label: "Intensity Map", icon: Flame },
-  { href: "/demo/history", label: "Health & History", icon: HeartPulse },
-  { href: "/demo/coach", label: "AveraAI", icon: Bot },
-  { href: "/demo/team", label: "My Team", icon: Users },
-  { href: "/demo/profile", label: "Profile", icon: User },
+  { href: "/demo-coach", label: "Team Dashboard", icon: LayoutDashboard },
+  { href: "/demo-coach/team", label: "Athlete Roster", icon: Users },
+  { href: "/demo-coach/plans", label: "Training Plans", icon: Calendar },
+  { href: "/demo-coach/coach", label: "AveraAI", icon: Bot },
+  { href: "/demo-coach/profile", label: "Settings", icon: Settings },
 ];
 
-export default function DemoLayout({ children }: { children: React.ReactNode }) {
+export default function DemoCoachLayout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
 
   return (
@@ -45,7 +30,7 @@ export default function DemoLayout({ children }: { children: React.ReactNode }) 
         </div>
         <nav className="flex-1 py-4 px-3 space-y-0.5">
           {navItems.map(({ href, label, icon: Icon }) => {
-            const active = href === "/demo" ? location === "/demo" : location.startsWith(href);
+            const active = href === "/demo-coach" ? location === "/demo-coach" : location.startsWith(href);
             return (
               <Link
                 key={href}
@@ -64,7 +49,7 @@ export default function DemoLayout({ children }: { children: React.ReactNode }) 
         </nav>
         <div className="px-4 py-4 border-t border-border">
           <button
-            onClick={() => navigate("/sign-up")}
+            onClick={() => navigate("/sign-up?role=coach")}
             className="w-full rounded-lg bg-primary text-primary-foreground text-sm font-semibold py-2.5 hover:bg-primary/90 transition-colors"
           >
             Sign up free
@@ -84,13 +69,13 @@ export default function DemoLayout({ children }: { children: React.ReactNode }) 
             Back
           </button>
           <p className="text-sm font-semibold text-white">
-            You're viewing a demo with sample data
+            You're viewing the coach demo with sample data
           </p>
           <button
-            onClick={() => navigate("/sign-up")}
+            onClick={() => navigate("/sign-up?role=coach")}
             className="rounded-full bg-white px-4 py-1.5 text-xs font-bold text-primary hover:bg-white/90 transition-colors"
           >
-            Sign up to start tracking →
+            Sign up to start coaching →
           </button>
         </div>
 

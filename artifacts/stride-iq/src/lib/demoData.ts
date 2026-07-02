@@ -54,6 +54,21 @@ export const DEMO_DATA = {
     { day: "Saturday", label: "Long Run", detail: "9 mi @ easy pace" },
     { day: "Sunday", label: "Cross Training", detail: "30 min cycling or swim" },
   ],
+  averaWeeklyPlanProposal: {
+    name: "Half Marathon Base Build — Week 7 (Knee-Protective)",
+    rationale:
+      "Your weekly mileage is up 24% this week and your right knee alert is still active, so this week backs off the tempo work and keeps everything else at easy pace. The long run stays in to protect your aerobic base, but it's shorter and slower than a normal build week.",
+    weeklyMileage: 22,
+    sessions: [
+      { day: "Monday", label: "Rest", detail: "Full recovery day" },
+      { day: "Tuesday", label: "Easy Run", detail: "4 mi @ conversational pace" },
+      { day: "Wednesday", label: "Cross Training", detail: "30 min low-impact cycling — skip the tempo this week" },
+      { day: "Thursday", label: "Easy Run", detail: "3 mi @ conversational pace" },
+      { day: "Friday", label: "Rest", detail: "Full recovery day" },
+      { day: "Saturday", label: "Long Run", detail: "7 mi @ easy pace, walk breaks if the knee flares" },
+      { day: "Sunday", label: "Easy Run", detail: "3 mi shakeout, stop if any sharp pain" },
+    ],
+  },
   weeklyHrv: [
     { day: "Mon", value: 71 },
     { day: "Tue", value: 68 },
@@ -155,3 +170,105 @@ export function generateDemoIntensityMonth(year: number, month: number, isCurren
     return { date: dateStr, score, intensity, activityIds };
   });
 }
+
+// ── Coach-side demo fixture ─────────────────────────────────────────────
+export const DEMO_COACH_DATA = {
+  coachName: "Taylor",
+  focus: "Cross Country",
+  team: {
+    id: 1,
+    name: "Riverside Running Club",
+    inviteCode: "RUN-4C82",
+    createdAt: "2026-03-01",
+  },
+  roster: [
+    {
+      userId: "1",
+      name: "Jordan P.",
+      email: "jordan@example.com",
+      primaryGoal: "Complete a half marathon",
+      fitnessLevel: "intermediate",
+      restingHeartRate: 52,
+      hrv: 68,
+      weeklyDistanceKm: 24.5,
+      riskLevel: "medium" as const,
+    },
+    {
+      userId: "2",
+      name: "Sam R.",
+      email: "sam@example.com",
+      primaryGoal: "Break 20 min in 5K",
+      fitnessLevel: "advanced",
+      restingHeartRate: 48,
+      hrv: 74,
+      weeklyDistanceKm: 45.1,
+      riskLevel: "low" as const,
+    },
+    {
+      userId: "3",
+      name: "Priya N.",
+      email: "priya@example.com",
+      primaryGoal: "Build base mileage",
+      fitnessLevel: "beginner",
+      restingHeartRate: 61,
+      hrv: 58,
+      weeklyDistanceKm: 12.2,
+      riskLevel: "low" as const,
+    },
+    {
+      userId: "4",
+      name: "Marcus T.",
+      email: "marcus@example.com",
+      primaryGoal: "Run a full marathon",
+      fitnessLevel: "advanced",
+      restingHeartRate: 50,
+      hrv: 51,
+      weeklyDistanceKm: 53.2,
+      riskLevel: "high" as const,
+    },
+    {
+      userId: "5",
+      name: "Ava L.",
+      email: "ava@example.com",
+      primaryGoal: "Stay injury-free",
+      fitnessLevel: "intermediate",
+      restingHeartRate: 55,
+      hrv: 65,
+      weeklyDistanceKm: 20.8,
+      riskLevel: "low" as const,
+    },
+  ],
+  plans: [
+    { id: 1, athleteName: "Jordan P.", name: "Half Marathon Base Build", goal: "Complete a half marathon", status: "active" as const, weeklyMileage: 30 },
+    { id: 2, athleteName: "Sam R.", name: "5K Speed Cycle", goal: "Break 20 min in 5K", status: "active" as const, weeklyMileage: 42 },
+    { id: 3, athleteName: "Marcus T.", name: "Marathon Peak Phase", goal: "Run a full marathon", status: "active" as const, weeklyMileage: 55 },
+    { id: 4, athleteName: "Priya N.", name: "Beginner Base Miles", goal: "Build base mileage", status: "paused" as const, weeklyMileage: 15 },
+  ],
+  coachConversation: [
+    { role: "user" as const, text: "Marcus is showing high injury risk this week — what should I have him do?" },
+    {
+      role: "assistant" as const,
+      text: "Marcus's weekly mileage jumped to 53 mi, well above his recent average, and his HRV has dropped to 51ms (down from a baseline near 65). I'd recommend cutting his next two sessions to easy pace only, dropping volume by about 25% this week, and checking in on sleep and soreness before ramping back up.",
+    },
+  ],
+  averaPlanProposal: {
+    athleteUserId: "4",
+    athleteName: "Marcus T.",
+    name: "Marathon Recovery & Rebuild",
+    goal: "Run a full marathon",
+    startDate: "2026-07-06",
+    endDate: "2026-07-27",
+    weeklyMileage: 40,
+    rationale:
+      "Marcus's mileage spiked 24% above his baseline this week and his HRV has dropped, both early signs of overreaching. This 3-week block deliberately backs off volume by about 25% and shifts most sessions to easy pace, so he arrives at the next build phase recovered instead of digging a deeper hole.",
+    sessions: [
+      { weekNumber: 1, dayOfWeek: 1, sessionType: "rest", description: "Full recovery day", distanceMiles: 0, durationMinutes: 0 },
+      { weekNumber: 1, dayOfWeek: 2, sessionType: "easy_run", description: "Easy, conversational pace", distanceMiles: 5, durationMinutes: 42 },
+      { weekNumber: 1, dayOfWeek: 3, sessionType: "cross_training", description: "Low-impact cycling or swim", distanceMiles: 0, durationMinutes: 30 },
+      { weekNumber: 1, dayOfWeek: 4, sessionType: "easy_run", description: "Easy, conversational pace", distanceMiles: 5, durationMinutes: 42 },
+      { weekNumber: 1, dayOfWeek: 5, sessionType: "rest", description: "Full recovery day", distanceMiles: 0, durationMinutes: 0 },
+      { weekNumber: 1, dayOfWeek: 6, sessionType: "long_run", description: "Long run, easy pace only — no tempo", distanceMiles: 10, durationMinutes: 85 },
+      { weekNumber: 1, dayOfWeek: 7, sessionType: "easy_run", description: "Very easy shakeout", distanceMiles: 4, durationMinutes: 34 },
+    ],
+  },
+};
