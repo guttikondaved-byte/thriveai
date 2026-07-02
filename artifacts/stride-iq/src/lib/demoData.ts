@@ -84,4 +84,74 @@ export const DEMO_DATA = {
       { name: "Marcus T.", weeklyMiles: 33 },
     ],
   },
+  riskDashboard: {
+    riskScore: 34,
+    riskBand: "moderate" as "low" | "moderate" | "high" | "critical",
+    riskLabel: "Moderate Risk",
+    lastUpdated: "2026-06-29T18:20:00Z",
+    workload: {
+      ratio: 1.18,
+      daily: [
+        { date: "2026-06-23", day: "Mon", load: 0, baseline: 210 },
+        { date: "2026-06-24", day: "Tue", load: 260, baseline: 230 },
+        { date: "2026-06-25", day: "Wed", load: 610, baseline: 260 },
+        { date: "2026-06-26", day: "Thu", load: 0, baseline: 200 },
+        { date: "2026-06-27", day: "Fri", load: 300, baseline: 220 },
+        { date: "2026-06-28", day: "Sat", load: 0, baseline: 240 },
+        { date: "2026-06-29", day: "Sun", load: 420, baseline: 250 },
+      ],
+    },
+    fitnessTrend: {
+      series: [58, 61, 60, 64, 66, 65, 68, 70, 69, 72, 74, 73, 76, 78, 77, 79, 81, 80, 82, 84, 83, 85, 87, 86, 88, 90, 89, 91, 93, 95],
+      changePct: 12,
+    },
+    weeklyRelativeEffort: { total: 268, band: "moderate" as const },
+    activityConsistency: { daysActive: 4, totalDays: 7, pct: 57 },
+    insight:
+      "Your acute load is running about 18% above your recent average, driven mostly by Wednesday's long run. Keep the next couple of easy days genuinely easy — that's what will let this week's gains stick without a setback.",
+    heartRateZones: [
+      { zone: 1, label: "Recovery", seconds: 1380 },
+      { zone: 2, label: "Aerobic", seconds: 5220 },
+      { zone: 3, label: "Tempo", seconds: 2640 },
+      { zone: 4, label: "Threshold", seconds: 1080 },
+      { zone: 5, label: "Anaerobic", seconds: 240 },
+    ],
+    segments: [
+      { name: "1K", currentTimeSeconds: 224, prTimeSeconds: 218, isPr: false },
+      { name: "1 Mile", currentTimeSeconds: 372, prTimeSeconds: 360, isPr: false },
+      { name: "5K", currentTimeSeconds: 1334, prTimeSeconds: 1334, isPr: true },
+    ],
+    soreness: [
+      { bodyPart: "Right knee", painScore: 4 },
+      { bodyPart: "Left calf", painScore: 1 },
+    ],
+  },
 };
+
+// Generates a fake but stable month of intensity-map data — deterministic per
+// day-of-month so the calendar doesn't jump around between renders.
+export function generateDemoIntensityMonth(year: number, month: number, isCurrentMonth: boolean) {
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  return Array.from({ length: daysInMonth }, (_, i) => {
+    const day = i + 1;
+    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const isFuture = isCurrentMonth && dateStr > todayStr;
+
+    // Deterministic pseudo-random pattern: long runs every ~6 days, rest every ~3rd day.
+    const cycle = day % 7;
+    let score = 0;
+    if (!isFuture) {
+      if (cycle === 0) score = 78 + (day % 15);
+      else if (cycle === 3 || cycle === 5) score = 0;
+      else score = 20 + ((day * 13) % 45);
+      score = Math.min(100, score);
+    }
+    const intensity = score === 0 ? 0 : score < 25 ? 1 : score < 50 ? 2 : score < 75 ? 3 : 4;
+    const activityIds = score > 0 ? [day] : [];
+
+    return { date: dateStr, score, intensity, activityIds };
+  });
+}

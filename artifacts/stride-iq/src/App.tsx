@@ -30,6 +30,7 @@ import DemoDashboard from "@/pages/demo/dashboard";
 import DemoActivities from "@/pages/demo/activities";
 import DemoPlans from "@/pages/demo/plans";
 import DemoAlerts from "@/pages/demo/alerts";
+import DemoIntensity from "@/pages/demo/intensity";
 import DemoHistory from "@/pages/demo/history";
 import DemoCoach from "@/pages/demo/coach";
 import DemoTeam from "@/pages/demo/team";
@@ -296,6 +297,7 @@ function DemoRouter() {
         <Route path="/demo/activities" component={DemoActivities} />
         <Route path="/demo/plans" component={DemoPlans} />
         <Route path="/demo/alerts" component={DemoAlerts} />
+        <Route path="/demo/intensity" component={DemoIntensity} />
         <Route path="/demo/history" component={DemoHistory} />
         <Route path="/demo/coach" component={DemoCoach} />
         <Route path="/demo/team" component={DemoTeam} />
