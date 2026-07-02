@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useClerk } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { useUpdateAthleteProfile, getGetAthleteProfileQueryKey } from "@workspace/api-client-react";
 import { PaywallCard } from "@/components/PaywallCard";
 
@@ -12,7 +12,7 @@ import { PaywallCard } from "@/components/PaywallCard";
  */
 export default function Subscribe({ planType }: { planType: "athlete" | "coach" }) {
   const { signOut } = useClerk();
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   const qc = useQueryClient();
   const updateProfile = useUpdateAthleteProfile();
   const [switching, setSwitching] = useState(false);
