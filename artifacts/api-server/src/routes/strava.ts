@@ -102,7 +102,7 @@ router.get("/strava/callback", async (req, res): Promise<void> => {
     .insert(stravaTokensTable)
     .values({
       userId,
-      stravaAthleteId: BigInt(data.athlete.id),
+      stravaAthleteId: data.athlete.id,
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
       expiresAt: data.expires_at,
@@ -111,7 +111,7 @@ router.get("/strava/callback", async (req, res): Promise<void> => {
     .onConflictDoUpdate({
       target: stravaTokensTable.userId,
       set: {
-        stravaAthleteId: BigInt(data.athlete.id),
+        stravaAthleteId: data.athlete.id,
         accessToken: data.access_token,
         refreshToken: data.refresh_token,
         expiresAt: data.expires_at,
@@ -197,7 +197,7 @@ router.post("/strava/webhook", async (req, res): Promise<void> => {
   const [token] = await db
     .select({ userId: stravaTokensTable.userId })
     .from(stravaTokensTable)
-    .where(eq(stravaTokensTable.stravaAthleteId, BigInt(event.owner_id)));
+    .where(eq(stravaTokensTable.stravaAthleteId, event.owner_id));
 
   if (!token) {
     req.log.warn({ owner_id: event.owner_id }, "No user found for Strava athlete");

@@ -1,6 +1,11 @@
 import app from "./app";
 import { logger } from "./lib/logger";
-import { registerStravaWebhook, getStravaWebhookSubscription } from "./lib/strava";
+import {
+  registerStravaWebhook,
+  getStravaWebhookSubscription,
+  deleteStravaWebhookSubscription,
+  getWebhookCallbackUrl,
+} from "./lib/strava";
 
 const rawPort = process.env["PORT"];
 
@@ -27,14 +32,27 @@ app.listen(port, async (err) => {
   // ── Validate Stripe configuration ──
   validateStripeConfiguration();
 
-  // Auto-register Strava webhook subscription on startup if credentials are present
+  // Auto-register Strava webhook subscription on startup if credentials are present.
+  // Also self-heals a stale subscription (e.g. left pointing at an old hosting
+  // domain) by deleting and re-registering it against the current callback URL.
   if (process.env.STRAVA_CLIENT_ID && process.env.STRAVA_CLIENT_SECRET) {
     try {
-      const existing = await getStravaWebhookSubscription() as Array<{ id: number }>;
+      const existing = await getStravaWebhookSubscription() as Array<{ id: number; callback_url?: string }>;
+      const expectedUrl = getWebhookCallbackUrl();
+      const stale = Array.isArray(existing) ? existing.find((s) => s.callback_url !== expectedUrl) : undefined;
+
       if (Array.isArray(existing) && existing.length === 0) {
         logger.info("No Strava webhook subscription found — registering…");
         const result = await registerStravaWebhook();
         logger.info({ result }, "Strava webhook registration result");
+      } else if (stale) {
+        logger.warn(
+          { staleUrl: stale.callback_url, expectedUrl },
+          "Strava webhook subscription points at a stale URL — re-registering",
+        );
+        await deleteStravaWebhookSubscription(stale.id);
+        const result = await registerStravaWebhook();
+        logger.info({ result }, "Strava webhook re-registration result");
       } else {
         logger.info({ subscriptions: existing }, "Strava webhook already registered");
       }

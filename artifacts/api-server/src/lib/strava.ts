@@ -77,7 +77,7 @@ export async function syncStravaActivity(
     .where(
       and(
         eq(activitiesTable.userId, userId),
-        eq(activitiesTable.stravaActivityId, BigInt(stravaActivityId)),
+        eq(activitiesTable.stravaActivityId, stravaActivityId),
       ),
     );
   if (existing.length > 0) return;
@@ -182,7 +182,7 @@ export async function syncStravaActivity(
 
   await db.insert(activitiesTable).values({
     userId,
-    stravaActivityId: BigInt(stravaActivityId),
+    stravaActivityId: stravaActivityId,
     type: activityType,
     ...(distanceKm ? { distanceKm } : {}),
     ...(durationMinutes ? { durationMinutes } : {}),
@@ -261,4 +261,14 @@ export async function getStravaWebhookSubscription(): Promise<unknown> {
     `${STRAVA_API_BASE}/push_subscriptions?client_id=${process.env.STRAVA_CLIENT_ID}&client_secret=${process.env.STRAVA_CLIENT_SECRET}`,
   );
   return resp.json();
+}
+
+export async function deleteStravaWebhookSubscription(id: number): Promise<void> {
+  const resp = await fetch(
+    `${STRAVA_API_BASE}/push_subscriptions/${id}?client_id=${process.env.STRAVA_CLIENT_ID}&client_secret=${process.env.STRAVA_CLIENT_SECRET}`,
+    { method: "DELETE" },
+  );
+  if (!resp.ok && resp.status !== 404) {
+    logger.error({ status: resp.status, id }, "Failed to delete stale Strava webhook subscription");
+  }
 }
