@@ -69,60 +69,60 @@
 }
 
 :root {
-  --button-outline: rgba(255,255,255, .10);
-  --badge-outline: rgba(255,255,255, .05);
+  --button-outline: rgba(13, 71, 161, .12);
+  --badge-outline: rgba(13, 71, 161, .08);
   --opaque-button-border-intensity: 9;
-  --elevate-1: rgba(255,255,255, .04);
-  --elevate-2: rgba(255,255,255, .09);
+  --elevate-1: rgba(13, 71, 161, .04);
+  --elevate-2: rgba(13, 71, 161, .08);
 
-  /* #06070E — near-black */
-  --background: 237 40% 4%;
-  --foreground: 0 0% 96%;
+  /* Light blue canvas */
+  --background: 200 100% 99%;
+  --foreground: 218 48% 34%;
 
-  --border: 174 10% 13%;
-  --input:  174 10% 13%;
-  --ring:   174 31% 38%;
+  --border: 205 40% 86%;
+  --input:  205 40% 88%;
+  --ring:   205 90% 52%;
 
-  --card:             237 40% 6%;
-  --card-foreground:  0 0% 96%;
-  --card-border:      174 10% 13%;
+  --card:             0 0% 100%;
+  --card-foreground:  218 48% 34%;
+  --card-border:      205 40% 88%;
 
-  --popover:            237 40% 6%;
-  --popover-foreground: 0 0% 96%;
-  --popover-border:     174 10% 13%;
+  --popover:            0 0% 100%;
+  --popover-foreground: 218 48% 34%;
+  --popover-border:     205 40% 88%;
 
-  /* Primary = readable teal derived from #2A504C */
-  --primary:            174 31% 38%;
-  --primary-foreground: 0 0% 96%;
+  /* Primary = bright sky blue */
+  --primary:            205 90% 52%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary:            174 10% 10%;
-  --secondary-foreground: 0 0% 96%;
+  --secondary:            205 70% 92%;
+  --secondary-foreground: 218 45% 40%;
 
-  --muted:            174 10% 10%;
-  --muted-foreground: 93 12% 55%;
+  --muted:            205 55% 93%;
+  --muted-foreground: 215 20% 45%;
 
-  /* Accent = Almond Silk #F2D2CF */
-  --accent:            5 57% 88%;
-  --accent-foreground: 237 40% 6%;
+  /* Accent = soft cyan-blue */
+  --accent:            195 85% 88%;
+  --accent-foreground: 218 48% 34%;
 
   --destructive:            350 80% 50%;
-  --destructive-foreground: 0 0% 96%;
+  --destructive-foreground: 0 0% 100%;
 
-  /* Chart — earth-tone palette */
-  --chart-1: 174 31% 38%;
-  --chart-2: 93 12% 64%;
-  --chart-3: 5 57% 78%;
-  --chart-4: 174 20% 28%;
-  --chart-5: 93 8% 45%;
+  /* Chart — blue-family palette */
+  --chart-1: 205 90% 52%;
+  --chart-2: 195 75% 55%;
+  --chart-3: 220 80% 62%;
+  --chart-4: 190 60% 45%;
+  --chart-5: 230 65% 65%;
 
-  --sidebar:                    237 40% 5%;
-  --sidebar-foreground:         0 0% 96%;
-  --sidebar-border:             174 10% 11%;
-  --sidebar-primary:            174 31% 38%;
-  --sidebar-primary-foreground: 0 0% 96%;
-  --sidebar-accent:             174 10% 10%;
-  --sidebar-accent-foreground:  0 0% 96%;
-  --sidebar-ring:               174 31% 38%;
+  --sidebar:                    205 80% 95%;
+  --sidebar-foreground:         218 48% 34%;
+  --sidebar-border:             205 40% 86%;
+  --sidebar-primary:            205 90% 52%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent:             205 65% 90%;
+  --sidebar-accent-foreground:  218 45% 40%;
+  --sidebar-ring:               205 90% 52%;
 
   --radius: 0.75rem;
 
@@ -143,49 +143,50 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  --background: 237 40% 4%;
-  --foreground: 0 0% 96%;
-  --border: 174 10% 13%;
-  --input:  174 10% 13%;
-  --ring:   174 31% 38%;
+  /* Deep navy canvas */
+  --background: 220 55% 8%;
+  --foreground: 205 40% 96%;
+  --border: 210 30% 20%;
+  --input:  210 30% 20%;
+  --ring:   205 90% 60%;
 
-  --card:             237 40% 6%;
-  --card-foreground:  0 0% 96%;
-  --card-border:      174 10% 13%;
+  --card:             220 50% 11%;
+  --card-foreground:  205 40% 96%;
+  --card-border:      210 30% 20%;
 
-  --popover:            237 40% 6%;
-  --popover-foreground: 0 0% 96%;
-  --popover-border:     174 10% 13%;
+  --popover:            220 50% 11%;
+  --popover-foreground: 205 40% 96%;
+  --popover-border:     210 30% 20%;
 
-  --primary:            174 31% 38%;
-  --primary-foreground: 0 0% 96%;
+  --primary:            205 90% 58%;
+  --primary-foreground: 220 55% 8%;
 
-  --secondary:            174 10% 10%;
-  --secondary-foreground: 0 0% 96%;
+  --secondary:            210 35% 18%;
+  --secondary-foreground: 205 40% 96%;
 
-  --muted:            174 10% 10%;
-  --muted-foreground: 93 12% 55%;
+  --muted:            210 35% 18%;
+  --muted-foreground: 205 20% 65%;
 
-  --accent:            5 57% 88%;
-  --accent-foreground: 237 40% 6%;
+  --accent:            195 70% 30%;
+  --accent-foreground: 205 40% 96%;
 
-  --destructive:            350 80% 50%;
-  --destructive-foreground: 0 0% 96%;
+  --destructive:            350 80% 55%;
+  --destructive-foreground: 0 0% 100%;
 
-  --chart-1: 174 31% 38%;
-  --chart-2: 93 12% 64%;
-  --chart-3: 5 57% 78%;
-  --chart-4: 174 20% 28%;
-  --chart-5: 93 8% 45%;
+  --chart-1: 205 90% 58%;
+  --chart-2: 195 75% 55%;
+  --chart-3: 220 80% 65%;
+  --chart-4: 190 60% 50%;
+  --chart-5: 230 65% 68%;
 
-  --sidebar:                    237 40% 5%;
-  --sidebar-foreground:         0 0% 96%;
-  --sidebar-border:             174 10% 11%;
-  --sidebar-primary:            174 31% 38%;
-  --sidebar-primary-foreground: 0 0% 96%;
-  --sidebar-accent:             174 10% 10%;
-  --sidebar-accent-foreground:  0 0% 96%;
-  --sidebar-ring:               174 31% 38%;
+  --sidebar:                    220 55% 9%;
+  --sidebar-foreground:         205 40% 96%;
+  --sidebar-border:             210 30% 18%;
+  --sidebar-primary:            205 90% 58%;
+  --sidebar-primary-foreground: 220 55% 8%;
+  --sidebar-accent:             210 35% 18%;
+  --sidebar-accent-foreground:  205 40% 96%;
+  --sidebar-ring:               205 90% 58%;
 }
 
 @layer base {
@@ -194,5 +195,13 @@
   }
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(60rem 60rem at 8% -8%, hsl(200 100% 88% / 0.55), transparent 60%),
+      radial-gradient(50rem 50rem at 105% 0%, hsl(265 100% 92% / 0.45), transparent 55%),
+      radial-gradient(55rem 55rem at 50% 115%, hsl(180 100% 88% / 0.4), transparent 60%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    min-height: 100vh;
   }
 }

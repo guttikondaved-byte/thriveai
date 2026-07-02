@@ -97,8 +97,8 @@ function HelpModal({ guideKey, onClose }: { guideKey: NonNullable<GuideKey>; onC
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full sm:max-w-lg max-h-[85vh] overflow-y-auto bg-[#06070E] border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl">
-        <div className="sticky top-0 bg-[#06070E] border-b border-border px-5 py-4 flex items-start justify-between gap-3 rounded-t-2xl">
+      <div className="relative z-10 w-full sm:max-w-lg max-h-[85vh] overflow-y-auto bg-background border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl">
+        <div className="sticky top-0 bg-background border-b border-border px-5 py-4 flex items-start justify-between gap-3 rounded-t-2xl">
           <div>
             <h2 className="text-base font-semibold text-foreground">{guide.title}</h2>
             <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{guide.subtitle}</p>
@@ -185,14 +185,14 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md bg-[#06070E] border border-red-500/30 rounded-2xl shadow-2xl p-6">
+      <div className="relative z-10 w-full max-w-md bg-background border border-red-500/30 rounded-2xl shadow-2xl p-6">
         <div className="flex items-start gap-3 mb-5">
           <div className="shrink-0 w-10 h-10 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center">
             <TriangleAlert className="w-5 h-5 text-red-400" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-white">Delete account</h2>
-            <p className="text-sm text-slate-400 mt-0.5">This permanently deletes your account, all runs, plans, and alerts. This cannot be undone.</p>
+            <h2 className="text-base font-bold text-foreground">Delete account</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">This permanently deletes your account, all runs, plans, and alerts. This cannot be undone.</p>
           </div>
         </div>
 
@@ -203,7 +203,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
             onChange={e => setConfirm(e.target.checked)}
             className="mt-0.5 w-4 h-4 rounded border-slate-600 bg-slate-800 accent-red-500 cursor-pointer shrink-0"
           />
-          <span className="text-sm text-slate-300 leading-snug group-hover:text-white transition-colors">
+          <span className="text-sm text-foreground leading-snug group-hover:text-foreground transition-colors">
             I understand this is permanent and cannot be undone
           </span>
         </label>
@@ -215,13 +215,13 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
         )}
 
         <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:text-white text-sm font-medium transition-colors">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-foreground hover:text-foreground text-sm font-medium transition-colors">
             Cancel
           </button>
           <button
             onClick={handleDelete}
             disabled={!ready || loading}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-foreground text-sm font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Trash2 size={14} />
             {loading ? "Deleting…" : "Delete my account"}
@@ -281,14 +281,14 @@ function BillingCard({ userRole }: { userRole: string | null | undefined }) {
     <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 mb-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-white">{title}</p>
-          <p className="text-xs text-slate-400 mt-1">{description}</p>
+          <p className="text-sm font-semibold text-foreground">{title}</p>
+          <p className="text-xs text-muted-foreground mt-1">{description}</p>
         </div>
         <button
           type="button"
           onClick={handleCheckout}
           disabled={isLoading}
-          className="mt-2 sm:mt-0 inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-2 sm:mt-0 inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? "Opening checkout…" : "Checkout with Stripe"}
         </button>
@@ -351,20 +351,20 @@ function CoachProfile() {
       <div className="p-6 max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <div className="mb-2">
-          <h1 className="text-2xl font-bold text-white">Coach Profile</h1>
-          <p className="text-sm text-slate-500 mt-1">Your coaching profile</p>
+          <h1 className="text-2xl font-bold text-foreground">Coach Profile</h1>
+          <p className="text-sm text-muted-foreground mt-1">Your coaching profile</p>
         </div>
 
         {/* Profile Card */}
-        <div className="bg-[#06070E] border border-border rounded-xl p-6">
+        <div className="bg-background border border-border rounded-xl p-6">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#2A504C] to-[#3d7a74] flex items-center justify-center text-xl font-bold text-white">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#2A504C] to-[#3d7a74] flex items-center justify-center text-xl font-bold text-foreground">
               {profile?.name?.charAt(0)?.toUpperCase() ?? "C"}
             </div>
             <div>
-              <p className="text-sm font-semibold text-white">{profile?.name ?? "Coach"}</p>
+              <p className="text-sm font-semibold text-foreground">{profile?.name ?? "Coach"}</p>
               <p className="text-xs text-primary font-medium uppercase tracking-wider">Thrive Coach</p>
-              <p className="text-xs text-slate-500 mt-0.5">{profile?.email ?? ""}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{profile?.email ?? ""}</p>
             </div>
           </div>
 
@@ -373,18 +373,18 @@ function CoachProfile() {
               <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem className="col-span-2">
-                    <FormLabel className="text-xs text-slate-400 font-medium uppercase tracking-wider">Name</FormLabel>
+                    <FormLabel className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Name</FormLabel>
                     <FormControl>
-                      <Input className="bg-[#06070E] border-border text-white placeholder-slate-600" {...field} />
+                      <Input className="bg-background border-border text-foreground placeholder-slate-600" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={form.control} name="age" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-slate-400 font-medium uppercase tracking-wider">Age</FormLabel>
+                    <FormLabel className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Age</FormLabel>
                     <FormControl>
-                      <Input type="number" className="bg-[#06070E] border-border text-white placeholder-slate-600" {...field} />
+                      <Input type="number" className="bg-background border-border text-foreground placeholder-slate-600" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -392,10 +392,10 @@ function CoachProfile() {
               </div>
               <FormField control={form.control} name="bio" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs text-slate-400 font-medium uppercase tracking-wider">Coaching Bio</FormLabel>
+                  <FormLabel className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Coaching Bio</FormLabel>
                   <FormControl>
                     <textarea
-                      className="w-full bg-[#06070E] border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary min-h-[80px] resize-y"
+                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary min-h-[80px] resize-y"
                       placeholder="Describe your coaching philosophy, specialties, and experience..."
                       maxLength={500}
                       {...field}
@@ -423,7 +423,7 @@ function CoachProfile() {
             <TriangleAlert className="w-4 h-4 text-red-400" />
             <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wider">Danger Zone</h2>
           </div>
-          <p className="text-xs text-slate-500 mb-4">Once you delete your account, all your runs, training plans, alerts, and data are permanently gone. There is no undo.</p>
+          <p className="text-xs text-muted-foreground mb-4">Once you delete your account, all your runs, training plans, alerts, and data are permanently gone. There is no undo.</p>
           <button
             type="button"
             onClick={() => setShowDeleteModal(true)}
@@ -599,7 +599,7 @@ function AthleteProfile() {
               <TriangleAlert className="w-4 h-4 text-red-400" />
               <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wider">Danger Zone</h2>
             </div>
-            <p className="text-xs text-slate-500 mb-4">Once you delete your account, all your runs, training plans, alerts, and data are permanently gone. There is no undo.</p>
+            <p className="text-xs text-muted-foreground mb-4">Once you delete your account, all your runs, training plans, alerts, and data are permanently gone. There is no undo.</p>
             <button
               type="button"
               onClick={() => setShowDeleteModal(true)}

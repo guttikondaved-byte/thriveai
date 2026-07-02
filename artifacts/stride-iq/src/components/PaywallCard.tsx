@@ -108,16 +108,16 @@ export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
           Start your {TRIAL_DAYS}-day free trial
         </p>
       </div>
-      <p className="text-xs text-slate-400 mb-5">
+      <p className="text-xs text-muted-foreground mb-5">
         No card required. Free for {TRIAL_DAYS} days, or subscribe now to skip the trial.
       </p>
 
-      <div className="rounded-xl bg-[#0e1a19]/60 border border-border px-4 py-3 mb-4">
+      <div className="rounded-xl bg-secondary/60 border border-border px-4 py-3 mb-4">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-white">{copy.title} plan</p>
-          <p className="text-sm font-bold text-white whitespace-nowrap">{copy.price}</p>
+          <p className="text-sm font-semibold text-foreground">{copy.title} plan</p>
+          <p className="text-sm font-bold text-foreground whitespace-nowrap">{copy.price}</p>
         </div>
-        <p className="text-xs text-slate-400 mt-1">{copy.sub}</p>
+        <p className="text-xs text-muted-foreground mt-1">{copy.sub}</p>
       </div>
 
       {error && <p className="text-red-400 text-xs mb-3">{error}</p>}

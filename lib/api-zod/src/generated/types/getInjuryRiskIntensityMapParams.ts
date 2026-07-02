@@ -6,10 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListActivitiesParams = {
-limit?: number;
+export type GetInjuryRiskIntensityMapParams = {
 /**
- * Filter to activities on this date (YYYY-MM-DD).
+ * Target month as YYYY-MM. Defaults to the current month.
  */
-date?: string;
+month?: string;
 };

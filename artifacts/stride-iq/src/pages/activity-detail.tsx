@@ -22,7 +22,7 @@ const ACTIVITY_COLORS: Record<string, string> = {
   long_run: "text-[#f59e0b] bg-[#f59e0b]/10 border-[#f59e0b]/20",
   race: "text-[#ef4444] bg-[#ef4444]/10 border-[#ef4444]/20",
   cross_training: "text-primary bg-primary/10 border-primary/20",
-  rest: "text-slate-400 bg-secondary border-border",
+  rest: "text-muted-foreground bg-secondary border-border",
 };
 
 const M_PER_MILE = 1609.344;
@@ -154,8 +154,8 @@ export default function ActivityDetail() {
               const end = parsePoint(polyPoints[polyPoints.length - 1]!);
               return (
                 <>
-                  <circle cx={start.x} cy={start.y} r={5} fill="#10b981" stroke="#06070E" strokeWidth={2} />
-                  <circle cx={end.x} cy={end.y} r={5} fill="#ef4444" stroke="#06070E" strokeWidth={2} />
+                  <circle cx={start.x} cy={start.y} r={5} fill="#10b981" stroke="#eaf4ff" strokeWidth={2} />
+                  <circle cx={end.x} cy={end.y} r={5} fill="#ef4444" stroke="#eaf4ff" strokeWidth={2} />
                 </>
               );
             })()}

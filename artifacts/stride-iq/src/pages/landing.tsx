@@ -176,7 +176,7 @@ function BtnTeal({
       className={cn(
         "inline-flex items-center justify-center font-sans font-semibold border-0",
         "cursor-pointer rounded-[10px] text-base px-[30px] py-[15px]",
-        "bg-[#3D7A74] text-white shadow-[0_14px_30px_-12px_rgba(61,122,116,0.6)]",
+        "bg-[#3D7A74] text-foreground shadow-[0_14px_30px_-12px_rgba(61,122,116,0.6)]",
         "transition-colors hover:bg-[#2A504C]",
         className,
       )}
@@ -322,7 +322,7 @@ export default function Landing() {
   ];
 
   return (
-    <div className="bg-[#06070E] overflow-x-clip">
+    <div className="bg-background overflow-x-clip">
       {/* NAVBAR */}
       <header
         className="sticky top-0 z-50 backdrop-blur-[12px] border-b border-[#182220] transition-[background-color,box-shadow] duration-200"
@@ -390,7 +390,7 @@ export default function Landing() {
         </div>
         {menuOpen && (
           <div
-            className="lg:hidden flex flex-col gap-[6px] bg-[#06070E] border-t border-[#182220]"
+            className="lg:hidden flex flex-col gap-[6px] bg-background border-t border-[#182220]"
             style={{ padding: "18px clamp(20px,4vw,32px) 26px" }}
           >
             {navLinks.map(([label, id]) => (
@@ -407,7 +407,7 @@ export default function Landing() {
                 navigate("/sign-in");
                 setMenuOpen(false);
               }}
-              className="w-full text-white font-semibold py-3 border border-[#182220] rounded-[10px] mt-[14px] bg-transparent cursor-pointer text-[15px] font-sans"
+              className="w-full text-foreground font-semibold py-3 border border-[#182220] rounded-[10px] mt-[14px] bg-transparent cursor-pointer text-[15px] font-sans"
             >
               Log in
             </button>
@@ -425,7 +425,7 @@ export default function Landing() {
       </header>
 
       {/* HERO */}
-      <section id="top" className="relative overflow-hidden bg-[#06070E]">
+      <section id="top" className="relative overflow-hidden bg-background">
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -534,7 +534,7 @@ export default function Landing() {
             </div>
             <div className="flex-1">
               <div
-                className="rounded-[18px] border border-[#182220] bg-[#06070E] p-4 flex flex-col gap-3"
+                className="rounded-[18px] border border-[#182220] bg-background p-4 flex flex-col gap-3"
                 style={{ boxShadow: "0 30px 60px -28px rgba(0,0,0,0.7)" }}
               >
                 <div className="rounded-[14px] border border-[#182220] bg-[#0C0F1A] p-4">
@@ -587,7 +587,7 @@ export default function Landing() {
       </section>
 
       {/* FOR COACHES */}
-      <section id="coaches" className="relative overflow-hidden bg-[#06070E]">
+      <section id="coaches" className="relative overflow-hidden bg-background">
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -808,7 +808,7 @@ export default function Landing() {
       </section>
 
       {/* REVIEWS */}
-      <section className="bg-[#06070E]">
+      <section className="bg-background">
         <div className={cn(WRAP, SEC)}>
           <div className="flex flex-col lg:flex-row rounded-[18px] overflow-hidden">
             <div
@@ -816,13 +816,13 @@ export default function Landing() {
               style={{ padding: "clamp(32px,4vw,56px)" }}
             >
               <h2
-                className="font-display font-bold leading-[1.08] text-white mb-[34px]"
+                className="font-display font-bold leading-[1.08] text-foreground mb-[34px]"
                 style={{ fontSize: "clamp(28px,4.4vw,52px)" }}
               >
                 Reviews from users
               </h2>
               <div className="mb-8">
-                <div className="flex gap-[3px] mb-2 text-white text-[22px]">
+                <div className="flex gap-[3px] mb-2 text-foreground text-[22px]">
                   ★★★★★
                 </div>
                 <p className="text-[rgba(255,255,255,0.92)] font-semibold text-lg m-0">
@@ -833,7 +833,7 @@ export default function Landing() {
                 </p>
               </div>
               <div>
-                <div className="flex gap-[3px] mb-2 text-white text-[18px]">
+                <div className="flex gap-[3px] mb-2 text-foreground text-[18px]">
                   ★★★★★
                 </div>
                 <p className="text-[rgba(255,255,255,0.92)] font-semibold text-base m-0">
@@ -858,7 +858,7 @@ export default function Landing() {
                 >
                   "{REVIEWS[currentIndex].quote}"
                 </p>
-                <p className="text-white font-semibold m-0">
+                <p className="text-foreground font-semibold m-0">
                   {REVIEWS[currentIndex].author}
                 </p>
               </div>
@@ -881,7 +881,7 @@ export default function Landing() {
       </section>
 
       {/* WHY USE THRIVE */}
-      <section className="relative overflow-hidden bg-[#06070E] border-t border-[#182220]">
+      <section className="relative overflow-hidden bg-background border-t border-[#182220]">
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -960,7 +960,7 @@ export default function Landing() {
       </section>
 
       {/* PRICING */}
-      <section id="pricing" className="bg-[#06070E] border-t border-[#182220]">
+      <section id="pricing" className="bg-background border-t border-[#182220]">
         <div className={cn(WRAP, SEC)}>
           <h2
             className={cn(h2, "text-center")}
@@ -1078,7 +1078,7 @@ export default function Landing() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="bg-[#06070E] border-t border-[#182220]">
+      <section id="faq" className="bg-background border-t border-[#182220]">
         <div className={cn(WRAP, SEC)}>
           <div
             className="flex flex-col lg:flex-row lg:items-start"
@@ -1152,7 +1152,7 @@ export default function Landing() {
                 className="relative"
                 style={{
                   border: "1px solid rgba(255,255,255,0.10)",
-                  background: "#06070E",
+                  background: "#eaf4ff",
                   boxShadow: "0 36px 70px -28px rgba(0,0,0,0.8)",
                 }}
               />
@@ -1249,7 +1249,7 @@ export default function Landing() {
 
 function FeatureCardShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-[22px] border border-[#182220] bg-[#06070E] p-[18px] aspect-[9/16] flex flex-col gap-3">
+    <div className="rounded-[22px] border border-[#182220] bg-background p-[18px] aspect-[9/16] flex flex-col gap-3">
       {children}
     </div>
   );

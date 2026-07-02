@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { useListActivities, useCreateActivity, getListActivitiesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, X, Upload, Activity, RefreshCw, Unlink, CheckCircle2 } from "lucide-react";
@@ -29,7 +29,7 @@ const ACTIVITY_COLORS: Record<string, string> = {
   long_run: "text-[#f59e0b] bg-[#f59e0b]/10 border-[#f59e0b]/20", // Amber
   race: "text-[#ef4444] bg-[#ef4444]/10 border-[#ef4444]/20", // Red
   cross_training: "text-primary bg-primary/10 border-primary/20",
-  rest: "text-slate-400 bg-secondary border-border",
+  rest: "text-muted-foreground bg-secondary border-border",
 };
 
 const schema = z.object({
@@ -84,7 +84,12 @@ export default function Activities() {
   const [showGpx, setShowGpx] = useState(false);
   const qc = useQueryClient();
   const { toast } = useToast();
-  const { data: activities, isLoading } = useListActivities({ limit: 50 });
+  const search = useSearch();
+  const dateFilter = new URLSearchParams(search).get("date") ?? undefined;
+  const { data: activities, isLoading } = useListActivities({
+    limit: 50,
+    ...(dateFilter ? { date: dateFilter } : {}),
+  });
   const createActivity = useCreateActivity();
   const stravaStatus = useStravaStatus();
   const stravaSync = useStravaSync();
@@ -188,14 +193,28 @@ export default function Activities() {
         </div>
       </div>
 
+      {dateFilter && (
+        <div className="flex items-center justify-between bg-primary/10 border border-primary/30 rounded-xl px-5 py-3.5 mb-6">
+          <div className="flex items-center gap-3">
+            <Activity className="w-4 h-4 text-primary" />
+            <span className="text-sm text-foreground">
+              Showing activities on <strong>{format(new Date(`${dateFilter}T00:00:00`), "EEEE, MMM d, yyyy")}</strong>
+            </span>
+          </div>
+          <Link href="/activities" className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+            <X className="w-3.5 h-3.5" /> Clear
+          </Link>
+        </div>
+      )}
+
       {/* Strava connection banner */}
       {stravaStatus.data?.connected ? (
         <div className="flex items-center justify-between bg-[#FC4C02]/10 border border-[#FC4C02]/30 rounded-xl px-5 py-3.5 mb-6">
           <div className="flex items-center gap-3">
             <CheckCircle2 size={18} className="text-[#FC4C02] shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-white">Strava connected</p>
-              <p className="text-xs text-slate-400">New runs sync automatically via webhook.</p>
+              <p className="text-sm font-semibold text-foreground">Strava connected</p>
+              <p className="text-xs text-muted-foreground">New runs sync automatically via webhook.</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -235,7 +254,7 @@ export default function Activities() {
             href="/api/strava/connect"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg bg-[#FC4C02] hover:bg-[#e34400] text-white transition-colors shrink-0"
+            className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg bg-[#FC4C02] hover:bg-[#e34400] text-foreground transition-colors shrink-0"
           >
             Connect Strava
           </a>
@@ -329,8 +348,19 @@ export default function Activities() {
       ) : !activities?.length ? (
         <div className="bg-card border border-border rounded-lg py-16 text-center">
           <ActivityIcon className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">No activities logged yet.</p>
-          <p className="text-xs text-muted-foreground mt-1">Log a run manually or import a GPX file from your GPS watch.</p>
+          {dateFilter ? (
+            <>
+              <p className="text-sm text-muted-foreground">No activities on this day.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                <Link href="/activities" className="text-primary hover:underline">View all activities</Link>
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">No activities logged yet.</p>
+              <p className="text-xs text-muted-foreground mt-1">Log a run manually or import a GPX file from your GPS watch.</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="bg-card border border-border rounded-lg divide-y divide-border">

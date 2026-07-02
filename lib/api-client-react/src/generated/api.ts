@@ -26,14 +26,18 @@ import type {
   AthleteProfileInput,
   AuthUserEnvelope,
   BeginBrowserLoginParams,
+  CreateSorenessBody,
   CreateTeamBody,
   DashboardSummary,
   ErrorEnvelope,
+  GetInjuryRiskIntensityMapParams,
   HandleBrowserLoginCallbackParams,
   HealthStatus,
   Injury,
   InjuryAlert,
   InjuryInput,
+  InjuryRiskDashboard,
+  IntensityMap,
   JoinTeamBody,
   ListActivitiesParams,
   LogoutSuccess,
@@ -47,6 +51,7 @@ import type {
   OpenaiError,
   OpenaiMessage,
   OpenaiMessageInput,
+  SorenessEntry,
   TeamEnvelope,
   TeamInfo,
   TeamMember,
@@ -1042,6 +1047,238 @@ export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDash
 
 
 
+
+export const getGetInjuryRiskDashboardUrl = () => {
+
+
+
+
+  return `/api/injury-risk/dashboard`
+}
+
+/**
+ * @summary Get the aggregated injury risk dashboard for the current athlete
+ */
+export const getInjuryRiskDashboard = async ( options?: RequestInit): Promise<InjuryRiskDashboard> => {
+
+  return customFetch<InjuryRiskDashboard>(getGetInjuryRiskDashboardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetInjuryRiskDashboardQueryKey = () => {
+    return [
+    `/api/injury-risk/dashboard`
+    ] as const;
+    }
+
+
+export const getGetInjuryRiskDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getInjuryRiskDashboard>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInjuryRiskDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetInjuryRiskDashboardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getInjuryRiskDashboard>>> = ({ signal }) => getInjuryRiskDashboard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInjuryRiskDashboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetInjuryRiskDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getInjuryRiskDashboard>>>
+export type GetInjuryRiskDashboardQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the aggregated injury risk dashboard for the current athlete
+ */
+
+export function useGetInjuryRiskDashboard<TData = Awaited<ReturnType<typeof getInjuryRiskDashboard>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInjuryRiskDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetInjuryRiskDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetInjuryRiskIntensityMapUrl = (params?: GetInjuryRiskIntensityMapParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/injury-risk/intensity-map?${stringifiedParams}` : `/api/injury-risk/intensity-map`
+}
+
+/**
+ * @summary Get the calendar-month training intensity map for a given month
+ */
+export const getInjuryRiskIntensityMap = async (params?: GetInjuryRiskIntensityMapParams, options?: RequestInit): Promise<IntensityMap> => {
+
+  return customFetch<IntensityMap>(getGetInjuryRiskIntensityMapUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetInjuryRiskIntensityMapQueryKey = (params?: GetInjuryRiskIntensityMapParams,) => {
+    return [
+    `/api/injury-risk/intensity-map`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetInjuryRiskIntensityMapQueryOptions = <TData = Awaited<ReturnType<typeof getInjuryRiskIntensityMap>>, TError = ErrorType<unknown>>(params?: GetInjuryRiskIntensityMapParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInjuryRiskIntensityMap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetInjuryRiskIntensityMapQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getInjuryRiskIntensityMap>>> = ({ signal }) => getInjuryRiskIntensityMap(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInjuryRiskIntensityMap>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetInjuryRiskIntensityMapQueryResult = NonNullable<Awaited<ReturnType<typeof getInjuryRiskIntensityMap>>>
+export type GetInjuryRiskIntensityMapQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the calendar-month training intensity map for a given month
+ */
+
+export function useGetInjuryRiskIntensityMap<TData = Awaited<ReturnType<typeof getInjuryRiskIntensityMap>>, TError = ErrorType<unknown>>(
+ params?: GetInjuryRiskIntensityMapParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInjuryRiskIntensityMap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetInjuryRiskIntensityMapQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateSorenessEntryUrl = () => {
+
+
+
+
+  return `/api/injury-risk/soreness`
+}
+
+/**
+ * @summary Log a self-reported soreness entry for a body part
+ */
+export const createSorenessEntry = async (createSorenessBody: CreateSorenessBody, options?: RequestInit): Promise<SorenessEntry> => {
+
+  return customFetch<SorenessEntry>(getCreateSorenessEntryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createSorenessBody,)
+  }
+);}
+
+
+
+
+export const getCreateSorenessEntryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSorenessEntry>>, TError,{data: BodyType<CreateSorenessBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSorenessEntry>>, TError,{data: BodyType<CreateSorenessBody>}, TContext> => {
+
+const mutationKey = ['createSorenessEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSorenessEntry>>, {data: BodyType<CreateSorenessBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSorenessEntry(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSorenessEntryMutationResult = NonNullable<Awaited<ReturnType<typeof createSorenessEntry>>>
+    export type CreateSorenessEntryMutationBody = BodyType<CreateSorenessBody>
+    export type CreateSorenessEntryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Log a self-reported soreness entry for a body part
+ */
+export const useCreateSorenessEntry = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSorenessEntry>>, TError,{data: BodyType<CreateSorenessBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSorenessEntry>>,
+        TError,
+        {data: BodyType<CreateSorenessBody>},
+        TContext
+      > => {
+      return useMutation(getCreateSorenessEntryMutationOptions(options));
+    }
 
 export const getListOpenaiConversationsUrl = () => {
 

@@ -107,13 +107,13 @@ export default function CoachDashboard() {
     return (
       <div className="p-6 max-w-2xl mx-auto">
         <p className={`text-xs font-semibold uppercase tracking-[0.15em] ${focus.accentText}`}>{greeting}{displayName ? `, Coach ${displayName}` : ""}</p>
-        <h1 className="text-2xl font-bold text-white mb-2 mt-1">{focus.headline}</h1>
-        <div className="bg-[#06070E] border border-border rounded-xl p-8 text-center mt-6">
+        <h1 className="text-2xl font-bold text-foreground mb-2 mt-1">{focus.headline}</h1>
+        <div className="bg-background border border-border rounded-xl p-8 text-center mt-6">
           <div className={`w-12 h-12 rounded-xl ${focus.accentBg} border ${focus.accentBorder} flex items-center justify-center mx-auto mb-3 ${focus.accentText}`}>
             <focus.icon className="w-6 h-6" />
           </div>
-          <p className="text-white font-medium">No team yet</p>
-          <p className="text-slate-500 text-sm mt-1">Create a team from the Team page and share the invite code to start tracking your {focus.athleteNoun} here.</p>
+          <p className="text-foreground font-medium">No team yet</p>
+          <p className="text-muted-foreground text-sm mt-1">Create a team from the Team page and share the invite code to start tracking your {focus.athleteNoun} here.</p>
         </div>
       </div>
     );
@@ -123,8 +123,8 @@ export default function CoachDashboard() {
     <div className="p-6 max-w-6xl mx-auto">
       <div className="mb-6">
         <p className={`text-xs font-semibold uppercase tracking-[0.15em] ${focus.accentText}`}>{greeting}{displayName ? `, Coach ${displayName}` : ""}</p>
-        <h1 className="text-2xl font-bold text-white mt-1">{focus.headline}</h1>
-        <p className="text-slate-500 text-sm mt-0.5">{team.name} · {members.length} {focus.athleteNoun}</p>
+        <h1 className="text-2xl font-bold text-foreground mt-1">{focus.headline}</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">{team.name} · {members.length} {focus.athleteNoun}</p>
       </div>
 
       {/* Discipline-tuned focus banner */}
@@ -136,26 +136,26 @@ export default function CoachDashboard() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className={`text-xs font-bold uppercase tracking-[0.15em] ${focus.accentText}`}>{focus.label}</span>
-              <span className="text-[10px] text-slate-500">·</span>
-              <span className="text-[11px] text-slate-500">Portal tuned for your {focus.athleteNoun}</span>
+              <span className="text-[10px] text-muted-foreground">·</span>
+              <span className="text-[11px] text-muted-foreground">Portal tuned for your {focus.athleteNoun}</span>
             </div>
-            <p className="text-sm text-slate-300 mt-1 leading-relaxed">{focus.tagline}</p>
+            <p className="text-sm text-foreground mt-1 leading-relaxed">{focus.tagline}</p>
             <p className={`text-[11px] italic mt-1 ${focus.accentText} opacity-80`}>"{focus.philosophy}"</p>
             <div className="mt-3 space-y-2">
               <div className="flex flex-wrap gap-2">
                 {focus.focusAreas.map(area => (
                   <span
                     key={area}
-                    className={`text-[11px] font-medium px-2.5 py-1 rounded-full border ${focus.accentBorder} ${focus.accentText} bg-[#06070E]/40`}
+                    className={`text-[11px] font-medium px-2.5 py-1 rounded-full border ${focus.accentBorder} ${focus.accentText} bg-background/40`}
                   >
                     {area}
                   </span>
                 ))}
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider">Key sessions</span>
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Key sessions</span>
                 {focus.keySessionTypes.map(s => (
-                  <span key={s} className="text-[10px] text-slate-400 bg-slate-800/60 px-2 py-0.5 rounded">
+                  <span key={s} className="text-[10px] text-muted-foreground bg-slate-800/60 px-2 py-0.5 rounded">
                     {s}
                   </span>
                 ))}
@@ -172,14 +172,14 @@ export default function CoachDashboard() {
       </div>
 
       <div className="mb-6">
-        <div className="bg-[#06070E] border border-border rounded-xl overflow-hidden">
+        <div className="bg-background border border-border rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <h2 className="font-semibold text-white text-sm">Athlete Roster</h2>
-            <span className="text-slate-500 text-xs">{members.length} athlete{members.length !== 1 ? "s" : ""}</span>
+            <h2 className="font-semibold text-foreground text-sm">Athlete Roster</h2>
+            <span className="text-muted-foreground text-xs">{members.length} athlete{members.length !== 1 ? "s" : ""}</span>
           </div>
 
           {members.length === 0 ? (
-            <div className="px-5 py-10 text-center text-sm text-slate-500">
+            <div className="px-5 py-10 text-center text-sm text-muted-foreground">
               No athletes yet. Share your invite code <span className="font-mono text-primary">{team.inviteCode}</span> from the Team page.
             </div>
           ) : (
@@ -193,26 +193,26 @@ export default function CoachDashboard() {
                     onClick={() => setSelectedUserId(athlete.userId)}
                     className={`w-full flex items-center gap-4 px-5 py-3.5 text-left hover:bg-slate-800/30 transition-colors ${cfg?.row ?? ""}`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold text-foreground flex-shrink-0">
                       {athlete.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-white truncate">{athlete.name}</div>
-                      <div className="text-xs text-slate-500 truncate">{athlete.primaryGoal ?? (athlete.fitnessLevel ? `${athlete.fitnessLevel} runner` : "Athlete")}</div>
+                      <div className="text-sm font-medium text-foreground truncate">{athlete.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">{athlete.primaryGoal ?? (athlete.fitnessLevel ? `${athlete.fitnessLevel} runner` : "Athlete")}</div>
                     </div>
                     <div className="text-right hidden sm:block">
-                      <div className="text-xs text-slate-300 font-medium">{athlete.weeklyDistanceKm.toFixed(1)} mi</div>
-                      <div className="text-[10px] text-slate-600">this week</div>
+                      <div className="text-xs text-foreground font-medium">{athlete.weeklyDistanceKm.toFixed(1)} mi</div>
+                      <div className="text-[10px] text-muted-foreground">this week</div>
                     </div>
                     <div className="text-right hidden md:block">
-                      <div className="text-xs text-slate-300 font-medium">{athlete.restingHeartRate != null ? `HR ${athlete.restingHeartRate}` : "HR —"}</div>
-                      <div className="text-[10px] text-slate-600">{athlete.hrv != null ? `HRV ${athlete.hrv.toFixed(0)}` : "HRV —"}</div>
+                      <div className="text-xs text-foreground font-medium">{athlete.restingHeartRate != null ? `HR ${athlete.restingHeartRate}` : "HR —"}</div>
+                      <div className="text-[10px] text-muted-foreground">{athlete.hrv != null ? `HRV ${athlete.hrv.toFixed(0)}` : "HRV —"}</div>
                     </div>
                     <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium flex-shrink-0 ${badge.badge}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
                       {badge.label}
                     </div>
-                    <ChevronRight size={14} className="text-slate-600 flex-shrink-0" />
+                    <ChevronRight size={14} className="text-muted-foreground flex-shrink-0" />
                   </button>
                 );
               })}

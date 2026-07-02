@@ -41,11 +41,15 @@ router.get("/activities", async (req: Request, res): Promise<void> => {
   }
   const query = ListActivitiesQueryParams.safeParse(req.query);
   const limit = query.success ? (query.data.limit ?? 20) : 20;
+  const date = query.success ? query.data.date : undefined;
   const userId = req.user.id;
+  const where = date
+    ? and(eq(activitiesTable.userId, userId), eq(activitiesTable.activityDate, date))
+    : eq(activitiesTable.userId, userId);
   const activities = await db
     .select()
     .from(activitiesTable)
-    .where(eq(activitiesTable.userId, userId))
+    .where(where)
     .orderBy(desc(activitiesTable.activityDate))
     .limit(limit);
   res.json(ListActivitiesResponse.parse(activities.map(serializeActivity)));

@@ -57,13 +57,13 @@ export default function GpxImport({ onImport, onClose }: Props) {
   };
 
   return (
-    <div className="bg-[#06070E] border border-border rounded-xl p-6 mb-6">
+    <div className="bg-background border border-border rounded-xl p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-sm font-semibold text-white">Import GPX File</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Upload a .gpx file from Garmin, Apple Watch, or any GPS watch</p>
+          <h2 className="text-sm font-semibold text-foreground">Import GPX File</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Upload a .gpx file from Garmin, Apple Watch, or any GPS watch</p>
         </div>
-        <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
           <X size={16} />
         </button>
       </div>
@@ -75,19 +75,19 @@ export default function GpxImport({ onImport, onClose }: Props) {
           onDrop={onDrop}
           onClick={() => inputRef.current?.click()}
           className={`border-2 border-dashed rounded-lg py-10 flex flex-col items-center gap-3 cursor-pointer transition-colors
-            ${dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-[#0e1a19]/40"}`}
+            ${dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-secondary/40"}`}
         >
           <Upload size={28} className={dragging ? "text-primary" : "text-muted-foreground"} />
           <div className="text-center">
-            <p className="text-sm text-slate-300 font-medium">Drop your .gpx file here</p>
-            <p className="text-xs text-slate-500 mt-1">or click to browse</p>
+            <p className="text-sm text-foreground font-medium">Drop your .gpx file here</p>
+            <p className="text-xs text-muted-foreground mt-1">or click to browse</p>
           </div>
           <input ref={inputRef} type="file" accept=".gpx" className="hidden" onChange={onFileChange} />
         </div>
       )}
 
       {loading && (
-        <div className="flex items-center justify-center gap-3 py-10 text-slate-400">
+        <div className="flex items-center justify-center gap-3 py-10 text-muted-foreground">
           <Loader2 size={20} className="animate-spin" />
           <span className="text-sm">Parsing GPX file…</span>
         </div>
@@ -119,7 +119,7 @@ export default function GpxImport({ onImport, onClose }: Props) {
           </div>
 
           {parsed.name && (
-            <p className="text-xs text-slate-400">Activity name: <span className="text-slate-200">{parsed.name}</span></p>
+            <p className="text-xs text-muted-foreground">Activity name: <span className="text-foreground">{parsed.name}</span></p>
           )}
 
           <div className="flex gap-3 pt-1">
@@ -141,9 +141,9 @@ export default function GpxImport({ onImport, onClose }: Props) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-[#0e1a19]/60 rounded-lg px-3 py-2.5">
-      <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-0.5">{label}</p>
-      <p className="text-sm font-semibold text-white">{value}</p>
+    <div className="bg-secondary/60 rounded-lg px-3 py-2.5">
+      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">{label}</p>
+      <p className="text-sm font-semibold text-foreground">{value}</p>
     </div>
   );
 }

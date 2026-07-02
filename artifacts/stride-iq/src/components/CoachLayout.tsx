@@ -135,7 +135,7 @@ function AveraTipPopup() {
 
   return (
     <div className="fixed bottom-6 right-6 z-50 w-80 animate-in slide-in-from-bottom-4 fade-in duration-300">
-      <div className="bg-[#06070E] border border-primary/30 rounded-xl shadow-2xl shadow-black/50 overflow-hidden">
+      <div className="bg-background border border-primary/30 rounded-xl shadow-2xl shadow-black/50 overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-primary/5">
           <div className="w-6 h-6 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
             <Bot className="w-3 h-3 text-primary" />
@@ -143,14 +143,14 @@ function AveraTipPopup() {
           <span className="text-xs font-semibold text-primary">AveraAI has a suggestion</span>
           <button
             onClick={() => { setDismissed(true); setVisible(false); }}
-            className="ml-auto text-slate-500 hover:text-slate-300 transition-colors"
+            className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
         <div className="px-4 py-3">
-          <p className="text-sm text-slate-300 leading-relaxed">{tip}</p>
+          <p className="text-sm text-foreground leading-relaxed">{tip}</p>
         </div>
 
         {flow === "proposal" && proposal && (
@@ -158,17 +158,17 @@ function AveraTipPopup() {
             <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
               <Calendar className="w-3 h-3" /> Proposed plan
             </div>
-            <p className="mt-1.5 text-sm font-semibold text-white">{proposal.name}</p>
-            <p className="text-xs text-slate-400">for {proposal.athleteName}</p>
-            <div className="mt-2 space-y-1 text-xs text-slate-400">
-              <p><span className="text-slate-500">Goal:</span> {proposal.goal}</p>
+            <p className="mt-1.5 text-sm font-semibold text-foreground">{proposal.name}</p>
+            <p className="text-xs text-muted-foreground">for {proposal.athleteName}</p>
+            <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+              <p><span className="text-muted-foreground">Goal:</span> {proposal.goal}</p>
               <p>
-                <span className="text-slate-500">Volume:</span> {proposal.weeklyMileage} mi/wk · {proposal.sessions.length} sessions
+                <span className="text-muted-foreground">Volume:</span> {proposal.weeklyMileage} mi/wk · {proposal.sessions.length} sessions
               </p>
-              <p><span className="text-slate-500">Dates:</span> {proposal.startDate} → {proposal.endDate}</p>
+              <p><span className="text-muted-foreground">Dates:</span> {proposal.startDate} → {proposal.endDate}</p>
             </div>
             {proposal.rationale && (
-              <p className="mt-2 text-xs italic text-slate-500 leading-relaxed">"{proposal.rationale}"</p>
+              <p className="mt-2 text-xs italic text-muted-foreground leading-relaxed">"{proposal.rationale}"</p>
             )}
           </div>
         )}
@@ -209,7 +209,7 @@ function AveraTipPopup() {
               </button>
               <button
                 onClick={() => { setFlow("idle"); setProposal(null); }}
-                className="text-xs text-slate-500 hover:text-slate-400 transition-colors"
+                className="text-xs text-muted-foreground hover:text-muted-foreground transition-colors"
               >
                 Cancel
               </button>
@@ -251,7 +251,7 @@ function AveraTipPopup() {
 
           <button
             onClick={() => { setDismissed(true); setVisible(false); }}
-            className="ml-auto text-xs text-slate-500 hover:text-slate-400 transition-colors"
+            className="ml-auto text-xs text-muted-foreground hover:text-muted-foreground transition-colors"
           >
             Dismiss
           </button>

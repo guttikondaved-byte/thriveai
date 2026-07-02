@@ -48,7 +48,7 @@ interface AveraProposal {
 
 const STATUS_COLORS: Record<string, string> = {
   active: "text-[#10b981] bg-[#10b981]/10 border-[#10b981]/20",
-  completed: "text-slate-400 bg-slate-400/10 border-slate-400/20",
+  completed: "text-muted-foreground bg-slate-400/10 border-slate-400/20",
   paused: "text-[#f59e0b] bg-[#f59e0b]/10 border-[#f59e0b]/20",
 };
 
@@ -203,8 +203,8 @@ export default function CoachPlans() {
     <div className="p-6 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Training Plans</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Manage training plans for each athlete</p>
+          <h1 className="text-2xl font-bold text-foreground">Training Plans</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage training plans for each athlete</p>
         </div>
         <Button
           onClick={averaFlow === "idle" || averaFlow === "error" ? buildWithAvera : undefined}
@@ -229,14 +229,14 @@ export default function CoachPlans() {
             </div>
             <button
               onClick={() => { setAveraFlow("idle"); setAveraProposal(null); setAveraError(""); }}
-              className="text-slate-500 hover:text-slate-300 transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
           {averaFlow === "loading" && (
-            <div className="px-5 py-8 flex items-center justify-center gap-3 text-slate-400 text-sm">
+            <div className="px-5 py-8 flex items-center justify-center gap-3 text-muted-foreground text-sm">
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
               Avera is reviewing your team and designing a personalised plan…
             </div>
@@ -246,22 +246,22 @@ export default function CoachPlans() {
             <div className="px-5 py-4 space-y-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-base font-semibold text-white">{averaProposal.name}</p>
+                  <p className="text-base font-semibold text-foreground">{averaProposal.name}</p>
                   <p className="text-sm text-primary mt-0.5">for {averaProposal.athleteName}</p>
-                  <p className="text-sm text-slate-400 mt-1">{averaProposal.goal}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{averaProposal.goal}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-semibold text-white">{averaProposal.weeklyMileage} mi/wk</p>
-                  <p className="text-xs text-slate-500">{averaProposal.sessions.length} sessions</p>
+                  <p className="text-sm font-semibold text-foreground">{averaProposal.weeklyMileage} mi/wk</p>
+                  <p className="text-xs text-muted-foreground">{averaProposal.sessions.length} sessions</p>
                 </div>
               </div>
 
-              <div className="flex gap-4 text-xs text-slate-500">
+              <div className="flex gap-4 text-xs text-muted-foreground">
                 <span>{averaProposal.startDate} → {averaProposal.endDate}</span>
               </div>
 
               {averaProposal.rationale && (
-                <p className="text-xs text-slate-400 italic border-l-2 border-primary/30 pl-3 leading-relaxed">
+                <p className="text-xs text-muted-foreground italic border-l-2 border-primary/30 pl-3 leading-relaxed">
                   "{averaProposal.rationale}"
                 </p>
               )}
@@ -275,9 +275,9 @@ export default function CoachPlans() {
                     long_run: "Long", cross_training: "Cross", rest: "Rest", race: "Race",
                   };
                   return (
-                    <div key={type} className="bg-[#06070E] rounded-lg px-3 py-2 text-center">
-                      <p className="text-sm font-semibold text-white">{count}</p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{labels[type]}</p>
+                    <div key={type} className="bg-background rounded-lg px-3 py-2 text-center">
+                      <p className="text-sm font-semibold text-foreground">{count}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{labels[type]}</p>
                     </div>
                   );
                 })}
@@ -301,7 +301,7 @@ export default function CoachPlans() {
                   <button
                     onClick={buildWithAvera}
                     disabled={averaFlow === "applying"}
-                    className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Generate different plan
                   </button>
@@ -326,9 +326,9 @@ export default function CoachPlans() {
 
       {athletes.length === 0 ? (
         <div className="bg-primary/5 border border-border rounded-xl p-12 text-center">
-          <Calendar className="w-8 h-8 text-slate-600 mx-auto mb-3" />
-          <p className="text-slate-400 text-sm">No athletes on your team yet.</p>
-          <p className="text-slate-600 text-xs mt-1">Add athletes from the Team page first.</p>
+          <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground text-sm">No athletes on your team yet.</p>
+          <p className="text-muted-foreground text-xs mt-1">Add athletes from the Team page first.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -338,7 +338,7 @@ export default function CoachPlans() {
             const isCreating = showFormFor === athlete.userId;
 
             return (
-              <div key={athlete.userId} className="bg-[#06070E] border border-border rounded-xl overflow-hidden">
+              <div key={athlete.userId} className="bg-background border border-border rounded-xl overflow-hidden">
                 <button
                   onClick={() => {
                     setExpandedAthleteId(isExpanded ? null : athlete.userId);
@@ -351,22 +351,22 @@ export default function CoachPlans() {
                       {athlete.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-semibold text-white">{athlete.name}</p>
-                      <p className="text-xs text-slate-500">{athlete.fitnessLevel} · {athlete.primaryGoal}</p>
+                      <p className="text-sm font-semibold text-foreground">{athlete.name}</p>
+                      <p className="text-xs text-muted-foreground">{athlete.fitnessLevel} · {athlete.primaryGoal}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-muted-foreground">
                       {athletePlans.length} plan{athletePlans.length !== 1 ? "s" : ""}
                     </span>
-                    {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                   </div>
                 </button>
 
                 {isExpanded && (
                   <div className="border-t border-border px-5 py-4 space-y-3">
                     {athletePlans.length === 0 && !isCreating && (
-                      <p className="text-xs text-slate-500 py-2">No training plans yet for this athlete.</p>
+                      <p className="text-xs text-muted-foreground py-2">No training plans yet for this athlete.</p>
                     )}
 
                     {athletePlans.map(plan => {
@@ -377,32 +377,32 @@ export default function CoachPlans() {
                       const progress = Math.min(100, Math.round((elapsed / totalDays) * 100));
 
                       return (
-                        <div key={plan.id} className="bg-[#06070E] border border-border rounded-lg p-4">
+                        <div key={plan.id} className="bg-background border border-border rounded-lg p-4">
                           <div className="flex items-start justify-between gap-3 mb-2">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-0.5">
-                                <p className="text-sm font-medium text-white truncate">{plan.name}</p>
+                                <p className="text-sm font-medium text-foreground truncate">{plan.name}</p>
                                 <span className={`text-xs px-2 py-0.5 rounded border font-medium capitalize shrink-0 ${STATUS_COLORS[plan.status] ?? ""}`}>
                                   {plan.status}
                                 </span>
                               </div>
-                              <p className="text-xs text-slate-400">{plan.goal}</p>
+                              <p className="text-xs text-muted-foreground">{plan.goal}</p>
                             </div>
                             <button
                               onClick={() => deletePlan(plan.id)}
                               disabled={deleting === plan.id}
-                              className="p-1.5 rounded text-slate-600 hover:text-red-400 hover:bg-red-400/10 transition-colors shrink-0"
+                              className="p-1.5 rounded text-muted-foreground hover:text-red-400 hover:bg-red-400/10 transition-colors shrink-0"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
-                          <div className="flex items-center gap-4 text-xs text-slate-500 mb-2">
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
                             <span>{format(start, "MMM d")} – {format(end, "MMM d, yyyy")}</span>
                             {plan.weeklyMileage && <span>{plan.weeklyMileage} mi/wk</span>}
                           </div>
                           {plan.status === "active" && (
                             <div>
-                              <div className="flex justify-between text-xs text-slate-500 mb-1">
+                              <div className="flex justify-between text-xs text-muted-foreground mb-1">
                                 <span>Progress</span><span>{progress}%</span>
                               </div>
                               <div className="h-1 bg-secondary rounded-full overflow-hidden">
@@ -415,59 +415,59 @@ export default function CoachPlans() {
                     })}
 
                     {isCreating ? (
-                      <div className="bg-[#06070E] border border-primary/20 rounded-lg p-4 space-y-3">
+                      <div className="bg-background border border-primary/20 rounded-lg p-4 space-y-3">
                         <div className="flex items-center justify-between mb-1">
                           <p className="text-xs font-semibold text-primary uppercase tracking-wider">New Plan for {athlete.name}</p>
-                          <button onClick={() => setShowFormFor(null)} className="text-slate-500 hover:text-slate-300">
+                          <button onClick={() => setShowFormFor(null)} className="text-muted-foreground hover:text-foreground">
                             <X className="w-4 h-4" />
                           </button>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div className="col-span-2">
-                            <label className="text-xs text-slate-400 mb-1 block">Plan Name *</label>
+                            <label className="text-xs text-muted-foreground mb-1 block">Plan Name *</label>
                             <Input
                               value={form.name}
                               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                               placeholder="8-Week 5K Build"
-                              className="bg-[#06070E] border-border text-white text-sm placeholder:text-muted-foreground"
+                              className="bg-background border-border text-foreground text-sm placeholder:text-muted-foreground"
                             />
                           </div>
                           <div className="col-span-2">
-                            <label className="text-xs text-slate-400 mb-1 block">Goal *</label>
+                            <label className="text-xs text-muted-foreground mb-1 block">Goal *</label>
                             <Input
                               value={form.goal}
                               onChange={e => setForm(f => ({ ...f, goal: e.target.value }))}
                               placeholder="Sub-25 min 5K"
-                              className="bg-[#06070E] border-border text-white text-sm placeholder:text-muted-foreground"
+                              className="bg-background border-border text-foreground text-sm placeholder:text-muted-foreground"
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Start Date *</label>
+                            <label className="text-xs text-muted-foreground mb-1 block">Start Date *</label>
                             <Input
                               type="date"
                               value={form.startDate}
                               onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
-                              className="bg-[#06070E] border-border text-white text-sm placeholder:text-muted-foreground"
+                              className="bg-background border-border text-foreground text-sm placeholder:text-muted-foreground"
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-slate-400 mb-1 block">End Date *</label>
+                            <label className="text-xs text-muted-foreground mb-1 block">End Date *</label>
                             <Input
                               type="date"
                               value={form.endDate}
                               onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
-                              className="bg-[#06070E] border-border text-white text-sm placeholder:text-muted-foreground"
+                              className="bg-background border-border text-foreground text-sm placeholder:text-muted-foreground"
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Weekly Mileage (mi)</label>
+                            <label className="text-xs text-muted-foreground mb-1 block">Weekly Mileage (mi)</label>
                             <Input
                               type="number"
                               step="0.1"
                               value={form.weeklyMileage}
                               onChange={e => setForm(f => ({ ...f, weeklyMileage: e.target.value }))}
                               placeholder="30"
-                              className="bg-[#06070E] border-border text-white text-sm placeholder:text-slate-600"
+                              className="bg-background border-border text-foreground text-sm placeholder:text-muted-foreground"
                             />
                           </div>
                         </div>

@@ -12,13 +12,9 @@ import {
 import type { Injury, InjuryInput } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Edit2, Check, X, Shield, Trophy, FileText } from "lucide-react";
+import { BODY_PARTS } from "@/lib/bodyParts";
 
 type Tab = "records" | "injuries" | "notes";
-
-const BODY_PARTS = [
-  "Knee", "Hip", "Ankle", "Foot", "Shin", "Calf", "Hamstring",
-  "Quad", "IT Band", "Plantar Fascia", "Achilles", "Lower Back", "Shoulder", "Other",
-];
 
 const INJURY_TYPES = [
   "Strain", "Sprain", "Tendinitis", "Stress Fracture", "Bursitis",

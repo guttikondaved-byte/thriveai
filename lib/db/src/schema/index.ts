@@ -6,6 +6,7 @@ export * from "./alerts";
 export * from "./conversations";
 export * from "./messages";
 export * from "./injuries";
+export * from "./soreness";
 export * from "./teams";
 export * from "./notifications";
 export * from "./strava";

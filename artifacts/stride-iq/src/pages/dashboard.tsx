@@ -64,7 +64,7 @@ function StravaBanner() {
     <div className={`mb-6 flex items-center gap-4 rounded-xl border px-5 py-4 ${autoPrompt ? "border-[#FC4C02]/30 bg-[#FC4C02]/5" : "border-border bg-secondary"}`}>
       <Activity className="w-6 h-6 shrink-0 text-[#FC4C02]" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white">
+        <p className="text-sm font-medium text-foreground">
           {autoPrompt ? "One more step — connect Strava" : "Connect Strava for automatic run syncing"}
         </p>
         <p className="text-xs text-muted-foreground mt-0.5">Every run will appear in Thrive automatically. No imports needed.</p>
@@ -73,7 +73,7 @@ function StravaBanner() {
         href="/api/strava/connect"
         target="_blank"
         rel="noopener noreferrer"
-        className="shrink-0 px-4 py-2 rounded-lg bg-[#FC4C02] hover:bg-[#e34400] text-white text-xs font-bold transition-colors"
+        className="shrink-0 px-4 py-2 rounded-lg bg-[#FC4C02] hover:bg-[#e34400] text-foreground text-xs font-bold transition-colors"
       >
         Connect Strava
       </a>

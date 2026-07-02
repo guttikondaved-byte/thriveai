@@ -310,7 +310,7 @@ export default function Team() {
                 <button
                   onClick={leaveTeam}
                   disabled={leaving}
-                  className="flex-1 py-2 rounded-lg bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-2 rounded-lg bg-destructive text-foreground text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {leaving ? <><div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />Leaving…</> : "Leave team"}
                 </button>
@@ -389,10 +389,10 @@ export default function Team() {
         }`}>
           <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-4 h-4 shrink-0" alt="Strava" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-white">
+            <p className="text-sm font-semibold text-foreground">
               {connectedCount} / {totalMembers} athlete{totalMembers !== 1 ? "s" : ""} connected to Strava
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted-foreground">
               {connectedCount < totalMembers
                 ? "Athletes without Strava need to connect from their Activities page."
                 : "All athletes are syncing runs automatically."}
@@ -497,7 +497,7 @@ export default function Team() {
               <button
                 onClick={deleteTeam}
                 disabled={deleting}
-                className="flex-1 py-2 rounded-lg bg-destructive text-white text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 py-2 rounded-lg bg-destructive text-foreground text-sm font-medium hover:bg-destructive/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {deleting ? <><div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />Deleting…</> : "Delete team"}
               </button>
