@@ -1,6 +1,15 @@
 import { Router, type Request, type IRouter } from "express";
 import { eq, and, desc, gte } from "drizzle-orm";
-import { db, activitiesTable, athleteProfileTable, injuryAlertsTable, sorenessLogsTable } from "@workspace/db";
+import {
+  db,
+  activitiesTable,
+  athleteProfileTable,
+  injuryAlertsTable,
+  sorenessLogsTable,
+  teamsTable,
+  teamMembershipsTable,
+  notificationsTable,
+} from "@workspace/db";
 import { GetInjuryRiskDashboardResponse, GetInjuryRiskIntensityMapResponse, CreateSorenessEntryBody } from "@workspace/api-zod";
 import { assessInjuryRisk } from "../lib/injuryRiskCalculator";
 import { computeWorkloadRatio, buildMonthlyIntensityMap, maxDailyLoad } from "../lib/workloadRatio";
@@ -213,6 +222,52 @@ router.post("/injury-risk/soreness", async (req: Request, res): Promise<void> =>
     loggedDate: entry.loggedDate,
     createdAt: entry.createdAt.toISOString(),
   });
+});
+
+/**
+ * "Message your care team": send the athlete's coach an in-app notification
+ * about an injury concern. The coach picks it up in their notification bell.
+ * The optional `note` is the athlete's own message; if omitted we send a
+ * sensible default. Requires the athlete to be on a team (that team's coach is
+ * their care team).
+ */
+router.post("/injury-risk/notify-care-team", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const userId = req.user.id;
+  const rawNote = typeof req.body?.note === "string" ? req.body.note.trim() : "";
+  const note = rawNote.slice(0, 1000);
+
+  const [membership] = await db
+    .select({ teamId: teamMembershipsTable.teamId })
+    .from(teamMembershipsTable)
+    .where(eq(teamMembershipsTable.athleteUserId, userId))
+    .limit(1);
+
+  if (!membership) {
+    res.status(400).json({ error: "You're not on a team yet — ask your coach for an invite code to connect your care team." });
+    return;
+  }
+
+  const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, membership.teamId)).limit(1);
+  if (!team) {
+    res.status(400).json({ error: "Your team could not be found." });
+    return;
+  }
+
+  const athleteName = req.user.firstName ?? "An athlete";
+  const message = note || "flagged an injury concern from their injury-risk dashboard and would like to check in.";
+
+  await db.insert(notificationsTable).values({
+    userId: team.coachUserId,
+    type: "injury_concern",
+    title: `${athleteName} flagged an injury concern`,
+    message: note ? `${athleteName}: “${message}”` : `${athleteName} ${message}`,
+  });
+
+  res.status(201).json({ ok: true });
 });
 
 export default router;

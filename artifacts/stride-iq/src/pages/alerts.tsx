@@ -30,6 +30,7 @@ import {
   TrendingUp,
   TrendingDown,
   Info,
+  MessageSquare,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "wouter";
@@ -189,6 +190,54 @@ export default function Alerts() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [showSorenessForm, setShowSorenessForm] = useState(false);
+  const [showCareTeamForm, setShowCareTeamForm] = useState(false);
+  const [careNote, setCareNote] = useState("");
+  const [careSending, setCareSending] = useState(false);
+
+  async function sendCareTeamMessage() {
+    setCareSending(true);
+    try {
+      const res = await fetch("/api/injury-risk/notify-care-team", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ note: careNote.trim() }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        toast({
+          title: "Couldn't send message",
+          description: body.error ?? "Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({ title: "Message sent to your care team", description: "Your coach will see it in their notifications." });
+      setCareNote("");
+      setShowCareTeamForm(false);
+    } catch {
+      toast({ title: "Couldn't send message", description: "Please check your connection and try again.", variant: "destructive" });
+    } finally {
+      setCareSending(false);
+    }
+  }
+
+  function shareReport() {
+    const d = dashboard;
+    const summary = d
+      ? `Injury-risk report — ${d.riskLabel} (${d.riskScore}/100).\n${d.insight}`
+      : "Injury-risk report from StrideIQ.";
+    if (navigator.share) {
+      navigator.share({ title: "My Injury-Risk Report", text: summary }).catch(() => {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(summary).then(
+        () => toast({ title: "Report summary copied", description: "Paste it anywhere to share." }),
+        () => toast({ title: "Couldn't copy", variant: "destructive" }),
+      );
+    } else {
+      toast({ title: "Sharing not supported on this browser" });
+    }
+  }
 
   const { data: alerts, isLoading: alertsLoading } = useListInjuryAlerts();
   const acknowledge = useAcknowledgeAlert();
@@ -606,30 +655,73 @@ export default function Alerts() {
           </div>
 
           {/* Footer actions */}
-          <div className={`${CARD} p-6 mb-10 flex flex-col sm:flex-row items-center justify-between gap-4`}>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                <Stethoscope className="w-5 h-5" />
+          <div className={`${CARD} p-6 mb-10`}>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <Stethoscope className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Physical Therapy Access</p>
+                  <p className="text-xs text-muted-foreground">Message your coach about any flagged symptoms.</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">Physical Therapy Access</p>
-                <p className="text-xs text-muted-foreground">Message your care team about any flagged symptoms.</p>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-border text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                >
+                  <FileDown className="w-3.5 h-3.5" /> Export PDF
+                </button>
+                <button
+                  onClick={shareReport}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-border text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                >
+                  <Share2 className="w-3.5 h-3.5" /> Share Report
+                </button>
+                <button
+                  onClick={() => setShowCareTeamForm((v) => !v)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" /> Message Care Team
+                </button>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => window.print()}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-border text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-              >
-                <FileDown className="w-3.5 h-3.5" /> Export PDF
-              </button>
-              <button
-                onClick={() => toast({ title: "Report sharing coming soon" })}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors"
-              >
-                <Share2 className="w-3.5 h-3.5" /> Share Report
-              </button>
-            </div>
+
+            {showCareTeamForm && (
+              <div className="mt-5 pt-5 border-t border-border">
+                <label htmlFor="care-note" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  Message your coach
+                </label>
+                <textarea
+                  id="care-note"
+                  value={careNote}
+                  onChange={(e) => setCareNote(e.target.value)}
+                  rows={3}
+                  maxLength={1000}
+                  placeholder="e.g. Left knee has been sore for 3 days after my long run — should I adjust this week?"
+                  className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                />
+                <div className="flex justify-end gap-2 mt-3">
+                  <button
+                    onClick={() => {
+                      setShowCareTeamForm(false);
+                      setCareNote("");
+                    }}
+                    className="px-4 py-2 rounded-xl border border-border text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={sendCareTeamMessage}
+                    disabled={careSending}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" /> {careSending ? "Sending…" : "Send to Coach"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </>
       ) : null}
