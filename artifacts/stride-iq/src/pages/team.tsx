@@ -274,7 +274,10 @@ export default function Team() {
   if (!isCoach) {
     return (
       <div className="p-6 max-w-xl mx-auto space-y-6">
-        <h1 className="text-2xl font-bold text-foreground">Team</h1>
+        <div>
+          <Eyebrow accent>My Team</Eyebrow>
+          <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground mt-1.5">Team</h1>
+        </div>
         <div className="bg-card border border-border rounded-xl p-6 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center">
@@ -350,7 +353,7 @@ export default function Team() {
           <span className="inline-flex items-center gap-2.5">
             {team.name}
             {!isPrimaryCoach && (
-              <span className="font-mono font-normal text-[10px] uppercase tracking-[0.12em] text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md">
+              <span className="font-display font-medium text-[10px] uppercase tracking-[0.06em] text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md">
                 Co-coach
               </span>
             )}
@@ -465,7 +468,7 @@ export default function Team() {
                   <div className="flex items-center gap-3 shrink-0">
                     {strava?.connected ? (
                       <div className="flex items-center gap-1.5">
-                          <span className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.1em] text-[#FC4C02] bg-[#FC4C02]/10 border border-[#FC4C02]/25 px-2 py-0.5 rounded-md">
+                          <span className="flex items-center gap-1 font-display font-semibold text-[10px] uppercase tracking-[0.05em] text-[#FC4C02] bg-[#FC4C02]/10 border border-[#FC4C02]/25 px-2 py-0.5 rounded-md">
                           <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-2.5 h-2.5" alt="Strava" />
                           Strava linked
                         </span>
@@ -476,7 +479,7 @@ export default function Team() {
                         )}
                       </div>
                     ) : (
-                      <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground bg-secondary border border-border px-2 py-0.5 rounded-md">
+                      <span className="font-display font-semibold text-[10px] uppercase tracking-[0.05em] text-muted-foreground bg-secondary border border-border px-2 py-0.5 rounded-md">
                         No Strava
                       </span>
                     )}

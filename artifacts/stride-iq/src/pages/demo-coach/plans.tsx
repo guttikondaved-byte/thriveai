@@ -251,7 +251,7 @@ export default function DemoCoachPlans() {
                 <div className="text-right hidden sm:block">
                   <p className="text-xs font-medium text-foreground">{plan.weeklyMileage} mi/wk</p>
                 </div>
-                <span className={`font-mono text-[10px] uppercase tracking-[0.1em] px-2.5 py-1 rounded-md border ${STATUS_COLORS[plan.status]}`}>
+                <span className={`font-display font-semibold text-[10px] uppercase tracking-[0.05em] px-2.5 py-1 rounded-md border ${STATUS_COLORS[plan.status]}`}>
                   {plan.status}
                 </span>
                 <button

@@ -7,10 +7,10 @@ type Message = { role: "user" | "assistant"; text: string };
 const MAX_DEMO_MESSAGES = 4;
 
 const DEMO_REPLIES = [
-  "Look at pairing weekly mileage with HRV trends per athlete — a mileage jump alongside a dropping HRV is the clearest early warning sign of overreaching.",
+  "Look at pairing weekly mileage with HRV trends per athlete. A mileage jump alongside a dropping HRV is the clearest early warning sign of overreaching.",
   "For a roster this size, a simple rule of thumb: no athlete should increase weekly volume more than 20% week over week, regardless of how good they're feeling.",
-  "Consistency of training days matters as much as total volume — athletes who spread miles across more days per week tend to have lower injury rates than those who cram the same volume into fewer, harder days.",
-  "Once you sign up, AveraAI can generate a full training plan proposal for any athlete on your roster based on their actual data — not just general coaching guidance.",
+  "Consistency of training days matters as much as total volume. Athletes who spread miles across more days per week tend to have lower injury rates than those who cram the same volume into fewer, harder days.",
+  "Once you sign up, AveraAI can generate a full training plan proposal for any athlete on your roster based on their actual data, not just general coaching guidance.",
 ];
 
 const SUGGESTIONS = [
@@ -79,7 +79,7 @@ export default function DemoCoachChat() {
   return (
     <div className="flex flex-col h-[calc(100vh-52px)]">
       <div className="flex items-center px-4 py-3">
-        <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">AveraAI</span>
+        <span className="font-display font-semibold text-[11px] uppercase tracking-[0.08em] text-muted-foreground">AveraAI</span>
       </div>
 
       {messages.length === 0 && !sending ? (
@@ -135,7 +135,7 @@ export default function DemoCoachChat() {
           </div>
           {!limitReached && (
             <p className="text-xs text-muted-foreground pb-4 text-center">
-              {MAX_DEMO_MESSAGES - demoMessagesSent} message{MAX_DEMO_MESSAGES - demoMessagesSent === 1 ? "" : "s"} left in this demo — sign up for the full conversation.
+              {MAX_DEMO_MESSAGES - demoMessagesSent} message{MAX_DEMO_MESSAGES - demoMessagesSent === 1 ? "" : "s"} left in this demo. Sign up for the full conversation.
             </p>
           )}
         </>

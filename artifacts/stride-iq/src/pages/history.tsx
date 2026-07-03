@@ -239,7 +239,8 @@ export default function History() {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground">Health & History</h1>
+        <p className="font-display font-semibold text-[11px] uppercase tracking-[0.08em] text-primary">Health</p>
+        <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground mt-1.5">Health & History</h1>
         <p className="text-muted-foreground text-sm mt-1.5">Your personal records, injury history, and health notes</p>
       </div>
 
@@ -380,7 +381,7 @@ export default function History() {
       {tab === "notes" && (
         <div>
           <p className="text-sm text-muted-foreground mb-3">
-            Freeform health notes — allergies, chronic conditions, medications, sleep habits, dietary info. AveraAI uses this context when coaching you.
+            Freeform health notes: allergies, chronic conditions, medications, sleep habits, dietary info. AveraAI uses this context when coaching you.
           </p>
           <textarea
             className="w-full bg-secondary/20 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"

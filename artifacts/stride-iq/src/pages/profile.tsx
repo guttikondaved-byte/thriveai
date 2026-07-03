@@ -38,7 +38,7 @@ type GuideKey = "rhr" | "hrv" | null;
 const GUIDES: Record<NonNullable<GuideKey>, { title: string; subtitle: string; steps: { app: string; how: string }[]; tip: string }> = {
   rhr: {
     title: "Finding Your Resting Heart Rate",
-    subtitle: "Resting HR (RHR) is your heart rate when fully at rest — ideally measured first thing in the morning before getting out of bed.",
+    subtitle: "Resting HR (RHR) is your heart rate when fully at rest, ideally measured first thing in the morning before getting out of bed.",
     steps: [
       {
         app: "Garmin Connect",
@@ -65,7 +65,7 @@ const GUIDES: Record<NonNullable<GuideKey>, { title: string; subtitle: string; s
   },
   hrv: {
     title: "Finding Your HRV Score",
-    subtitle: "Heart Rate Variability (HRV) measures the variation in time between heartbeats — a higher HRV generally means better recovery. Scores vary by device and method.",
+    subtitle: "Heart Rate Variability (HRV) measures the variation in time between heartbeats. A higher HRV generally means better recovery. Scores vary by device and method.",
     steps: [
       {
         app: "Garmin Connect",
@@ -88,7 +88,7 @@ const GUIDES: Record<NonNullable<GuideKey>, { title: string; subtitle: string; s
         how: "Open the Oura app → tap the Readiness or Sleep tab → scroll to HRV. The value is in milliseconds.",
       },
     ],
-    tip: "HRV is measured in milliseconds (ms). A typical range is 20–100ms for adults — what matters most is your personal baseline, not comparison to others.",
+    tip: "HRV is measured in milliseconds (ms). A typical range is 20–100ms for adults. What matters most is your personal baseline, not comparison to others.",
   },
 };
 
@@ -159,7 +159,7 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
     let deleted = false;
     try {
       const res = await fetch("/api/account", { method: "DELETE", credentials: "include" });
-      if (!res.ok) throw new Error("Deletion failed — please try again.");
+      if (!res.ok) throw new Error("Deletion failed. Please try again.");
       deleted = true;
       sessionStorage.removeItem("thrive_pending_role");
 
@@ -351,7 +351,8 @@ function CoachProfile() {
       <div className="p-6 max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <div className="mb-2">
-          <h1 className="text-2xl font-bold text-foreground">Coach Profile</h1>
+          <p className="font-display font-semibold text-[11px] uppercase tracking-[0.08em] text-primary">Settings</p>
+          <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground mt-1.5">Coach Profile</h1>
           <p className="text-sm text-muted-foreground mt-1">Your coaching profile</p>
         </div>
 
@@ -507,7 +508,8 @@ function AthleteProfile() {
 
       <div className="p-8 max-w-3xl mx-auto">
         <div className="mb-8 border-b border-border pb-6">
-          <h1 className="text-2xl font-bold text-foreground tracking-tight" data-testid="profile-title">Athlete Profile</h1>
+          <p className="font-display font-semibold text-[11px] uppercase tracking-[0.08em] text-primary">Settings</p>
+          <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground mt-1.5" data-testid="profile-title">Athlete Profile</h1>
           <p className="text-sm text-muted-foreground mt-1.5 font-medium">Your training profile and physiological metrics</p>
         </div>
 

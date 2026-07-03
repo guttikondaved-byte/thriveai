@@ -8,9 +8,9 @@ const MAX_DEMO_MESSAGES = 4;
 
 const DEMO_REPLIES = [
   "Great question. As a general rule, keep easy runs at a conversational pace, cap weekly mileage increases around 20%, and prioritize sleep and protein for recovery.",
-  "That depends on how your body is responding day to day — soreness that eases within 24-48 hours is normal, but sharp or one-sided pain is a sign to back off and rest.",
+  "That depends on how your body is responding day to day. Soreness that eases within 24-48 hours is normal, but sharp or one-sided pain is a sign to back off and rest.",
   "Strength work 2x a week (focused on hips, glutes, and core) is one of the best things a runner can do to reduce injury risk and improve running economy.",
-  "Pacing your long runs 60-90 seconds slower than race pace builds aerobic endurance without accumulating excess fatigue — most runners go too fast on easy days.",
+  "Pacing your long runs 60-90 seconds slower than race pace builds aerobic endurance without accumulating excess fatigue. Most runners go too fast on easy days.",
 ];
 
 export default function DemoCoach() {
@@ -44,7 +44,7 @@ export default function DemoCoach() {
   return (
     <div className="p-8 flex flex-col h-[calc(100vh-52px)]">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
+        <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground flex items-center gap-2">
           <Bot className="w-6 h-6 text-primary" />
           AveraAI
         </h1>
@@ -112,7 +112,7 @@ export default function DemoCoach() {
       )}
       {!limitReached && (
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          {MAX_DEMO_MESSAGES - demoMessagesSent} message{MAX_DEMO_MESSAGES - demoMessagesSent === 1 ? "" : "s"} left in this demo — sign up for the full conversation.
+          {MAX_DEMO_MESSAGES - demoMessagesSent} message{MAX_DEMO_MESSAGES - demoMessagesSent === 1 ? "" : "s"} left in this demo. Sign up for the full conversation.
         </p>
       )}
     </div>

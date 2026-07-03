@@ -4,7 +4,7 @@ export function Eyebrow({ children, accent = false, className = "" }: {
   className?: string;
 }) {
   return (
-    <p className={`font-mono text-[11px] uppercase tracking-[0.18em] ${accent ? "text-primary" : "text-muted-foreground"} ${className}`}>
+    <p className={`font-display font-semibold text-[11px] uppercase tracking-[0.08em] ${accent ? "text-primary" : "text-muted-foreground"} ${className}`}>
       {children}
     </p>
   );

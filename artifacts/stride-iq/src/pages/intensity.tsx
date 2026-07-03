@@ -43,8 +43,9 @@ export default function Intensity() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2" data-testid="intensity-title">
-          <Activity className="w-6 h-6 text-primary" /> Monthly Intensity Map
+        <p className="font-display font-semibold text-[11px] uppercase tracking-[0.08em] text-primary">Training Load</p>
+        <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground mt-1.5" data-testid="intensity-title">
+          Monthly Intensity Map
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Every training day scored 0–100 against the hardest day you&apos;ve ever logged.
@@ -124,9 +125,9 @@ export default function Intensity() {
                   role={clickable ? "button" : undefined}
                   tabIndex={clickable ? 0 : undefined}
                   title={
-                    `${dateStr} — intensity ${d.score}/100` +
+                    `${dateStr}: intensity ${d.score}/100` +
                     (clickable
-                      ? ` · ${activityCount} ${activityCount === 1 ? "activity" : "activities"} — click to view`
+                      ? ` · ${activityCount} ${activityCount === 1 ? "activity" : "activities"} · click to view`
                       : "")
                   }
                   className={`relative aspect-square rounded-lg p-1 ${
@@ -185,13 +186,13 @@ export default function Intensity() {
             Each square is a real day, showing that day&apos;s <strong className="text-foreground">intensity score from 0 to 100</strong>.
           </p>
           <p>
-            The score is your training load for the day — session RPE × duration (or distance when effort isn&apos;t logged) —
+            The score is your training load for the day, meaning session RPE × duration (or distance when effort isn&apos;t logged),
             scaled against the <strong className="text-foreground">hardest single day in your entire history</strong>. So a 100 is
             your all-time toughest day, and a 50 is roughly half that load. Because it&apos;s scaled across everything you&apos;ve
             ever done, scores mean the same thing from month to month.
           </p>
           <p>
-            Color tracks the same score, and a run of high numbers back-to-back — stacking hard days without easy days between —
+            Color tracks the same score, and a run of high numbers back-to-back (stacking hard days without easy days between)
             is a common overtraining pattern.
           </p>
           <p className="flex items-center gap-1.5 text-foreground">

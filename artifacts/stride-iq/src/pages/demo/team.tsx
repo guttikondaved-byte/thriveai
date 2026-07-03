@@ -5,7 +5,7 @@ export default function DemoTeam() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-foreground">My Team</h1>
+        <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground">My Team</h1>
         <p className="text-sm text-muted-foreground mt-1">Your coach and teammates</p>
       </div>
 

@@ -167,7 +167,7 @@ export default function PlanDetail() {
       <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <BackButton href="/plans" />
-          <h1 className="text-2xl font-semibold text-foreground" data-testid="plan-detail-title">{plan.name}</h1>
+          <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground" data-testid="plan-detail-title">{plan.name}</h1>
           <p className="text-sm text-muted-foreground mt-1">{plan.goal}</p>
           <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
             <span>{format(new Date(plan.startDate), "MMM d, yyyy")} – {format(new Date(plan.endDate), "MMM d, yyyy")}</span>

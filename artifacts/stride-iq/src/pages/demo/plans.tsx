@@ -52,9 +52,9 @@ export default function DemoPlans() {
     <div className="p-8">
       <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Training Plans</h1>
+          <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground">Training Plans</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Self-managed — Jordan isn't connected to a coach, so this plan is fully editable.
+            Self-managed: Jordan isn't connected to a coach, so this plan is fully editable.
           </p>
         </div>
         {!editing && averaFlow === "idle" && (
@@ -88,7 +88,7 @@ export default function DemoPlans() {
 
       {saved && !editing && !showAveraPanel && (
         <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium mb-4">
-          <Check className="w-4 h-4" /> Plan updated (demo edit — sign up to save this for real).
+          <Check className="w-4 h-4" /> Plan updated (demo edit, sign up to save this for real).
         </div>
       )}
 
@@ -143,7 +143,7 @@ export default function DemoPlans() {
 
               {averaFlow === "done" ? (
                 <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium">
-                  <Check className="w-4 h-4" /> Plan updated (demo edit — sign up to save this for real).
+                  <Check className="w-4 h-4" /> Plan updated (demo edit, sign up to save this for real).
                 </div>
               ) : (
                 <button

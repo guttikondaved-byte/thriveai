@@ -11,7 +11,7 @@ export const READY_CONFIG = { label: "Ready", dot: "bg-[#10b981]", badge: "bg-[#
 export function RiskBadge({ level }: { level: RiskLevel | null }) {
   const cfg = level ? RISK_CONFIG[level] : READY_CONFIG;
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border font-mono text-[10px] uppercase tracking-[0.12em] flex-shrink-0 ${cfg.badge}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border font-display font-semibold text-[10px] uppercase tracking-[0.06em] flex-shrink-0 ${cfg.badge}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
       {cfg.label}
     </span>

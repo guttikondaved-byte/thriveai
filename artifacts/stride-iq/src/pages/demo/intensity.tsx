@@ -41,7 +41,7 @@ export default function DemoIntensity() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
+        <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground flex items-center gap-2">
           <Activity className="w-6 h-6 text-primary" /> Monthly Intensity Map
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -103,7 +103,7 @@ export default function DemoIntensity() {
                 onClick={clickable ? () => navigate("/demo/activities") : undefined}
                 role={clickable ? "button" : undefined}
                 tabIndex={clickable ? 0 : undefined}
-                title={`${d.date} — intensity ${d.score}/100`}
+                title={`${d.date}: intensity ${d.score}/100`}
                 className={`relative aspect-square rounded-lg p-1 ${
                   isFuture ? "bg-secondary/30 border border-dashed border-border/60" : INTENSITY_CLASSES[d.intensity]
                 } ${isToday ? "ring-2 ring-primary ring-offset-2 ring-offset-card" : ""} ${
@@ -141,7 +141,7 @@ export default function DemoIntensity() {
             Each square is a real day, showing that day's <strong className="text-foreground">intensity score from 0 to 100</strong>.
           </p>
           <p>
-            The score is your training load for the day — session RPE × duration (or distance when effort isn't logged) —
+            The score is your training load for the day, meaning session RPE × duration (or distance when effort isn't logged),
             scaled against the <strong className="text-foreground">hardest single day in your entire history</strong>. So a 100 is
             your all-time toughest day, and a 50 is roughly half that load.
           </p>

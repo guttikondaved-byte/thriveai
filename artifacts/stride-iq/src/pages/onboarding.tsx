@@ -66,7 +66,7 @@ const DATA_SOURCES = [
     Icon: Activity,
     title: "Connect Strava",
     subtitle: "Real-time automatic sync",
-    desc: "Every run you record on Strava appears in Thrive automatically — no manual imports ever.",
+    desc: "Every run you record on Strava appears in Thrive automatically, with no manual imports ever.",
     badge: "Recommended",
     badgeColor: "bg-transparent text-[#FC4C02] border-[#FC4C02]/30",
   },
@@ -84,7 +84,7 @@ const DATA_SOURCES = [
     Icon: Check,
     title: "Manual Logging",
     subtitle: "Log runs by hand",
-    desc: "Enter distance, duration, heart rate, and effort directly — no GPS required.",
+    desc: "Enter distance, duration, heart rate, and effort directly, no GPS required.",
     badge: "Always available",
     badgeColor: "bg-transparent text-muted-foreground border-border/40",
   },
@@ -486,7 +486,7 @@ export default function Onboarding() {
                   placeholder="24"
                   className={inputCls(errors.athleteCount)}
                 />
-                <p className="text-xs text-muted-foreground mt-1">An estimate is okay — you can update this later.</p>
+                <p className="text-xs text-muted-foreground mt-1">An estimate is okay. You can update this later.</p>
                 {errors.athleteCount && <p className="text-red-600 text-xs mt-1">{errors.athleteCount}</p>}
               </div>
 
@@ -587,7 +587,7 @@ export default function Onboarding() {
             </div>
 
             <p className="text-xs text-muted-foreground mt-4 text-center">
-              You can skip this — connect Strava or import files from the Activities page any time.
+              You can skip this and connect Strava or import files from the Activities page any time.
             </p>
           </div>
         )}

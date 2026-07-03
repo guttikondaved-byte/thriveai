@@ -78,7 +78,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: "Suggested — pending review",
+  pending: "Suggested, pending review",
   rejected: "Not approved",
 };
 
@@ -509,7 +509,7 @@ export default function CoachPlans() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-0.5">
                                 <p className="text-sm font-medium text-foreground truncate">{plan.name}</p>
-                                <span className={`font-mono text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 rounded-md border shrink-0 ${STATUS_COLORS[plan.status] ?? ""}`}>
+                                <span className={`font-display font-semibold text-[10px] uppercase tracking-[0.05em] px-2 py-0.5 rounded-md border shrink-0 ${STATUS_COLORS[plan.status] ?? ""}`}>
                                   {STATUS_LABELS[plan.status] ?? plan.status}
                                 </span>
                               </div>
@@ -565,7 +565,7 @@ export default function CoachPlans() {
                     {isCreating ? (
                       <div className="bg-background border border-primary/20 rounded-lg p-4 space-y-3">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="font-mono text-[11px] text-primary uppercase tracking-[0.15em]">New Plan for {athlete.name}</p>
+                          <p className="font-display font-semibold text-[11px] text-primary uppercase tracking-[0.08em]">New Plan for {athlete.name}</p>
                           <button onClick={() => setShowFormFor(null)} className="text-muted-foreground hover:text-foreground">
                             <X className="w-4 h-4" />
                           </button>

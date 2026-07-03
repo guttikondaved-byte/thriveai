@@ -33,7 +33,7 @@ export default function DemoChoose() {
           <img src="/logo.svg" alt="Thrive" className="h-7 w-auto mb-5" />
           <h1 className="text-2xl font-bold text-foreground mb-2">Try the demo</h1>
           <p className="text-muted-foreground text-sm leading-relaxed max-w-sm">
-            See Thrive from either side — no signup required.
+            See Thrive from either side, no signup required.
           </p>
         </div>
 

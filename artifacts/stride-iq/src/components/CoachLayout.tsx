@@ -296,7 +296,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
       >
         <div className="px-5 py-5 border-b border-sidebar-border flex items-center gap-3">
           <img src="/logo.svg" alt="Thrive" className="h-7 w-auto" />
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{focus.label} Coach</div>
+          <div className="font-display font-semibold text-[10px] uppercase tracking-[0.08em] text-muted-foreground">{focus.label} Coach</div>
           <button
             onClick={() => setMobileOpen(false)}
             className="lg:hidden ml-auto text-muted-foreground hover:text-foreground"

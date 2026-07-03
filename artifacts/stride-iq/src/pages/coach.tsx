@@ -577,7 +577,7 @@ export default function CoachAI() {
       {sidebarOpen && (
         <div className="hidden md:flex w-64 border-r border-border flex-col shrink-0 bg-background">
           <div className="px-4 pt-4 pb-1 flex items-center justify-between">
-            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Chats</span>
+            <span className="font-display font-semibold text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Chats</span>
             <button
               onClick={() => setSidebarOpen(false)}
               aria-label="Close chat history"
@@ -642,7 +642,7 @@ export default function CoachAI() {
               <PanelLeftOpen className="w-4 h-4" />
             </button>
           )}
-          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">AveraAI</span>
+          <span className="font-display font-semibold text-[11px] uppercase tracking-[0.08em] text-muted-foreground">AveraAI</span>
         </div>
 
         {!selectedId ? (

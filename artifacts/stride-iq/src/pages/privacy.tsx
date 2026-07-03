@@ -32,7 +32,7 @@ export default function Privacy() {
           <h2>Information We Collect</h2>
           <ul>
             <li><strong>Account information:</strong> name, email address, and profile photo, provided through our authentication provider (Clerk) when you sign up.</li>
-            <li><strong>Training data:</strong> activities you log manually, or sync automatically if you connect a Strava account — including distance, pace, heart rate, elevation, and route data.</li>
+            <li><strong>Training data:</strong> activities you log manually, or sync automatically if you connect a Strava account, including distance, pace, heart rate, elevation, and route data.</li>
             <li><strong>Health &amp; injury data:</strong> self-reported soreness, injury alerts, and recovery metrics (HRV, resting heart rate) you choose to provide, used to power injury-risk features.</li>
             <li><strong>Coach/team data:</strong> if you join a team, your coach can see your training data, injury risk, and training plans. If you're a coach, your athletes' data described above is visible to you.</li>
             <li><strong>Payment information:</strong> subscription and billing details are processed by Stripe. We do not store your full card number on our servers.</li>
@@ -52,7 +52,7 @@ export default function Privacy() {
             AveraAI and our automated training-plan and injury-risk features use a third-party AI provider to
             analyze your training data and generate coaching guidance. Messages you send to AveraAI and the
             training context used to generate responses may be processed by that provider. AveraAI's guidance
-            is for informational purposes only and is <strong>not medical advice</strong> — always consult a
+            is for informational purposes only and is <strong>not medical advice</strong>. Always consult a
             healthcare professional about injuries or health concerns.
           </p>
 

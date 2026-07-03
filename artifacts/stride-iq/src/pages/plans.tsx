@@ -85,7 +85,8 @@ export default function Plans() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground" data-testid="plans-title">Training Plans</h1>
+          <p className="font-display font-semibold text-[11px] uppercase tracking-[0.08em] text-primary">Training</p>
+          <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground mt-1.5" data-testid="plans-title">Training Plans</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {hasCoach ? "Suggest a plan to your coach for approval" : "Your structured training programs"}
           </p>

@@ -100,7 +100,7 @@ export default function DemoAlerts() {
     <div className="p-6 md:p-12 max-w-7xl mx-auto">
       <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="max-w-2xl">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground mb-3">
+          <h1 className="font-display font-extrabold text-3xl md:text-4xl tracking-[-0.01em] text-foreground mb-3">
             Injury Risk Analysis
           </h1>
           <p className="text-sm md:text-base text-muted-foreground font-light leading-relaxed">
@@ -330,7 +330,7 @@ export default function DemoAlerts() {
                   </div>
                 ))}
                 {sorenessSaved && (
-                  <p className="text-xs text-emerald-600 font-medium">Symptoms updated (demo entry — sign up to track this for real).</p>
+                  <p className="text-xs text-emerald-600 font-medium">Symptoms updated (demo entry, sign up to track this for real).</p>
                 )}
               </div>
               <button
@@ -411,7 +411,7 @@ export default function DemoAlerts() {
               <div key={alert.id} className="bg-card border border-border rounded-2xl px-6 py-3.5 opacity-60">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">{alert.bodyPart} — {alert.riskLevel} risk</span>
+                  <span className="text-sm text-muted-foreground">{alert.bodyPart} · {alert.riskLevel} risk</span>
                   <span className="text-xs text-muted-foreground ml-auto">{format(new Date(alert.createdAt), "MMM d")}</span>
                 </div>
               </div>
@@ -449,7 +449,7 @@ function SorenessForm({ onSubmit, onCancel }: { onSubmit: () => void; onCancel: 
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wider font-semibold">
-          Pain Level — <span className={`font-bold ${painColor}`}>{painScore}/10</span>
+          Pain Level: <span className={`font-bold ${painColor}`}>{painScore}/10</span>
         </label>
         <input
           type="range"

@@ -50,8 +50,8 @@ function BestEffortsCard() {
   if (segments.length === 0) return null;
 
   return (
-    <div className="bg-card border border-border rounded-lg p-5 mt-4" data-testid="card-best-efforts">
-      <h2 className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-4">
+    <div className="bg-card border border-border rounded-xl p-5 mt-4" data-testid="card-best-efforts">
+      <h2 className="font-display font-semibold text-[11px] text-muted-foreground uppercase tracking-[0.08em] flex items-center gap-1.5 mb-4">
         <Mountain className="w-3.5 h-3.5" /> Best Efforts
       </h2>
       <div className="space-y-3">
@@ -73,12 +73,12 @@ function BestEffortsCard() {
 
 function StatCard({ label, value, sub, icon: Icon }: { label: string; value: string | number; sub?: string; icon: React.ElementType }) {
   return (
-    <div className="bg-card border border-border rounded-lg p-5" data-testid={`stat-${label.toLowerCase().replace(/\s+/g, "-")}`}>
+    <div className="bg-card border border-border rounded-xl p-5 shadow-sm" data-testid={`stat-${label.toLowerCase().replace(/\s+/g, "-")}`}>
       <div className="flex items-start justify-between mb-3">
-        <span className="text-xs text-muted-foreground uppercase tracking-wider">{label}</span>
+        <span className="font-display font-semibold text-[11px] uppercase tracking-[0.08em] text-muted-foreground">{label}</span>
         <Icon className="w-4 h-4 text-muted-foreground" />
       </div>
-      <p className="text-2xl font-semibold text-foreground">{value}</p>
+      <p className="font-display font-extrabold text-2xl tracking-tight text-foreground">{value}</p>
       {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
     </div>
   );
@@ -102,7 +102,7 @@ function StravaBanner() {
       <Activity className="w-6 h-6 shrink-0 text-[#FC4C02]" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground">
-          {autoPrompt ? "One more step — connect Strava" : "Connect Strava for automatic run syncing"}
+          {autoPrompt ? "One more step: connect Strava" : "Connect Strava for automatic run syncing"}
         </p>
         <p className="text-xs text-muted-foreground mt-0.5">Every run will appear in Thrive automatically. No imports needed.</p>
       </div>
@@ -146,7 +146,8 @@ export default function Dashboard() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-foreground" data-testid="dashboard-title">Dashboard</h1>
+        <p className="font-display font-semibold text-[11px] uppercase tracking-[0.08em] text-primary">Athlete Portal</p>
+        <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground mt-1.5" data-testid="dashboard-title">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">
           {format(new Date(), "EEEE, MMMM d")}
         </p>
@@ -165,9 +166,9 @@ export default function Dashboard() {
       <div className="grid grid-cols-3 gap-6">
         {/* Training Load */}
         <div className="col-span-1">
-          <div className="bg-card border border-border rounded-lg p-5 mb-4">
-            <h2 className="text-xs text-muted-foreground uppercase tracking-wider mb-4">Training Load</h2>
-            <div className={`text-xl font-semibold capitalize ${LOAD_COLORS[data.trainingLoad] ?? "text-foreground"}`}>
+          <div className="bg-card border border-border rounded-xl p-5 mb-4">
+            <h2 className="font-display font-semibold text-[11px] text-muted-foreground uppercase tracking-[0.08em] mb-4">Training Load</h2>
+            <div className={`font-display font-extrabold text-xl tracking-tight capitalize ${LOAD_COLORS[data.trainingLoad] ?? "text-foreground"}`}>
               {loadLabel}
             </div>
             <div className="mt-3 h-1.5 bg-secondary rounded-full overflow-hidden">
@@ -185,8 +186,8 @@ export default function Dashboard() {
 
           {/* Active plan */}
           {data.currentPlanName && (
-            <div className="bg-card border border-border rounded-lg p-5">
-              <h2 className="text-xs text-muted-foreground uppercase tracking-wider mb-3">Active Plan</h2>
+            <div className="bg-card border border-border rounded-xl p-5">
+              <h2 className="font-display font-semibold text-[11px] text-muted-foreground uppercase tracking-[0.08em] mb-3">Active Plan</h2>
               <p className="text-sm font-medium text-foreground">{data.currentPlanName}</p>
               <Link href="/plans" className="text-xs text-primary hover:underline mt-2 inline-block" data-testid="link-view-plan">View plan</Link>
             </div>
@@ -194,9 +195,9 @@ export default function Dashboard() {
 
           {/* Alerts preview */}
           {data.activeAlerts > 0 && (
-            <div className="bg-card border border-border rounded-lg p-5 mt-4">
+            <div className="bg-card border border-border rounded-xl p-5 mt-4">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xs text-muted-foreground uppercase tracking-wider">Alerts</h2>
+                <h2 className="font-display font-semibold text-[11px] text-muted-foreground uppercase tracking-[0.08em]">Alerts</h2>
                 <Link href="/alerts" className="text-xs text-primary hover:underline" data-testid="link-view-alerts">View all</Link>
               </div>
               <p className="text-sm text-foreground">
@@ -211,9 +212,9 @@ export default function Dashboard() {
 
         {/* Recent activities */}
         <div className="col-span-2">
-          <div className="bg-card border border-border rounded-lg p-5">
+          <div className="bg-card border border-border rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xs text-muted-foreground uppercase tracking-wider">Recent Activity</h2>
+              <h2 className="font-display font-semibold text-[11px] text-muted-foreground uppercase tracking-[0.08em]">Recent Activity</h2>
               <Link href="/activities" className="text-xs text-primary hover:underline" data-testid="link-view-activities">View all</Link>
             </div>
             {data.recentActivities.length === 0 ? (

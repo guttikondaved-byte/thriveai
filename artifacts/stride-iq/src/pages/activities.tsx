@@ -183,7 +183,8 @@ export default function Activities() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground" data-testid="activities-title">Activities</h1>
+          <p className="font-display font-semibold text-[11px] uppercase tracking-[0.08em] text-primary">Training Log</p>
+          <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground mt-1.5" data-testid="activities-title">Activities</h1>
           <p className="text-sm text-muted-foreground mt-1">Your training log</p>
         </div>
         <div className="flex items-center gap-2">
@@ -247,7 +248,7 @@ export default function Activities() {
                 onSuccess: (d) => toast({
                   title: `Imported ${d.imported} activities`,
                   description: d.imported > 0
-                    ? "Your full Strava history is now in Thrive — intensity map and AI coaching just got smarter."
+                    ? "Your full Strava history is now in Thrive. Your intensity map and AI coaching just got smarter."
                     : "Everything was already imported.",
                 }),
                 onError: () => toast({ title: "Full sync failed", variant: "destructive" }),

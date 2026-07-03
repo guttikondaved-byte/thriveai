@@ -156,7 +156,7 @@ function SorenessForm({ onSubmit, onCancel, isPending }: {
       </div>
       <div>
         <label className={labelCls}>
-          Pain Level — <span className={`font-bold ${painColor}`}>{painScore}/10</span>
+          Pain Level: <span className={`font-bold ${painColor}`}>{painScore}/10</span>
         </label>
         <input
           type="range"
@@ -224,7 +224,7 @@ export default function Alerts() {
   function shareReport() {
     const d = dashboard;
     const summary = d
-      ? `Injury-risk report — ${d.riskLabel} (${d.riskScore}/100).\n${d.insight}`
+      ? `Injury-risk report: ${d.riskLabel} (${d.riskScore}/100).\n${d.insight}`
       : "Injury-risk report from StrideIQ.";
     if (navigator.share) {
       navigator.share({ title: "My Injury-Risk Report", text: summary }).catch(() => {});
@@ -315,7 +315,8 @@ export default function Alerts() {
 
       <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="max-w-2xl">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground mb-3" data-testid="alerts-title">
+          <p className="font-display font-semibold text-[11px] uppercase tracking-[0.08em] text-primary mb-1.5">Injury Prevention</p>
+          <h1 className="font-display font-extrabold text-3xl md:text-4xl tracking-[-0.01em] text-foreground mb-3" data-testid="alerts-title">
             Injury Risk Analysis
           </h1>
           <p className="text-sm md:text-base text-muted-foreground font-light leading-relaxed">
@@ -359,19 +360,19 @@ export default function Alerts() {
                     <ul className="space-y-2.5 mb-3">
                       <li className="flex gap-2.5">
                         <span className="text-xs font-bold text-primary shrink-0 w-9 text-right tabular-nums">45%</span>
-                        <span className="text-xs text-foreground/90 leading-snug"><span className="font-semibold">Recent run analysis</span> — heart-rate vs. pace mismatch, mileage jumps &gt;20%, prolonged high-intensity efforts, and pain/fatigue in your notes.</span>
+                        <span className="text-xs text-foreground/90 leading-snug"><span className="font-semibold">Recent run analysis:</span> heart-rate vs. pace mismatch, mileage jumps &gt;20%, prolonged high-intensity efforts, and pain/fatigue in your notes.</span>
                       </li>
                       <li className="flex gap-2.5">
                         <span className="text-xs font-bold text-primary shrink-0 w-9 text-right tabular-nums">25%</span>
-                        <span className="text-xs text-foreground/90 leading-snug"><span className="font-semibold">Workload ratio (ACWR)</span> — this week's load vs. your recent weekly average. Flags when acute load outpaces what you're conditioned for.</span>
+                        <span className="text-xs text-foreground/90 leading-snug"><span className="font-semibold">Workload ratio (ACWR)</span>: this week's load vs. your recent weekly average. Flags when acute load outpaces what you're conditioned for.</span>
                       </li>
                       <li className="flex gap-2.5">
                         <span className="text-xs font-bold text-primary shrink-0 w-9 text-right tabular-nums">20%</span>
-                        <span className="text-xs text-foreground/90 leading-snug"><span className="font-semibold">Open injury alerts</span> — weighted by severity until you acknowledge them.</span>
+                        <span className="text-xs text-foreground/90 leading-snug"><span className="font-semibold">Open injury alerts</span>: weighted by severity until you acknowledge them.</span>
                       </li>
                       <li className="flex gap-2.5">
                         <span className="text-xs font-bold text-primary shrink-0 w-9 text-right tabular-nums">10%</span>
-                        <span className="text-xs text-foreground/90 leading-snug"><span className="font-semibold">Reported soreness</span> — your worst self-reported pain in the last few days.</span>
+                        <span className="text-xs text-foreground/90 leading-snug"><span className="font-semibold">Reported soreness</span>: your worst self-reported pain in the last few days.</span>
                       </li>
                     </ul>
                     <div className="flex flex-wrap gap-1.5 mb-3">
@@ -441,7 +442,7 @@ export default function Alerts() {
                     <h3 className="text-xl font-bold text-foreground">Workload Ratio</h3>
                     <InfoTip title="Workload Ratio (ACWR)">
                       <p>Compares your <strong>acute load</strong> (this week) against your <strong>chronic load</strong> (recent weekly average). It's the acute:chronic workload ratio used in sports science to catch training spikes.</p>
-                      <p>A ratio of <strong>0.8–1.3</strong> is the "sweet spot." Above <strong>1.3</strong> means you're ramping faster than your body is conditioned for — the main driver of overuse injuries.</p>
+                      <p>A ratio of <strong>0.8–1.3</strong> is the "sweet spot." Above <strong>1.3</strong> means you're ramping faster than your body is conditioned for, which is the main driver of overuse injuries.</p>
                       <p>Bars show each day's load; the dashed line is your baseline. We need ~2 weeks of history before showing a ratio.</p>
                     </InfoTip>
                   </div>
@@ -660,7 +661,7 @@ export default function Alerts() {
                   onChange={(e) => setCareNote(e.target.value)}
                   rows={3}
                   maxLength={1000}
-                  placeholder="e.g. Left knee has been sore for 3 days after my long run — should I adjust this week?"
+                  placeholder="e.g. Left knee has been sore for 3 days after my long run. Should I adjust this week?"
                   className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                 />
                 <div className="flex justify-end gap-2 mt-3">
@@ -752,7 +753,7 @@ export default function Alerts() {
                   <div key={alert.id} className="bg-card border border-border rounded-2xl px-6 py-3.5 opacity-60" data-testid={`alert-dismissed-${alert.id}`}>
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">{alert.bodyPart} — {alert.riskLevel} risk</span>
+                      <span className="text-sm text-muted-foreground">{alert.bodyPart} · {alert.riskLevel} risk</span>
                       <span className="text-xs text-muted-foreground ml-auto">{format(new Date(alert.createdAt), "MMM d")}</span>
                     </div>
                   </div>

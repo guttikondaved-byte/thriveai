@@ -7,7 +7,7 @@ export default function DemoHistory() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-foreground">Health & History</h1>
+        <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground">Health & History</h1>
         <p className="text-sm text-muted-foreground mt-1">Recovery trends and personal records</p>
       </div>
 

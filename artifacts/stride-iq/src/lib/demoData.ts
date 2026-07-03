@@ -12,7 +12,7 @@ export const DEMO_DATA = {
   weeklyRuns: 4,
   avgPaceMinPerKm: 8.2,
   trainingLoad: "moderate" as const,
-  currentPlanName: "Half Marathon Base Build — Week 6",
+  currentPlanName: "Half Marathon Base Build · Week 6",
   fitnessLevel: "Intermediate",
   primaryGoal: "Complete a half marathon",
   weeklyMileageGoal: 30,
@@ -55,14 +55,14 @@ export const DEMO_DATA = {
     { day: "Sunday", label: "Cross Training", detail: "30 min cycling or swim" },
   ],
   averaWeeklyPlanProposal: {
-    name: "Half Marathon Base Build — Week 7 (Knee-Protective)",
+    name: "Half Marathon Base Build · Week 7 (Knee-Protective)",
     rationale:
       "Your weekly mileage is up 24% this week and your right knee alert is still active, so this week backs off the tempo work and keeps everything else at easy pace. The long run stays in to protect your aerobic base, but it's shorter and slower than a normal build week.",
     weeklyMileage: 22,
     sessions: [
       { day: "Monday", label: "Rest", detail: "Full recovery day" },
       { day: "Tuesday", label: "Easy Run", detail: "4 mi @ conversational pace" },
-      { day: "Wednesday", label: "Cross Training", detail: "30 min low-impact cycling — skip the tempo this week" },
+      { day: "Wednesday", label: "Cross Training", detail: "30 min low-impact cycling instead of this week's tempo" },
       { day: "Thursday", label: "Easy Run", detail: "3 mi @ conversational pace" },
       { day: "Friday", label: "Rest", detail: "Full recovery day" },
       { day: "Saturday", label: "Long Run", detail: "7 mi @ easy pace, walk breaks if the knee flares" },
@@ -82,7 +82,7 @@ export const DEMO_DATA = {
     { role: "user" as const, text: "My right knee has felt a little tight after my last two runs. Should I be worried?" },
     {
       role: "assistant" as const,
-      text: "Mild tightness after a mileage increase is common — your weekly volume is up 24% this week, which is above the usual 20% guideline. I'd suggest an easy or rest day next, ice for 10–15 minutes after runs, and some quad/IT band mobility work. If the tightness turns into sharp pain or doesn't ease within 48 hours, it's worth seeing a physio.",
+      text: "Mild tightness after a mileage increase is common. Your weekly volume is up 24% this week, which is above the usual 20% guideline. I'd suggest an easy or rest day next, ice for 10–15 minutes after runs, and some quad/IT band mobility work. If the tightness turns into sharp pain or doesn't ease within 48 hours, it's worth seeing a physio.",
     },
     { role: "user" as const, text: "Got it. Should I still do my long run this Saturday?" },
     {
@@ -123,7 +123,7 @@ export const DEMO_DATA = {
     weeklyRelativeEffort: { total: 268, band: "moderate" as const },
     activityConsistency: { daysActive: 4, totalDays: 7, pct: 57 },
     insight:
-      "Your acute load is running about 18% above your recent average, driven mostly by Wednesday's long run. Keep the next couple of easy days genuinely easy — that's what will let this week's gains stick without a setback.",
+      "Your acute load is running about 18% above your recent average, driven mostly by Wednesday's long run. Keep the next couple of easy days genuinely easy. That's what will let this week's gains stick without a setback.",
     heartRateZones: [
       { zone: 1, label: "Recovery", seconds: 1380 },
       { zone: 2, label: "Aerobic", seconds: 5220 },
@@ -250,7 +250,7 @@ export const DEMO_COACH_DATA = {
     { id: 4, athleteName: "Priya N.", name: "Beginner Base Miles", goal: "Build base mileage", status: "paused" as const, weeklyMileage: 15 },
   ],
   coachConversation: [
-    { role: "user" as const, text: "Marcus is showing high injury risk this week — what should I have him do?" },
+    { role: "user" as const, text: "Marcus is showing high injury risk this week. What should I have him do?" },
     {
       role: "assistant" as const,
       text: "Marcus's weekly mileage jumped to 53 mi, well above his recent average, and his HRV has dropped to 51ms (down from a baseline near 65). I'd recommend cutting his next two sessions to easy pace only, dropping volume by about 25% this week, and checking in on sleep and soreness before ramping back up.",
@@ -272,7 +272,7 @@ export const DEMO_COACH_DATA = {
       { weekNumber: 1, dayOfWeek: 3, sessionType: "cross_training", description: "Low-impact cycling or swim", distanceMiles: 0, durationMinutes: 30 },
       { weekNumber: 1, dayOfWeek: 4, sessionType: "easy_run", description: "Easy, conversational pace", distanceMiles: 5, durationMinutes: 42 },
       { weekNumber: 1, dayOfWeek: 5, sessionType: "rest", description: "Full recovery day", distanceMiles: 0, durationMinutes: 0 },
-      { weekNumber: 1, dayOfWeek: 6, sessionType: "long_run", description: "Long run, easy pace only — no tempo", distanceMiles: 10, durationMinutes: 85 },
+      { weekNumber: 1, dayOfWeek: 6, sessionType: "long_run", description: "Long run at easy pace only, no tempo", distanceMiles: 10, durationMinutes: 85 },
       { weekNumber: 1, dayOfWeek: 7, sessionType: "easy_run", description: "Very easy shakeout", distanceMiles: 4, durationMinutes: 34 },
     ],
   },
@@ -320,7 +320,7 @@ const DEMO_ATHLETE_EXTRAS: Record<string, {
   "4": {
     joinedAt: "2026-03-02", age: 34, weeklyMileageGoal: 48, paceMinPerMi: 8.1,
     pr5k: "20:45", pr10k: "43:20", prHalf: "1:38:05", prMarathon: "3:29:44",
-    healthNotes: "History of Achilles tightness — watch sharp mileage increases.",
+    healthNotes: "History of Achilles tightness. Watch sharp mileage increases.",
     trendFactors: [0.75, 0.8, 0.78, 0.82, 0.85, 0.8, 0.82, 1],
     alerts: [
       {

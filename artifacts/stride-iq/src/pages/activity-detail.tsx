@@ -127,7 +127,7 @@ export default function ActivityDetail() {
               </span>
             )}
           </div>
-          <h1 className="text-2xl font-semibold text-foreground" data-testid="activity-detail-title">
+          <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground" data-testid="activity-detail-title">
             {activity.notes || ACTIVITY_LABELS[activity.type] || "Activity"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">{startLabel}</p>

@@ -99,7 +99,7 @@ const COACH_FEATURES = [
 const WHY_ITEMS = [
   {
     title: "Injury risk detection before you feel it",
-    desc: "Thrive monitors your mileage, load, and training patterns to estimate injury risk after every session — so you can back off before a real injury hits.",
+    desc: "Thrive monitors your mileage, load, and training patterns to estimate injury risk after every session, so you can back off before a real injury hits.",
   },
   {
     title: "Automatic sync with Strava",
@@ -107,7 +107,7 @@ const WHY_ITEMS = [
   },
   {
     title: "Training plans built around your real fitness",
-    desc: "Your plan adapts each week based on how your body is actually responding — not a fixed PDF template that ignores your progress.",
+    desc: "Your plan adapts each week based on how your body is actually responding, not a fixed PDF template that ignores your progress.",
   },
   {
     title: "A direct line between athlete and coach",
@@ -130,7 +130,7 @@ const BECOME_ITEMS = [
   },
   {
     title: "Chat with AveraAI",
-    desc: "Ask anything about your training, recovery, or race strategy — any time of day.",
+    desc: "Ask anything about your training, recovery, or race strategy, any time of day.",
   },
 ];
 
@@ -461,7 +461,7 @@ export default function Landing() {
               >
                 Get the coaching support you need as a runner. AI-powered
                 training plans, automatic injury risk detection, and a direct
-                line to your coach — all in one place.
+                line to your coach, all in one place.
               </p>
               <div className="flex flex-wrap items-center gap-4">
                 <BtnTeal onClick={() => navigate("/sign-up")}>
@@ -737,7 +737,7 @@ export default function Landing() {
             className="text-muted-foreground leading-[1.75] text-center max-w-[38rem] mx-auto mb-14"
             style={{ fontSize: "clamp(15px,1.6vw,18px)" }}
           >
-            See exactly what your training is doing to your body — before it
+            See exactly what your training is doing to your body, before it
             becomes an injury, a plateau, or a missed race.
           </p>
           {/* Mobile horizontal scroll */}
@@ -759,7 +759,7 @@ export default function Landing() {
               {
                 content: <FeatureActivityCard />,
                 caption:
-                  "Dive into any run — pace, heart rate, elevation, and cadence — pulled automatically from Strava.",
+                  "Dive into any run: pace, heart rate, elevation, and cadence, pulled automatically from Strava.",
               },
               {
                 content: <FeaturePlanCard />,
@@ -789,7 +789,7 @@ export default function Landing() {
               {
                 content: <FeatureActivityCard />,
                 caption:
-                  "Dive into any run — pace, heart rate, elevation, and cadence — pulled automatically from Strava.",
+                  "Dive into any run: pace, heart rate, elevation, and cadence, pulled automatically from Strava.",
               },
               {
                 content: <FeaturePlanCard />,
@@ -1175,7 +1175,7 @@ export default function Landing() {
               >
                 Your personalised training platform with AI-powered coaching,
                 automatic injury risk detection, and direct coach-athlete
-                connection — all in one place.
+                connection, all in one place.
               </p>
               <BtnTeal onClick={() => navigate("/sign-up")}>
                 Get Started
@@ -1335,7 +1335,7 @@ function FeatureActivityCard() {
           AveraAI insight
         </p>
         <p className="text-xs leading-[1.65] text-foreground m-0">
-          "Solid effort. Your pace was 6% faster than aerobic threshold — ease
+          "Solid effort. Your pace was 6% faster than aerobic threshold, so ease
           back tomorrow."
         </p>
       </div>

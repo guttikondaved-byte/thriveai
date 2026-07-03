@@ -33,7 +33,7 @@ export default function DemoDashboard() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
+        <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">{format(new Date(), "EEEE, MMMM d")}</p>
       </div>
 

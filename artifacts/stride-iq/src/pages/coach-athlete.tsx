@@ -168,7 +168,7 @@ export function AthleteDetailView({ data, onBack }: { data: AthleteDetail; onBac
         {data.alerts.length > 0 && (
           <a
             href="#alerts"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-xs uppercase tracking-[0.12em] text-amber-600 bg-amber-500/10 border border-amber-500/20 shrink-0"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-md font-display font-semibold text-xs uppercase tracking-[0.06em] text-amber-600 bg-amber-500/10 border border-amber-500/20 shrink-0"
           >
             <AlertTriangle className="w-4 h-4" />
             {data.alerts.length} alert{data.alerts.length !== 1 ? "s" : ""}
@@ -189,7 +189,7 @@ export function AthleteDetailView({ data, onBack }: { data: AthleteDetail; onBac
       <div className="grid lg:grid-cols-3 gap-6 mb-6 items-start">
         {/* Weekly trend */}
         <div className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
-          <Eyebrow className="mb-4">Weekly Mileage — last 8 weeks</Eyebrow>
+          <Eyebrow className="mb-4">Weekly Mileage · Last 8 Weeks</Eyebrow>
           <div className="flex items-end gap-2 h-36">
             {data.weeklyTrend.map((w, i) => (
               <div
@@ -232,7 +232,7 @@ export function AthleteDetailView({ data, onBack }: { data: AthleteDetail; onBac
             <span className="text-foreground font-medium text-right">{data.profile?.primaryGoal ?? "—"}</span>
           </div>
           <div className="pt-2 border-t border-border">
-            <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-2">Personal Records</p>
+            <p className="font-display font-semibold text-[10px] text-muted-foreground uppercase tracking-[0.08em] mb-2">Personal Records</p>
             <div className="grid grid-cols-4 gap-2">
               {[
                 { label: "5K", val: data.profile?.pr5k },
@@ -249,7 +249,7 @@ export function AthleteDetailView({ data, onBack }: { data: AthleteDetail; onBac
           </div>
           {data.profile?.healthNotes && (
             <div className="pt-2 border-t border-border">
-              <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-[0.15em] mb-1.5">Health Notes</p>
+              <p className="font-display font-semibold text-[10px] text-muted-foreground uppercase tracking-[0.08em] mb-1.5">Health Notes</p>
               <p className="text-sm text-foreground">{data.profile.healthNotes}</p>
             </div>
           )}
