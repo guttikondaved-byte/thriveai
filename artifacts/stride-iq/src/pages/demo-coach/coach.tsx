@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Bot, Send, Loader2 } from "lucide-react";
-import { DEMO_COACH_DATA } from "@/lib/demoData";
 
 type Message = { role: "user" | "assistant"; text: string };
 
@@ -16,7 +15,7 @@ const DEMO_REPLIES = [
 
 export default function DemoCoachChat() {
   const [, navigate] = useLocation();
-  const [messages, setMessages] = useState<Message[]>(DEMO_COACH_DATA.coachConversation);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [demoMessagesSent, setDemoMessagesSent] = useState(0);
@@ -53,6 +52,14 @@ export default function DemoCoachChat() {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 mb-4">
+        {messages.length === 0 && !sending && (
+          <div className="h-full flex flex-col items-center justify-center text-center gap-2 py-12">
+            <Bot className="w-8 h-8 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Ask AveraAI about your roster's training, workload, or injury risk.
+            </p>
+          </div>
+        )}
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
