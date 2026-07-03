@@ -239,7 +239,7 @@ function BillingCard({ userRole }: { userRole: string | null | undefined }) {
   const title = planType === "coach" ? "Coach subscription" : "Athlete subscription";
   const description = planType === "coach"
     ? "Coach plan includes 25 athletes, then $4 per athlete after 25."
-    : "$5 per month for athlete access.";
+    : "$7.99 per month for athlete access.";
 
   async function handleCheckout() {
     if (isLoading) return;
