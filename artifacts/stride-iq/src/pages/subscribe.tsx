@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useClerk } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { useUpdateAthleteProfile, getGetAthleteProfileQueryKey } from "@workspace/api-client-react";
 import { PaywallCard } from "@/components/PaywallCard";
 
@@ -11,6 +12,7 @@ import { PaywallCard } from "@/components/PaywallCard";
  */
 export default function Subscribe({ planType }: { planType: "athlete" | "coach" }) {
   const { signOut } = useClerk();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const updateProfile = useUpdateAthleteProfile();
   const [switching, setSwitching] = useState(false);
@@ -53,6 +55,14 @@ export default function Subscribe({ planType }: { planType: "athlete" | "coach" 
           className="mt-4 w-full text-center text-xs text-slate-400 hover:text-slate-200 disabled:opacity-50 transition-colors"
         >
           {switching ? "Switching…" : `Change plan — switch to ${otherPlan === "coach" ? "Coach" : "Athlete"}`}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate("/onboarding")}
+          className="mt-3 w-full text-center text-xs text-slate-400 hover:text-slate-200 transition-colors"
+        >
+          Redo survey
         </button>
 
         <button
