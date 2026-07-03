@@ -99,7 +99,7 @@
   --secondary-foreground: 220 15% 19%;
 
   --muted:            150 18% 95%;
-  --muted-foreground: 155 10% 40%;
+  --muted-foreground: 220 10% 46%;
 
   /* Accent = trail green */
   --accent:            152 34% 40%;
@@ -164,7 +164,7 @@
   --secondary-foreground: 220 15% 19%;
 
   --muted:            150 18% 95%;
-  --muted-foreground: 155 10% 40%;
+  --muted-foreground: 220 10% 46%;
 
   --accent:            152 34% 40%;
   --accent-foreground: 0 0% 100%;
