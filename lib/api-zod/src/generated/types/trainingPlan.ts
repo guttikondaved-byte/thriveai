@@ -17,4 +17,9 @@ export interface TrainingPlan {
   weeklyMileage?: number | null;
   status: TrainingPlanStatus;
   createdAt: Date;
+  /**
+     * userId of whoever authored the plan's content (athlete or coach). Null/self means the athlete can edit freely; a different id means the plan is coach-authored and the athlete can only suggest changes.
+     * @nullable
+     */
+  createdBy?: string | null;
 }

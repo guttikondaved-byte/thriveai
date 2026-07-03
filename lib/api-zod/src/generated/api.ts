@@ -240,7 +240,8 @@ export const ListTrainingPlansResponseItem = zod.object({
   "endDate": zod.coerce.date(),
   "weeklyMileage": zod.number().nullish(),
   "status": zod.enum(['active', 'pending', 'rejected', 'completed', 'paused']),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "createdBy": zod.string().nullish().describe('userId of whoever authored the plan\'s content (athlete or coach). Null\/self means the athlete can edit freely; a different id means the plan is coach-authored and the athlete can only suggest changes.')
 })
 export const ListTrainingPlansResponse = zod.array(ListTrainingPlansResponseItem)
 
@@ -273,6 +274,7 @@ export const GetTrainingPlanResponse = zod.object({
   "weeklyMileage": zod.number().nullish(),
   "status": zod.enum(['active', 'pending', 'rejected', 'completed', 'paused']),
   "createdAt": zod.coerce.date(),
+  "createdBy": zod.string().nullish(),
   "sessions": zod.array(zod.object({
   "id": zod.number(),
   "planId": zod.number(),

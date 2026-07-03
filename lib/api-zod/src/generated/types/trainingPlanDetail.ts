@@ -18,5 +18,7 @@ export interface TrainingPlanDetail {
   weeklyMileage?: number | null;
   status: TrainingPlanDetailStatus;
   createdAt: Date;
+  /** @nullable */
+  createdBy?: string | null;
   sessions: PlanSession[];
 }

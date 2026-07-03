@@ -4,6 +4,7 @@ import {
   db,
   trainingPlansTable,
   planSessionsTable,
+  planEditSuggestionsTable,
   athleteProfileTable,
   activitiesTable,
   teamMembershipsTable,
@@ -248,6 +249,9 @@ router.post("/plans", async (req: Request, res): Promise<void> => {
   const toDateStr = (d: Date) => d.toISOString().split("T")[0]!;
   const insertValues: typeof trainingPlansTable.$inferInsert = {
     userId,
+    // The athlete authored this content themselves, even if it needs coach
+    // approval — createdBy tracks authorship, not approval status.
+    createdBy: userId,
     name: parsed.data.name,
     goal: parsed.data.goal,
     startDate: toDateStr(parsed.data.startDate),
@@ -380,7 +384,7 @@ router.patch("/plans/:planId/sessions/:sessionId", async (req: Request, res): Pr
 
   // Verify user owns the plan
   const [plan] = await db
-    .select({ id: trainingPlansTable.id })
+    .select({ id: trainingPlansTable.id, createdBy: trainingPlansTable.createdBy })
     .from(trainingPlansTable)
     .where(and(eq(trainingPlansTable.id, planId), eq(trainingPlansTable.userId, userId)));
 
@@ -389,14 +393,40 @@ router.patch("/plans/:planId/sessions/:sessionId", async (req: Request, res): Pr
     return;
   }
 
-  // Parse request body for completion status
-  const { completed } = req.body ?? {};
-  const isCompleted = typeof completed === "boolean" ? completed : true;
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const isSelfAuthored = !plan.createdBy || plan.createdBy === userId;
 
-  // Update session completion status
+  // Full content edits (session type, description, distance, duration) are
+  // only allowed on plans the athlete authored themselves. On a coach-authored
+  // plan, only the completion toggle is allowed — content changes must go
+  // through POST /plans/:planId/suggest-changes for coach review.
+  const hasContentEdit = ["sessionType", "description", "distanceKm", "durationMinutes"].some((k) => k in body);
+  if (hasContentEdit && !isSelfAuthored) {
+    res.status(403).json({ error: "This plan was created by your coach — suggest a change instead of editing it directly." });
+    return;
+  }
+
+  const updateValues: Partial<typeof planSessionsTable.$inferInsert> = {};
+  if (typeof body.completed === "boolean") updateValues.completed = body.completed;
+  if (isSelfAuthored) {
+    if (typeof body.sessionType === "string" && VALID_SESSION_TYPES.includes(body.sessionType)) {
+      updateValues.sessionType = body.sessionType;
+    }
+    if (typeof body.description === "string") updateValues.description = body.description.slice(0, 280);
+    if (body.distanceKm !== undefined) {
+      updateValues.distanceKm = body.distanceKm === null ? null : String(Math.max(0, Number(body.distanceKm) || 0));
+    }
+    if (body.durationMinutes !== undefined) {
+      updateValues.durationMinutes = body.durationMinutes === null ? null : Math.max(0, Math.round(Number(body.durationMinutes) || 0));
+    }
+  }
+  if (Object.keys(updateValues).length === 0 && !("completed" in body)) {
+    updateValues.completed = true; // preserve old default behavior when body is empty
+  }
+
   const [session] = await db
     .update(planSessionsTable)
-    .set({ completed: isCompleted })
+    .set(updateValues)
     .where(and(eq(planSessionsTable.id, sessionId), eq(planSessionsTable.planId, planId)))
     .returning();
 
@@ -405,8 +435,70 @@ router.patch("/plans/:planId/sessions/:sessionId", async (req: Request, res): Pr
     return;
   }
 
-  logger.info({ userId, planId, sessionId, completed: isCompleted }, "Session marked as complete");
+  logger.info({ userId, planId, sessionId, updateValues }, "Session updated");
   res.json(serializeSession(session));
+});
+
+// ── Suggest changes to a coach-authored plan ────────────────────────────────
+router.post("/plans/:planId/suggest-changes", async (req: Request, res): Promise<void> => {
+  const userId = req.user!.id;
+  const planIdRaw = Array.isArray(req.params.planId) ? req.params.planId[0] : req.params.planId;
+  const planId = parseInt(planIdRaw, 10);
+  if (isNaN(planId)) {
+    res.status(400).json({ error: "Invalid plan ID" });
+    return;
+  }
+
+  const [plan] = await db
+    .select()
+    .from(trainingPlansTable)
+    .where(and(eq(trainingPlansTable.id, planId), eq(trainingPlansTable.userId, userId)));
+  if (!plan) {
+    res.status(404).json({ error: "Plan not found" });
+    return;
+  }
+  if (!plan.createdBy || plan.createdBy === userId) {
+    res.status(400).json({ error: "This is your own plan — edit it directly instead of suggesting changes." });
+    return;
+  }
+
+  const body = req.body as Record<string, unknown>;
+  const sessionsIn = Array.isArray(body.sessions) ? body.sessions : [];
+  const note = typeof body.note === "string" ? body.note.slice(0, 500) : null;
+  if (sessionsIn.length === 0) {
+    res.status(400).json({ error: "No proposed session changes provided" });
+    return;
+  }
+
+  const sessions = sessionsIn.map((s) => {
+    const o = s as Record<string, unknown>;
+    const type = String(o.sessionType ?? "easy_run");
+    return {
+      sessionId: typeof o.sessionId === "number" ? o.sessionId : null,
+      weekNumber: Math.max(1, Number(o.weekNumber) || 1),
+      dayOfWeek: Math.min(7, Math.max(1, Number(o.dayOfWeek) || 1)),
+      sessionType: VALID_SESSION_TYPES.includes(type) ? type : "easy_run",
+      description: String(o.description ?? "").slice(0, 280),
+      distanceKm: o.distanceKm != null ? Math.max(0, Number(o.distanceKm) || 0) : null,
+      durationMinutes: o.durationMinutes != null ? Math.max(0, Math.round(Number(o.durationMinutes) || 0)) : null,
+    };
+  });
+
+  const [suggestion] = await db.insert(planEditSuggestionsTable).values({
+    planId,
+    submittedBy: userId,
+    sessions,
+    note,
+  }).returning();
+
+  await db.insert(notificationsTable).values({
+    userId: plan.createdBy,
+    type: "plan_suggestion",
+    title: "Plan change suggested",
+    message: `${req.user!.firstName ?? "An athlete"} suggested ${sessions.length} change${sessions.length === 1 ? "" : "s"} to "${plan.name}".`,
+  });
+
+  res.status(201).json({ id: suggestion.id, status: suggestion.status });
 });
 
 // ── Auto-match activities to plan sessions ──

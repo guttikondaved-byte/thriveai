@@ -25,6 +25,28 @@ interface TeamPlan {
   createdAt: string;
 }
 
+interface ProposedSessionChange {
+  sessionId: number | null;
+  weekNumber: number;
+  dayOfWeek: number;
+  sessionType: string;
+  description: string;
+  distanceKm: number | null;
+  durationMinutes: number | null;
+}
+
+interface PlanSuggestion {
+  id: number;
+  planId: number;
+  planName: string;
+  athleteName: string;
+  submittedBy: string;
+  sessions: ProposedSessionChange[];
+  note: string | null;
+  status: string;
+  createdAt: string;
+}
+
 type AveraFlow = "idle" | "loading" | "proposal" | "applying" | "done" | "error";
 
 interface AveraProposal {
@@ -59,6 +81,12 @@ const STATUS_LABELS: Record<string, string> = {
   rejected: "Not approved",
 };
 
+const SESSION_LABELS: Record<string, string> = {
+  easy_run: "Easy", tempo_run: "Tempo", interval: "Intervals",
+  long_run: "Long", cross_training: "Cross", rest: "Rest", race: "Race",
+};
+const DAY_LABELS = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
 export default function CoachPlans() {
   const { toast } = useToast();
   const [athletes, setAthletes] = useState<Athlete[]>([]);
@@ -69,6 +97,8 @@ export default function CoachPlans() {
   const [deleting, setDeleting] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [reviewing, setReviewing] = useState<number | null>(null);
+  const [suggestions, setSuggestions] = useState<PlanSuggestion[]>([]);
+  const [reviewingSuggestion, setReviewingSuggestion] = useState<number | null>(null);
 
   const [averaFlow, setAveraFlow] = useState<AveraFlow>("idle");
   const [averaProposal, setAveraProposal] = useState<AveraProposal | null>(null);
@@ -82,9 +112,11 @@ export default function CoachPlans() {
     Promise.all([
       fetch("/api/coach/team-athletes", { credentials: "include" }).then(r => r.json()),
       fetch("/api/coach/team-plans", { credentials: "include" }).then(r => r.json()),
-    ]).then(([a, p]) => {
+      fetch("/api/coach/plan-suggestions", { credentials: "include" }).then(r => r.json()),
+    ]).then(([a, p, s]) => {
       setAthletes(Array.isArray(a) ? a : []);
       setPlans(Array.isArray(p) ? p : []);
+      setSuggestions(Array.isArray(s) ? s.filter((x: PlanSuggestion) => x.status === "pending") : []);
       if (Array.isArray(a) && a.length > 0) setExpandedAthleteId(a[0].userId);
     }).catch(() => {
       toast({ title: "Error", description: "Failed to load team data", variant: "destructive" });
@@ -136,6 +168,20 @@ export default function CoachPlans() {
       toast({ title: "Error", description: `Failed to ${action} plan`, variant: "destructive" });
     } finally {
       setReviewing(null);
+    }
+  }
+
+  async function reviewSuggestion(suggestionId: number, action: "approve" | "reject") {
+    setReviewingSuggestion(suggestionId);
+    try {
+      const res = await fetch(`/api/coach/plan-suggestions/${suggestionId}/${action}`, { method: "POST", credentials: "include" });
+      if (!res.ok) throw new Error();
+      setSuggestions(prev => prev.filter(s => s.id !== suggestionId));
+      toast({ title: action === "approve" ? "Changes approved" : "Changes not approved" });
+    } catch {
+      toast({ title: "Error", description: `Failed to ${action} changes`, variant: "destructive" });
+    } finally {
+      setReviewingSuggestion(null);
     }
   }
 
@@ -242,6 +288,60 @@ export default function CoachPlans() {
             : "Build plan with Avera"}
         </Button>
       </div>
+
+      {suggestions.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
+            Suggested Changes ({suggestions.length})
+          </h2>
+          <div className="space-y-3">
+            {suggestions.map(s => (
+              <div key={s.id} className="bg-background border border-primary/40 rounded-xl p-4">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{s.athleteName} · {s.planName}</p>
+                    <p className="text-xs text-muted-foreground">{s.sessions.length} session{s.sessions.length === 1 ? "" : "s"} proposed</p>
+                  </div>
+                </div>
+                {s.note && (
+                  <p className="text-xs text-muted-foreground italic border-l-2 border-primary/30 pl-3 mb-3">"{s.note}"</p>
+                )}
+                <div className="space-y-1.5 mb-3">
+                  {s.sessions.map((sess, i) => (
+                    <div key={i} className="flex items-center gap-3 text-xs bg-card rounded-lg px-3 py-2">
+                      <span className="w-8 font-semibold text-muted-foreground shrink-0">{DAY_LABELS[sess.dayOfWeek]}</span>
+                      <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium shrink-0">
+                        {SESSION_LABELS[sess.sessionType] ?? sess.sessionType}
+                      </span>
+                      <span className="text-foreground flex-1">{sess.description}</span>
+                      {sess.distanceKm != null && <span className="text-muted-foreground shrink-0">{sess.distanceKm} mi</span>}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => reviewSuggestion(s.id, "approve")}
+                    disabled={reviewingSuggestion === s.id}
+                    size="sm"
+                    className="bg-primary hover:bg-primary/80 text-[#F5F5F5] gap-1.5"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    Approve
+                  </Button>
+                  <Button
+                    onClick={() => reviewSuggestion(s.id, "reject")}
+                    disabled={reviewingSuggestion === s.id}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Reject
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {showAveraPanel && (
         <div className="mb-6 rounded-xl border border-primary/30 bg-primary/5 overflow-hidden">

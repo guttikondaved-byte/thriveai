@@ -862,6 +862,9 @@ router.post("/openai/apply-plan", async (req: Request, res): Promise<void> => {
 
     const [plan] = await db.insert(trainingPlansTable).values({
       userId: athleteUserId,
+      // The coach authored this plan's content — the athlete can only
+      // suggest changes to it, not edit it directly.
+      createdBy: userId,
       name,
       goal,
       startDate,
@@ -944,6 +947,7 @@ router.post("/openai/suggest-to-coach", async (req: Request, res): Promise<void>
 
     const [plan] = await db.insert(trainingPlansTable).values({
       userId,
+      createdBy: userId,
       name,
       goal,
       startDate,

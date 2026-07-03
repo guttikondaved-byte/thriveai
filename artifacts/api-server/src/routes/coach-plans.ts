@@ -4,6 +4,7 @@ import {
   db,
   trainingPlansTable,
   planSessionsTable,
+  planEditSuggestionsTable,
   athleteProfileTable,
   teamMembershipsTable,
   teamsTable,
@@ -82,7 +83,8 @@ router.post("/coach/team-plans", async (req: Request, res): Promise<void> => {
     res.status(403).json({ error: "Athlete not on your team" }); return;
   }
 
-  const insert: typeof trainingPlansTable.$inferInsert = { userId: athleteUserId, name, goal, startDate, endDate, status: "active" };
+  // Coach-authored — the athlete can only suggest changes to this plan, not edit it directly.
+  const insert: typeof trainingPlansTable.$inferInsert = { userId: athleteUserId, createdBy: req.user!.id, name, goal, startDate, endDate, status: "active" };
   if (weeklyMileage !== undefined) insert.weeklyMileage = String(weeklyMileage);
 
   const [plan] = await db.insert(trainingPlansTable).values(insert).returning();
@@ -179,6 +181,113 @@ router.post("/coach/team-plans/:id/reject", async (req: Request, res): Promise<v
   });
 
   res.json({ ...updated, weeklyMileage: updated.weeklyMileage ? Number(updated.weeklyMileage) : null, createdAt: updated.createdAt.toISOString() });
+});
+
+// ── Suggested changes to coach-authored plans ────────────────────────────────
+
+router.get("/coach/plan-suggestions", async (req: Request, res): Promise<void> => {
+  const memberIds = await getCoachMemberIds(req);
+  if (memberIds === "unauthorized") { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (memberIds === "forbidden") { res.status(403).json({ error: "Forbidden" }); return; }
+  if (memberIds.length === 0) { res.json([]); return; }
+
+  const plans = await db.select({ id: trainingPlansTable.id, name: trainingPlansTable.name, userId: trainingPlansTable.userId })
+    .from(trainingPlansTable)
+    .where(inArray(trainingPlansTable.userId, memberIds));
+  const planIds = plans.map(p => p.id);
+  if (planIds.length === 0) { res.json([]); return; }
+
+  const [suggestions, profiles] = await Promise.all([
+    db.select().from(planEditSuggestionsTable).where(inArray(planEditSuggestionsTable.planId, planIds)).orderBy(desc(planEditSuggestionsTable.createdAt)),
+    db.select({ userId: athleteProfileTable.userId, name: athleteProfileTable.name }).from(athleteProfileTable).where(inArray(athleteProfileTable.userId, memberIds)),
+  ]);
+  const planById = new Map(plans.map(p => [p.id, p]));
+  const nameByUser = new Map(profiles.map(p => [p.userId, p.name]));
+
+  res.json(suggestions.map(s => {
+    const plan = planById.get(s.planId);
+    return {
+      ...s,
+      createdAt: s.createdAt.toISOString(),
+      planName: plan?.name ?? "Plan",
+      athleteName: (plan?.userId && nameByUser.get(plan.userId)) || "Athlete",
+    };
+  }));
+});
+
+router.post("/coach/plan-suggestions/:id/approve", async (req: Request, res): Promise<void> => {
+  const memberIds = await getCoachMemberIds(req);
+  if (memberIds === "unauthorized") { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (memberIds === "forbidden") { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const suggestionId = parseInt(req.params.id as string, 10);
+  if (isNaN(suggestionId)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const [suggestion] = await db.select().from(planEditSuggestionsTable).where(eq(planEditSuggestionsTable.id, suggestionId)).limit(1);
+  if (!suggestion || suggestion.status !== "pending") { res.status(404).json({ error: "Not found" }); return; }
+
+  const [plan] = await db.select().from(trainingPlansTable).where(eq(trainingPlansTable.id, suggestion.planId)).limit(1);
+  if (!plan?.userId || !memberIds.includes(plan.userId)) { res.status(404).json({ error: "Not found" }); return; }
+
+  for (const s of suggestion.sessions) {
+    if (s.sessionId) {
+      await db.update(planSessionsTable)
+        .set({
+          sessionType: s.sessionType,
+          description: s.description,
+          distanceKm: s.distanceKm != null ? String(s.distanceKm) : null,
+          durationMinutes: s.durationMinutes,
+        })
+        .where(eq(planSessionsTable.id, s.sessionId));
+    } else {
+      await db.insert(planSessionsTable).values({
+        planId: suggestion.planId,
+        weekNumber: s.weekNumber,
+        dayOfWeek: s.dayOfWeek,
+        sessionType: s.sessionType,
+        description: s.description,
+        distanceKm: s.distanceKm != null ? String(s.distanceKm) : null,
+        durationMinutes: s.durationMinutes,
+      });
+    }
+  }
+
+  await db.update(planEditSuggestionsTable).set({ status: "approved" }).where(eq(planEditSuggestionsTable.id, suggestionId));
+
+  await db.insert(notificationsTable).values({
+    userId: suggestion.submittedBy,
+    type: "training_plan",
+    title: "Suggested changes approved",
+    message: `Your coach approved your suggested changes to "${plan.name}".`,
+  });
+
+  res.json({ ok: true });
+});
+
+router.post("/coach/plan-suggestions/:id/reject", async (req: Request, res): Promise<void> => {
+  const memberIds = await getCoachMemberIds(req);
+  if (memberIds === "unauthorized") { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (memberIds === "forbidden") { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const suggestionId = parseInt(req.params.id as string, 10);
+  if (isNaN(suggestionId)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const [suggestion] = await db.select().from(planEditSuggestionsTable).where(eq(planEditSuggestionsTable.id, suggestionId)).limit(1);
+  if (!suggestion || suggestion.status !== "pending") { res.status(404).json({ error: "Not found" }); return; }
+
+  const [plan] = await db.select().from(trainingPlansTable).where(eq(trainingPlansTable.id, suggestion.planId)).limit(1);
+  if (!plan?.userId || !memberIds.includes(plan.userId)) { res.status(404).json({ error: "Not found" }); return; }
+
+  await db.update(planEditSuggestionsTable).set({ status: "rejected" }).where(eq(planEditSuggestionsTable.id, suggestionId));
+
+  await db.insert(notificationsTable).values({
+    userId: suggestion.submittedBy,
+    type: "plan_suggestion",
+    title: "Suggested changes not approved",
+    message: `Your coach didn't approve your suggested changes to "${plan.name}".`,
+  });
+
+  res.json({ ok: true });
 });
 
 export default router;

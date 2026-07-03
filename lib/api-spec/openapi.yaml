@@ -1148,6 +1148,9 @@ components:
         createdAt:
           type: string
           format: date-time
+        createdBy:
+          type: ["string", "null"]
+          description: userId of whoever authored the plan's content (athlete or coach). Null/self means the athlete can edit freely; a different id means the plan is coach-authored and the athlete can only suggest changes.
       required:
         - id
         - name
@@ -1180,6 +1183,8 @@ components:
         createdAt:
           type: string
           format: date-time
+        createdBy:
+          type: ["string", "null"]
         sessions:
           type: array
           items:
