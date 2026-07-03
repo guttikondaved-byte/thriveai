@@ -1144,7 +1144,7 @@ components:
           type: ["number", "null"]
         status:
           type: string
-          enum: [active, completed, paused]
+          enum: [active, pending, rejected, completed, paused]
         createdAt:
           type: string
           format: date-time
@@ -1176,7 +1176,7 @@ components:
           type: ["number", "null"]
         status:
           type: string
-          enum: [active, completed, paused]
+          enum: [active, pending, rejected, completed, paused]
         createdAt:
           type: string
           format: date-time

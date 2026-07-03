@@ -11,6 +11,8 @@ export type TrainingPlanStatus = typeof TrainingPlanStatus[keyof typeof Training
 
 export const TrainingPlanStatus = {
   active: 'active',
+  pending: 'pending',
+  rejected: 'rejected',
   completed: 'completed',
   paused: 'paused',
 } as const;

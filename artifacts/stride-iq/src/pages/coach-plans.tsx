@@ -50,6 +50,13 @@ const STATUS_COLORS: Record<string, string> = {
   active: "text-[#10b981] bg-[#10b981]/10 border-[#10b981]/20",
   completed: "text-muted-foreground bg-muted/10 border-border/20",
   paused: "text-[#f59e0b] bg-[#f59e0b]/10 border-[#f59e0b]/20",
+  pending: "text-primary bg-primary/10 border-primary/20",
+  rejected: "text-red-600 bg-red-500/10 border-red-500/20",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Suggested — pending review",
+  rejected: "Not approved",
 };
 
 export default function CoachPlans() {
@@ -61,6 +68,7 @@ export default function CoachPlans() {
   const [showFormFor, setShowFormFor] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [reviewing, setReviewing] = useState<number | null>(null);
 
   const [averaFlow, setAveraFlow] = useState<AveraFlow>("idle");
   const [averaProposal, setAveraProposal] = useState<AveraProposal | null>(null);
@@ -113,6 +121,21 @@ export default function CoachPlans() {
       toast({ title: "Error", description: "Failed to create plan", variant: "destructive" });
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function reviewPlan(planId: number, action: "approve" | "reject") {
+    setReviewing(planId);
+    try {
+      const res = await fetch(`/api/coach/team-plans/${planId}/${action}`, { method: "POST", credentials: "include" });
+      if (!res.ok) throw new Error();
+      const updated = await res.json() as TeamPlan;
+      setPlans(prev => prev.map(p => (p.id === planId ? { ...p, status: updated.status } : p)));
+      toast({ title: action === "approve" ? "Plan approved" : "Plan not approved" });
+    } catch {
+      toast({ title: "Error", description: `Failed to ${action} plan`, variant: "destructive" });
+    } finally {
+      setReviewing(null);
     }
   }
 
@@ -376,14 +399,16 @@ export default function CoachPlans() {
                       const elapsed = Math.max(0, Math.ceil((Date.now() - start.getTime()) / 86400000));
                       const progress = Math.min(100, Math.round((elapsed / totalDays) * 100));
 
+                      const isPending = plan.status === "pending";
+
                       return (
-                        <div key={plan.id} className="bg-background border border-border rounded-lg p-4">
+                        <div key={plan.id} className={`bg-background border rounded-lg p-4 ${isPending ? "border-primary/40" : "border-border"}`}>
                           <div className="flex items-start justify-between gap-3 mb-2">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-0.5">
                                 <p className="text-sm font-medium text-foreground truncate">{plan.name}</p>
-                                <span className={`text-xs px-2 py-0.5 rounded border font-medium capitalize shrink-0 ${STATUS_COLORS[plan.status] ?? ""}`}>
-                                  {plan.status}
+                                <span className={`text-xs px-2 py-0.5 rounded border font-medium shrink-0 ${STATUS_COLORS[plan.status] ?? ""}`}>
+                                  {STATUS_LABELS[plan.status] ?? plan.status}
                                 </span>
                               </div>
                               <p className="text-xs text-muted-foreground">{plan.goal}</p>
@@ -408,6 +433,27 @@ export default function CoachPlans() {
                               <div className="h-1 bg-secondary rounded-full overflow-hidden">
                                 <div className="h-full bg-primary rounded-full" style={{ width: `${progress}%` }} />
                               </div>
+                            </div>
+                          )}
+                          {isPending && (
+                            <div className="flex items-center gap-2 mt-3">
+                              <Button
+                                onClick={() => reviewPlan(plan.id, "approve")}
+                                disabled={reviewing === plan.id}
+                                size="sm"
+                                className="bg-primary hover:bg-primary/80 text-[#F5F5F5] gap-1.5"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                Approve
+                              </Button>
+                              <Button
+                                onClick={() => reviewPlan(plan.id, "reject")}
+                                disabled={reviewing === plan.id}
+                                size="sm"
+                                variant="outline"
+                              >
+                                Reject
+                              </Button>
                             </div>
                           )}
                         </div>

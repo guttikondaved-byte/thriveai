@@ -903,7 +903,10 @@ router.post("/openai/apply-plan", async (req: Request, res): Promise<void> => {
   }
 });
 
-// ── Suggest a plan to the athlete's coach (creates a coach notification) ──────
+// ── Suggest an Avera-drafted plan to the athlete's coach ──────────────────────
+// Persists the full plan + sessions as status "pending" (not visible to the
+// athlete as an active plan yet) and notifies the coach. The coach approves
+// or rejects it from their Training Plans page.
 router.post("/openai/suggest-to-coach", async (req: Request, res): Promise<void> => {
   try {
     if (!req.isAuthenticated()) {
@@ -927,16 +930,55 @@ router.post("/openai/suggest-to-coach", async (req: Request, res): Promise<void>
     }
 
     const body = req.body as Record<string, unknown>;
-    const name = typeof body.name === "string" ? body.name.trim() : "Proposed plan";
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const goal = typeof body.goal === "string" ? body.goal.trim() : "";
+    const startDate = typeof body.startDate === "string" ? body.startDate : "";
+    const endDate = typeof body.endDate === "string" ? body.endDate : "";
+    const weeklyMileage = body.weeklyMileage != null ? Number(body.weeklyMileage) : null;
+    const sessionsIn = Array.isArray(body.sessions) ? body.sessions : [];
+
+    if (!name || !goal || !startDate || !endDate || sessionsIn.length === 0) {
+      res.status(400).json({ error: "Missing required plan fields" });
+      return;
+    }
+
+    const [plan] = await db.insert(trainingPlansTable).values({
+      userId,
+      name,
+      goal,
+      startDate,
+      endDate,
+      status: "pending",
+      weeklyMileage: weeklyMileage != null && !Number.isNaN(weeklyMileage) ? String(weeklyMileage) : null,
+    }).returning();
+
+    const sessionValues = sessionsIn.map((s) => {
+      const o = s as Record<string, unknown>;
+      const type = String(o.sessionType ?? "easy_run");
+      const miles = Math.max(0, Number(o.distanceMiles) || 0);
+      return {
+        planId: plan.id,
+        weekNumber: Math.max(1, Number(o.weekNumber) || 1),
+        dayOfWeek: Math.min(7, Math.max(1, Number(o.dayOfWeek) || 1)),
+        sessionType: VALID_SESSION_TYPES.includes(type) ? type : "easy_run",
+        description: String(o.description ?? "Run").slice(0, 280),
+        distanceKm: miles > 0 ? String(miles) : null,
+        durationMinutes: o.durationMinutes != null ? Math.max(0, Math.round(Number(o.durationMinutes) || 0)) : null,
+        completed: false,
+      };
+    });
+    if (sessionValues.length > 0) {
+      await db.insert(planSessionsTable).values(sessionValues);
+    }
 
     await db.insert(notificationsTable).values({
       userId: team.coachUserId,
       type: "plan_suggestion",
       title: "Plan suggestion",
-      message: `${req.user.firstName ?? "An athlete"} suggested a plan: \"${name}\".`,
+      message: `${req.user.firstName ?? "An athlete"} suggested a training plan: "${name}".`,
     });
 
-    res.status(201).json({ ok: true });
+    res.status(201).json({ planId: plan.id });
   } catch (err) {
     logger.error({ err }, "suggest-to-coach error");
     res.status(500).json({ error: "Failed to suggest plan to coach" });

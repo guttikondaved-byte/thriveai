@@ -239,7 +239,7 @@ export const ListTrainingPlansResponseItem = zod.object({
   "startDate": zod.coerce.date(),
   "endDate": zod.coerce.date(),
   "weeklyMileage": zod.number().nullish(),
-  "status": zod.enum(['active', 'completed', 'paused']),
+  "status": zod.enum(['active', 'pending', 'rejected', 'completed', 'paused']),
   "createdAt": zod.coerce.date()
 })
 export const ListTrainingPlansResponse = zod.array(ListTrainingPlansResponseItem)
@@ -271,7 +271,7 @@ export const GetTrainingPlanResponse = zod.object({
   "startDate": zod.coerce.date(),
   "endDate": zod.coerce.date(),
   "weeklyMileage": zod.number().nullish(),
-  "status": zod.enum(['active', 'completed', 'paused']),
+  "status": zod.enum(['active', 'pending', 'rejected', 'completed', 'paused']),
   "createdAt": zod.coerce.date(),
   "sessions": zod.array(zod.object({
   "id": zod.number(),

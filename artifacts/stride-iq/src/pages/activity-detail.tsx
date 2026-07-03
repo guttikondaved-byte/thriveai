@@ -44,11 +44,6 @@ function paceFromSpeed(speedMs: number): string {
   return `${m}:${String(s).padStart(2, "0")}/mi`;
 }
 
-function paceFromDistanceTime(meters: number, seconds: number): string {
-  if (!meters || !seconds) return "—";
-  return paceFromSpeed(meters / seconds);
-}
-
 const metersToFeet = (m: number) => Math.round(m * 3.28084);
 const cToF = (c: number) => Math.round((c * 9) / 5 + 32);
 
@@ -100,7 +95,6 @@ export default function ActivityDetail() {
 
   const movingSec = activity.movingTimeSeconds ?? (activity.durationMinutes != null ? activity.durationMinutes * 60 : null);
   const distance = activity.distanceKm; // stored in miles
-  const avgPace = distance && movingSec ? paceFromDistanceTime(distance * M_PER_MILE, movingSec) : null;
 
   const polyPoints = activity.mapPolyline ? decodePolyline(activity.mapPolyline) : [];
   const mapW = 760, mapH = 260;
@@ -171,9 +165,6 @@ export default function ActivityDetail() {
         {movingSec != null && (
           <MetricCard icon={<Clock className="w-4 h-4" />} label="Moving Time" value={fmtDuration(movingSec)}
             sub={activity.elapsedTimeSeconds != null && activity.elapsedTimeSeconds !== movingSec ? `${fmtDuration(activity.elapsedTimeSeconds)} elapsed` : undefined} />
-        )}
-        {avgPace && (
-          <MetricCard icon={<Gauge className="w-4 h-4" />} label="Avg Pace" value={avgPace} />
         )}
         {activity.elevationGainM != null && (
           <MetricCard icon={<TrendingUp className="w-4 h-4" />} label="Elevation Gain" value={`${metersToFeet(activity.elevationGainM)} ft`} />

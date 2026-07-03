@@ -7,6 +7,7 @@ import {
   athleteProfileTable,
   teamMembershipsTable,
   teamsTable,
+  notificationsTable,
 } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -116,6 +117,68 @@ router.delete("/coach/team-plans/:id", async (req: Request, res): Promise<void> 
 
   await db.delete(trainingPlansTable).where(eq(trainingPlansTable.id, planId));
   res.sendStatus(204);
+});
+
+// ── Approve or reject an athlete's suggested plan ────────────────────────────
+
+router.post("/coach/team-plans/:id/approve", async (req: Request, res): Promise<void> => {
+  const memberIds = await getCoachMemberIds(req);
+  if (memberIds === "unauthorized") { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (memberIds === "forbidden") { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const planId = parseInt(req.params.id as string, 10);
+  if (isNaN(planId)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const [plan] = await db.select().from(trainingPlansTable).where(eq(trainingPlansTable.id, planId)).limit(1);
+  if (!plan?.userId || !memberIds.includes(plan.userId) || plan.status !== "pending") {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(trainingPlansTable)
+    .set({ status: "active" })
+    .where(eq(trainingPlansTable.id, planId))
+    .returning();
+
+  await db.insert(notificationsTable).values({
+    userId: plan.userId,
+    type: "training_plan",
+    title: "Plan approved",
+    message: `Your coach approved your suggested plan: "${plan.name}".`,
+  });
+
+  res.json({ ...updated, weeklyMileage: updated.weeklyMileage ? Number(updated.weeklyMileage) : null, createdAt: updated.createdAt.toISOString() });
+});
+
+router.post("/coach/team-plans/:id/reject", async (req: Request, res): Promise<void> => {
+  const memberIds = await getCoachMemberIds(req);
+  if (memberIds === "unauthorized") { res.status(401).json({ error: "Unauthorized" }); return; }
+  if (memberIds === "forbidden") { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const planId = parseInt(req.params.id as string, 10);
+  if (isNaN(planId)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const [plan] = await db.select().from(trainingPlansTable).where(eq(trainingPlansTable.id, planId)).limit(1);
+  if (!plan?.userId || !memberIds.includes(plan.userId) || plan.status !== "pending") {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(trainingPlansTable)
+    .set({ status: "rejected" })
+    .where(eq(trainingPlansTable.id, planId))
+    .returning();
+
+  await db.insert(notificationsTable).values({
+    userId: plan.userId,
+    type: "plan_suggestion",
+    title: "Plan not approved",
+    message: `Your coach didn't approve your suggested plan: "${plan.name}". Try suggesting a revised one.`,
+  });
+
+  res.json({ ...updated, weeklyMileage: updated.weeklyMileage ? Number(updated.weeklyMileage) : null, createdAt: updated.createdAt.toISOString() });
 });
 
 export default router;

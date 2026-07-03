@@ -77,18 +77,18 @@
 
   /* Soft warm off-white — "fresh outdoors" daylight */
   --background: 48 33% 98%;
-  --foreground: 160 24% 14%;
+  --foreground: 220 15% 15%;
 
   --border: 150 14% 88%;
   --input:  150 14% 88%;
   --ring:   206 69% 52%;
 
   --card:             0 0% 100%;
-  --card-foreground:  160 24% 14%;
+  --card-foreground:  220 15% 15%;
   --card-border:      150 14% 90%;
 
   --popover:            0 0% 100%;
-  --popover-foreground: 160 24% 14%;
+  --popover-foreground: 220 15% 15%;
   --popover-border:     150 14% 90%;
 
   /* Primary = sky blue #2E90D9 */
@@ -96,7 +96,7 @@
   --primary-foreground: 0 0% 100%;
 
   --secondary:            150 22% 94%;
-  --secondary-foreground: 160 24% 18%;
+  --secondary-foreground: 220 15% 19%;
 
   --muted:            150 18% 95%;
   --muted-foreground: 155 10% 40%;
@@ -116,12 +116,12 @@
   --chart-5: 150 12% 55%;
 
   --sidebar:                    48 30% 97%;
-  --sidebar-foreground:         160 24% 14%;
+  --sidebar-foreground:         220 15% 15%;
   --sidebar-border:             150 14% 88%;
   --sidebar-primary:            206 69% 52%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent:             150 22% 92%;
-  --sidebar-accent-foreground:  160 24% 18%;
+  --sidebar-accent-foreground:  220 15% 19%;
   --sidebar-ring:               206 69% 52%;
 
   --radius: 0.75rem;
@@ -144,24 +144,24 @@
   --elevate-2: rgba(0,0,0, .07);
 
   --background: 48 33% 98%;
-  --foreground: 160 24% 14%;
+  --foreground: 220 15% 15%;
   --border: 150 14% 88%;
   --input:  150 14% 88%;
   --ring:   206 69% 52%;
 
   --card:             0 0% 100%;
-  --card-foreground:  160 24% 14%;
+  --card-foreground:  220 15% 15%;
   --card-border:      150 14% 90%;
 
   --popover:            0 0% 100%;
-  --popover-foreground: 160 24% 14%;
+  --popover-foreground: 220 15% 15%;
   --popover-border:     150 14% 90%;
 
   --primary:            206 69% 52%;
   --primary-foreground: 0 0% 100%;
 
   --secondary:            150 22% 94%;
-  --secondary-foreground: 160 24% 18%;
+  --secondary-foreground: 220 15% 19%;
 
   --muted:            150 18% 95%;
   --muted-foreground: 155 10% 40%;
@@ -179,12 +179,12 @@
   --chart-5: 150 12% 55%;
 
   --sidebar:                    48 30% 97%;
-  --sidebar-foreground:         160 24% 14%;
+  --sidebar-foreground:         220 15% 15%;
   --sidebar-border:             150 14% 88%;
   --sidebar-primary:            206 69% 52%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent:             150 22% 92%;
-  --sidebar-accent-foreground:  160 24% 18%;
+  --sidebar-accent-foreground:  220 15% 19%;
   --sidebar-ring:               206 69% 52%;
 }
 

@@ -6,6 +6,9 @@ import {
   planSessionsTable,
   athleteProfileTable,
   activitiesTable,
+  teamMembershipsTable,
+  teamsTable,
+  notificationsTable,
 } from "@workspace/db";
 import {
   ListTrainingPlansResponse,
@@ -228,6 +231,20 @@ router.post("/plans", async (req: Request, res): Promise<void> => {
   }
 
   const userId = req.user!.id;
+
+  // If this athlete is on a team, they can't add a plan directly — it goes to
+  // their coach as a suggestion instead, and only becomes active on approval.
+  const [membership] = await db
+    .select({ teamId: teamMembershipsTable.teamId })
+    .from(teamMembershipsTable)
+    .where(eq(teamMembershipsTable.athleteUserId, userId))
+    .limit(1);
+  let coachUserId: string | null = null;
+  if (membership) {
+    const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, membership.teamId)).limit(1);
+    coachUserId = team?.coachUserId ?? null;
+  }
+
   const toDateStr = (d: Date) => d.toISOString().split("T")[0]!;
   const insertValues: typeof trainingPlansTable.$inferInsert = {
     userId,
@@ -235,7 +252,7 @@ router.post("/plans", async (req: Request, res): Promise<void> => {
     goal: parsed.data.goal,
     startDate: toDateStr(parsed.data.startDate),
     endDate: toDateStr(parsed.data.endDate),
-    status: "active",
+    status: coachUserId ? "pending" : "active",
   };
   if (parsed.data.weeklyMileage !== undefined) {
     insertValues.weeklyMileage = String(parsed.data.weeklyMileage);
@@ -251,6 +268,15 @@ router.post("/plans", async (req: Request, res): Promise<void> => {
   // response is fast. AI-generated sessions replace these in the background.
   const fallbackSessions = buildFallbackSessions(plan.id, plan.name, plan.goal, weeklyMiles, weeks);
   await db.insert(planSessionsTable).values(fallbackSessions);
+
+  if (coachUserId) {
+    await db.insert(notificationsTable).values({
+      userId: coachUserId,
+      type: "plan_suggestion",
+      title: "Plan suggestion",
+      message: `${req.user!.firstName ?? "An athlete"} suggested a training plan: "${plan.name}".`,
+    });
+  }
 
   // Respond to the client right away — no waiting for the AI.
   res.status(201).json(serializePlan(plan));

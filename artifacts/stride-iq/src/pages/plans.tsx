@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useListTrainingPlans, useCreateTrainingPlan, getListTrainingPlansQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { Plus, X, Calendar, ChevronRight } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus, X, Calendar, ChevronRight, Send } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "wouter";
 import { useForm } from "react-hook-form";
@@ -16,7 +16,24 @@ const STATUS_COLORS: Record<string, string> = {
   active: "text-[#10b981] bg-[#10b981]/10 border border-[#10b981]/20",
   completed: "text-accent bg-accent/10 border border-accent/20",
   paused: "text-[#f59e0b] bg-[#f59e0b]/10 border border-[#f59e0b]/20",
+  pending: "text-primary bg-primary/10 border border-primary/20",
+  rejected: "text-red-600 bg-red-500/10 border border-red-500/20",
 };
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pending coach approval",
+  rejected: "Not approved",
+};
+
+function useMyTeam() {
+  return useQuery({
+    queryKey: ["teams-my"],
+    queryFn: async () => {
+      const r = await fetch("/api/teams/my", { credentials: "include" });
+      return r.json() as Promise<{ team: { id: number; name: string } | null }>;
+    },
+  });
+}
 
 const schema = z.object({
   name: z.string().min(1, "Required"),
@@ -33,6 +50,8 @@ export default function Plans() {
   const { toast } = useToast();
   const { data: plans, isLoading } = useListTrainingPlans();
   const createPlan = useCreateTrainingPlan();
+  const { data: teamData } = useMyTeam();
+  const hasCoach = !!teamData?.team;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -49,9 +68,13 @@ export default function Plans() {
         ...(values.weeklyMileage ? { weeklyMileage: parseFloat(values.weeklyMileage) } : {}),
       }
     }, {
-      onSuccess: () => {
+      onSuccess: (created) => {
         qc.invalidateQueries({ queryKey: getListTrainingPlansQueryKey() });
-        toast({ title: "Training plan created" });
+        toast(
+          created.status === "pending"
+            ? { title: "Plan suggested to your coach", description: "You'll be notified once it's reviewed." }
+            : { title: "Training plan created" },
+        );
         setShowForm(false);
         form.reset();
       },
@@ -63,17 +86,21 @@ export default function Plans() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-semibold text-foreground" data-testid="plans-title">Training Plans</h1>
-          <p className="text-sm text-muted-foreground mt-1">Your structured training programs</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {hasCoach ? "Suggest a plan to your coach for approval" : "Your structured training programs"}
+          </p>
         </div>
         <Button onClick={() => setShowForm(!showForm)} data-testid="button-create-plan" className="gap-2">
-          {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          {showForm ? "Cancel" : "New Plan"}
+          {showForm ? <X className="w-4 h-4" /> : hasCoach ? <Send className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          {showForm ? "Cancel" : hasCoach ? "Suggest Plan" : "New Plan"}
         </Button>
       </div>
 
       {showForm && (
         <div className="bg-card border border-border rounded-lg p-6 mb-6" data-testid="form-create-plan">
-          <h2 className="text-sm font-medium text-foreground mb-4">Create Training Plan</h2>
+          <h2 className="text-sm font-medium text-foreground mb-4">
+            {hasCoach ? "Suggest Training Plan to Your Coach" : "Create Training Plan"}
+          </h2>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-4">
               <FormField control={form.control} name="name" render={({ field }) => (
@@ -113,7 +140,9 @@ export default function Plans() {
               )} />
               <div className="col-span-2 flex justify-end">
                 <Button type="submit" disabled={createPlan.isPending} data-testid="button-submit-plan">
-                  {createPlan.isPending ? "Creating..." : "Create Plan"}
+                  {createPlan.isPending
+                    ? hasCoach ? "Sending…" : "Creating..."
+                    : hasCoach ? "Send to Coach" : "Create Plan"}
                 </Button>
               </div>
             </form>
@@ -146,7 +175,7 @@ export default function Plans() {
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-sm font-medium text-foreground">{plan.name}</h3>
                       <span className={`text-xs px-2 py-0.5 rounded font-medium capitalize ${STATUS_COLORS[plan.status] ?? ""}`}>
-                        {plan.status}
+                        {STATUS_LABELS[plan.status] ?? plan.status}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">{plan.goal}</p>
