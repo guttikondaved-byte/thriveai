@@ -58,7 +58,7 @@ const FOCUS_MAP: Record<string, FocusConfig> = {
     headline: "Cross Country Command Center",
     tagline: "Built for aerobic base building, terrain durability, and pack racing.",
     philosophy: "The race is won in the miles no one sees.",
-    athleteNoun: "harriers",
+    athleteNoun: "athletes",
     focusAreas: ["Aerobic base volume", "Hill & terrain strength", "Mileage progression", "Race-pack tactics"],
     keySessionTypes: ["Long run", "Hill repeats", "Progression run", "Fartlek"],
     distanceLabel: "Base Miles",

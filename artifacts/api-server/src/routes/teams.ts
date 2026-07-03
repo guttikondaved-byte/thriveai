@@ -241,8 +241,9 @@ router.get("/teams/:teamId/members", async (req, res): Promise<void> => {
 
   const memberIds = memberships.map(m => m.userId);
 
-  // Weekly distance per athlete (last 7 days)
+  // Weekly distance + workout count per athlete (last 7 days)
   const weeklyByUser = new Map<string, number>();
+  const workoutsByUser = new Map<string, number>();
   const riskByUser = new Map<string, "high" | "medium" | "low">();
   if (memberIds.length > 0) {
     const sevenDaysAgo = new Date();
@@ -259,6 +260,7 @@ router.get("/teams/:teamId/members", async (req, res): Promise<void> => {
     for (const a of last7) {
       if (!a.userId) continue;
       weeklyByUser.set(a.userId, (weeklyByUser.get(a.userId) ?? 0) + Number(a.distanceKm ?? 0));
+      workoutsByUser.set(a.userId, (workoutsByUser.get(a.userId) ?? 0) + 1);
     }
 
     // Highest active (unacknowledged) injury-alert risk per athlete
@@ -287,6 +289,7 @@ router.get("/teams/:teamId/members", async (req, res): Promise<void> => {
     restingHeartRate: m.restingHeartRate ?? null,
     hrv: m.hrv != null ? Number(m.hrv) : null,
     weeklyDistanceKm: weeklyByUser.get(m.userId) ?? 0,
+    weeklyWorkouts: workoutsByUser.get(m.userId) ?? 0,
     riskLevel: riskByUser.get(m.userId) ?? null,
   })));
 });
@@ -370,7 +373,7 @@ router.get("/teams/:teamId/members/:userId/profile", async (req, res): Promise<v
     .from(activitiesTable)
     .where(eq(activitiesTable.userId, athleteUserId))
     .orderBy(desc(activitiesTable.activityDate))
-    .limit(10);
+    .limit(50);
 
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -382,11 +385,36 @@ router.get("/teams/:teamId/members/:userId/profile", async (req, res): Promise<v
     ));
   const weeklyDistanceKm = last7.reduce((sum, a) => sum + Number(a.distanceKm ?? 0), 0);
 
+  // All-time totals + last-8-weeks trend
+  const allActivities = await db.select({
+    distanceKm: activitiesTable.distanceKm,
+    activityDate: activitiesTable.activityDate,
+  })
+    .from(activitiesTable)
+    .where(eq(activitiesTable.userId, athleteUserId));
+  const totalDistanceKm = allActivities.reduce((sum, a) => sum + Number(a.distanceKm ?? 0), 0);
+
+  const weeklyTrend: Array<{ weekStart: string; distanceKm: number; workouts: number }> = [];
+  for (let w = 7; w >= 0; w--) {
+    const start = new Date();
+    start.setDate(start.getDate() - start.getDay() - w * 7);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    const startStr = start.toISOString().slice(0, 10);
+    const endStr = end.toISOString().slice(0, 10);
+    const inWeek = allActivities.filter(a => a.activityDate >= startStr && a.activityDate < endStr);
+    weeklyTrend.push({
+      weekStart: startStr,
+      distanceKm: inWeek.reduce((sum, a) => sum + Number(a.distanceKm ?? 0), 0),
+      workouts: inWeek.length,
+    });
+  }
+
   const alerts = await db.select()
     .from(injuryAlertsTable)
     .where(and(eq(injuryAlertsTable.userId, athleteUserId), eq(injuryAlertsTable.acknowledged, false)))
     .orderBy(desc(injuryAlertsTable.createdAt))
-    .limit(5);
+    .limit(20);
 
   res.json({
     userId: athleteUserId,
@@ -407,14 +435,26 @@ router.get("/teams/:teamId/members/:userId/profile", async (req, res): Promise<v
       healthNotes: profile.healthNotes,
     } : null,
     weeklyDistanceKm,
+    weeklyWorkouts: last7.length,
+    totalActivities: allActivities.length,
+    totalDistanceKm,
+    weeklyTrend,
     recentActivities: recentActivities.map(a => ({
       id: a.id,
       type: a.type,
       distanceKm: a.distanceKm != null ? Number(a.distanceKm) : null,
       durationMinutes: a.durationMinutes,
       avgHeartRate: a.avgHeartRate,
+      maxHeartRate: a.maxHeartRate,
       perceivedEffort: a.perceivedEffort,
       activityDate: a.activityDate,
+      elevationGainM: a.elevationGainM != null ? Number(a.elevationGainM) : null,
+      avgSpeed: a.avgSpeed != null ? Number(a.avgSpeed) : null,
+      movingTimeSeconds: a.movingTimeSeconds,
+      calories: a.calories != null ? Number(a.calories) : null,
+      sufferScore: a.sufferScore,
+      notes: a.notes,
+      description: a.description,
     })),
     alerts: alerts.map(al => ({
       id: al.id,

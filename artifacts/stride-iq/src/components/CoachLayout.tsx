@@ -135,7 +135,7 @@ function AveraTipPopup() {
 
   return (
     <div className="fixed bottom-6 right-6 z-50 w-80 animate-in slide-in-from-bottom-4 fade-in duration-300">
-      <div className="bg-background border border-primary/30 rounded-xl shadow-2xl shadow-black/50 overflow-hidden">
+      <div className="bg-background border border-primary/30 rounded-xl shadow-xl overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-primary/5">
           <div className="w-6 h-6 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
             <Bot className="w-3 h-3 text-primary" />
@@ -175,13 +175,13 @@ function AveraTipPopup() {
 
         {flow === "done" && proposal && (
           <div className="mx-4 mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
-            <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-300"><Check className="w-4 h-4" /> Plan added for {proposal.athleteName}</p>
+            <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-700"><Check className="w-4 h-4" /> Plan added for {proposal.athleteName}</p>
           </div>
         )}
 
         {flow === "error" && errorMsg && (
           <div className="mx-4 mb-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3">
-            <p className="text-xs text-red-300">{errorMsg}</p>
+            <p className="text-xs text-destructive">{errorMsg}</p>
           </div>
         )}
 
@@ -189,7 +189,7 @@ function AveraTipPopup() {
           {flow === "idle" && (
             <button
               onClick={buildPlan}
-              className="text-xs font-medium text-[#F5F5F5] bg-primary hover:bg-primary/80 transition-colors rounded-md px-2.5 py-1.5"
+              className="text-xs font-medium text-primary-foreground bg-primary hover:bg-primary/80 transition-colors rounded-md px-2.5 py-1.5"
             >
               Build a training plan
             </button>
@@ -203,7 +203,7 @@ function AveraTipPopup() {
             <>
               <button
                 onClick={applyPlan}
-                className="text-xs font-medium text-[#F5F5F5] bg-primary hover:bg-primary/80 transition-colors rounded-md px-2.5 py-1.5"
+                className="text-xs font-medium text-primary-foreground bg-primary hover:bg-primary/80 transition-colors rounded-md px-2.5 py-1.5"
               >
                 Add to training plan
               </button>
@@ -296,7 +296,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
       >
         <div className="px-5 py-5 border-b border-sidebar-border flex items-center gap-3">
           <img src="/logo.svg" alt="Thrive" className="h-7 w-auto" />
-          <div className={`text-[10px] font-bold uppercase tracking-[0.15em] ${focus.accentText}`}>{focus.label} Coach</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{focus.label} Coach</div>
           <button
             onClick={() => setMobileOpen(false)}
             className="lg:hidden ml-auto text-muted-foreground hover:text-foreground"
@@ -314,12 +314,13 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
                 key={href}
                 href={href}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-md text-[13px] font-semibold transition-all
                   ${active
-                    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                    ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                   }`}
               >
+                {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-primary" />}
                 <Icon size={16} className={active ? "opacity-100" : "opacity-70"} />
                 {label}
               </Link>

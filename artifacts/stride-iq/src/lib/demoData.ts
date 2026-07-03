@@ -191,6 +191,7 @@ export const DEMO_COACH_DATA = {
       restingHeartRate: 52,
       hrv: 68,
       weeklyDistanceKm: 24.5,
+      weeklyWorkouts: 4,
       riskLevel: "medium" as const,
     },
     {
@@ -202,6 +203,7 @@ export const DEMO_COACH_DATA = {
       restingHeartRate: 48,
       hrv: 74,
       weeklyDistanceKm: 45.1,
+      weeklyWorkouts: 6,
       riskLevel: "low" as const,
     },
     {
@@ -213,6 +215,7 @@ export const DEMO_COACH_DATA = {
       restingHeartRate: 61,
       hrv: 58,
       weeklyDistanceKm: 12.2,
+      weeklyWorkouts: 3,
       riskLevel: "low" as const,
     },
     {
@@ -224,6 +227,7 @@ export const DEMO_COACH_DATA = {
       restingHeartRate: 50,
       hrv: 51,
       weeklyDistanceKm: 53.2,
+      weeklyWorkouts: 7,
       riskLevel: "high" as const,
     },
     {
@@ -235,6 +239,7 @@ export const DEMO_COACH_DATA = {
       restingHeartRate: 55,
       hrv: 65,
       weeklyDistanceKm: 20.8,
+      weeklyWorkouts: 4,
       riskLevel: "low" as const,
     },
   ],
@@ -272,3 +277,156 @@ export const DEMO_COACH_DATA = {
     ],
   },
 };
+
+// ── Coach-side per-athlete detail fixture ───────────────────────────────
+import type { AthleteDetail, AthleteActivity } from "@/pages/coach-athlete";
+
+const DEMO_ATHLETE_EXTRAS: Record<string, {
+  joinedAt: string;
+  age: number;
+  weeklyMileageGoal: number;
+  paceMinPerMi: number;
+  pr5k: string | null;
+  pr10k: string | null;
+  prHalf: string | null;
+  prMarathon: string | null;
+  healthNotes: string | null;
+  trendFactors: number[]; // 8 weeks, oldest → current, multiplier on this week's mileage
+  alerts: AthleteDetail["alerts"];
+}> = {
+  "1": {
+    joinedAt: "2026-03-04", age: 24, weeklyMileageGoal: 28, paceMinPerMi: 9.2,
+    pr5k: "22:41", pr10k: "47:30", prHalf: "1:52:10", prMarathon: null, healthNotes: null,
+    trendFactors: [0.65, 0.72, 0.8, 0.78, 0.85, 0.9, 0.95, 1],
+    alerts: [{
+      id: 1, riskLevel: "medium", bodyPart: "shin",
+      message: "Reported mild shin soreness after two consecutive hard sessions.",
+      recommendation: "Swap tomorrow's tempo for an easy run and monitor soreness for 48 hours.",
+      createdAt: "2026-07-01T14:00:00Z",
+    }],
+  },
+  "2": {
+    joinedAt: "2026-03-02", age: 29, weeklyMileageGoal: 45, paceMinPerMi: 7.4,
+    pr5k: "20:11", pr10k: "42:05", prHalf: "1:35:20", prMarathon: null, healthNotes: null,
+    trendFactors: [0.82, 0.85, 0.88, 0.9, 0.92, 0.95, 0.93, 1],
+    alerts: [],
+  },
+  "3": {
+    joinedAt: "2026-03-15", age: 21, weeklyMileageGoal: 15, paceMinPerMi: 11.3,
+    pr5k: "31:12", pr10k: null, prHalf: null, prMarathon: null, healthNotes: null,
+    trendFactors: [0.4, 0.5, 0.6, 0.65, 0.75, 0.8, 0.9, 1],
+    alerts: [],
+  },
+  "4": {
+    joinedAt: "2026-03-02", age: 34, weeklyMileageGoal: 48, paceMinPerMi: 8.1,
+    pr5k: "20:45", pr10k: "43:20", prHalf: "1:38:05", prMarathon: "3:29:44",
+    healthNotes: "History of Achilles tightness — watch sharp mileage increases.",
+    trendFactors: [0.75, 0.8, 0.78, 0.82, 0.85, 0.8, 0.82, 1],
+    alerts: [
+      {
+        id: 2, riskLevel: "high", bodyPart: "general",
+        message: "Weekly mileage jumped 24% above baseline while HRV dropped from 65 to 51 ms.",
+        recommendation: "Cut volume ~25% this week and keep all sessions at easy pace; reassess in 5 days.",
+        createdAt: "2026-07-02T09:00:00Z",
+      },
+      {
+        id: 3, riskLevel: "medium", bodyPart: "achilles",
+        message: "Elevated load on a previously flagged Achilles issue.",
+        recommendation: "Add eccentric calf raises and avoid hill repeats until symptoms clear.",
+        createdAt: "2026-06-30T16:30:00Z",
+      },
+    ],
+  },
+  "5": {
+    joinedAt: "2026-03-20", age: 27, weeklyMileageGoal: 22, paceMinPerMi: 9.8,
+    pr5k: "24:30", pr10k: "51:40", prHalf: "2:05:00", prMarathon: null, healthNotes: null,
+    trendFactors: [0.7, 0.75, 0.85, 0.8, 0.9, 0.85, 0.95, 1],
+    alerts: [],
+  },
+};
+
+const DEMO_ACTIVITY_CYCLE = ["easy_run", "tempo_run", "easy_run", "long_run", "interval", "easy_run", "easy_run"];
+
+export function getDemoAthleteDetail(userId: string): AthleteDetail | null {
+  const member = DEMO_COACH_DATA.roster.find(m => m.userId === userId);
+  const extras = DEMO_ATHLETE_EXTRAS[userId];
+  if (!member || !extras) return null;
+
+  const today = new Date();
+  const weekStart = new Date(today);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+
+  const weeklyTrend = extras.trendFactors.map((f, i) => {
+    const start = new Date(weekStart);
+    start.setDate(start.getDate() - (extras.trendFactors.length - 1 - i) * 7);
+    return {
+      weekStart: start.toISOString().slice(0, 10),
+      distanceKm: Math.round(member.weeklyDistanceKm * f * 10) / 10,
+      workouts: Math.max(1, Math.round(member.weeklyWorkouts * f)),
+    };
+  });
+
+  // Generate ~4 weeks of individual activities from the trend
+  const recentActivities: AthleteActivity[] = [];
+  let id = 1;
+  for (let w = weeklyTrend.length - 1; w >= weeklyTrend.length - 4 && w >= 0; w--) {
+    const week = weeklyTrend[w];
+    const gap = 7 / (week.workouts + 1);
+    for (let i = 0; i < week.workouts; i++) {
+      const date = new Date(week.weekStart + "T00:00:00");
+      date.setDate(date.getDate() + Math.round((i + 1) * gap));
+      if (date > today) continue;
+      const type = DEMO_ACTIVITY_CYCLE[(w + i) % DEMO_ACTIVITY_CYCLE.length];
+      const share = type === "long_run" ? 1.8 : type === "easy_run" ? 0.9 : 1;
+      const distance = Math.round((week.distanceKm / week.workouts) * share * 10) / 10;
+      const paceAdj = type === "long_run" ? 1.08 : type === "easy_run" ? 1.12 : 0.92;
+      const minutes = Math.round(distance * extras.paceMinPerMi * paceAdj);
+      const hardness = type === "interval" ? 24 : type === "tempo_run" ? 18 : type === "long_run" ? 10 : 0;
+      recentActivities.push({
+        id: id++,
+        type,
+        distanceKm: distance,
+        durationMinutes: minutes,
+        avgHeartRate: 142 + hardness + ((w + i) % 4),
+        maxHeartRate: 160 + hardness + ((w + i) % 6),
+        perceivedEffort: type === "interval" ? 8 : type === "tempo_run" ? 7 : type === "long_run" ? 6 : 4,
+        activityDate: date.toISOString().slice(0, 10),
+        elevationGainM: 20 + ((w * 7 + i * 13) % 70),
+        avgSpeed: null,
+        movingTimeSeconds: minutes * 60,
+        calories: Math.round(distance * 95),
+        sufferScore: 15 + hardness + ((w + i) % 10) * 2,
+        notes: null,
+        description: null,
+      });
+    }
+  }
+  recentActivities.sort((a, b) => b.activityDate.localeCompare(a.activityDate));
+
+  return {
+    userId: member.userId,
+    name: member.name,
+    email: member.email,
+    joinedAt: extras.joinedAt,
+    profile: {
+      age: extras.age,
+      fitnessLevel: member.fitnessLevel,
+      primaryGoal: member.primaryGoal,
+      weeklyMileageGoal: extras.weeklyMileageGoal,
+      restingHeartRate: member.restingHeartRate,
+      hrv: member.hrv,
+      pr5k: extras.pr5k,
+      pr10k: extras.pr10k,
+      prHalf: extras.prHalf,
+      prMarathon: extras.prMarathon,
+      healthNotes: extras.healthNotes,
+    },
+    weeklyDistanceKm: member.weeklyDistanceKm,
+    weeklyWorkouts: member.weeklyWorkouts,
+    totalActivities: recentActivities.length + 38,
+    totalDistanceKm: Math.round(member.weeklyDistanceKm * 14),
+    weeklyTrend,
+    recentActivities,
+    alerts: member.riskLevel === "low" ? [] : extras.alerts,
+  };
+}

@@ -17,7 +17,7 @@ export default function DemoCoachProfile() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
+        <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground flex items-center gap-2">
           <Settings className="w-6 h-6 text-primary" />
           Settings
         </h1>

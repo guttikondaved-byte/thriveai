@@ -11,16 +11,35 @@ import {
 } from "@workspace/api-client-react";
 import { useGetAthleteProfile } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Send, Bot, User, Trash2, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2, ArrowUp, PanelLeftOpen, PanelLeftClose, SquarePen } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { format } from "date-fns";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 type StreamMessage = { role: "user" | "assistant"; content: string; streaming?: boolean };
+
+function greetingFor(date: Date): string {
+  const h = date.getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+const COACH_SUGGESTIONS = [
+  "Who on my team is at injury risk this week?",
+  "Summarize my team's training load",
+  "Draft a 3-week taper plan for an athlete",
+  "How should I handle an athlete with dropping HRV?",
+];
+
+const ATHLETE_SUGGESTIONS = [
+  "How should I structure my runs this week?",
+  "Build me a training plan for my goal",
+  "Am I at risk of overtraining?",
+  "How do I improve my 5K time?",
+];
 
 type AveraProposal = {
   athleteUserId: string;
@@ -199,6 +218,8 @@ export default function CoachAI() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [addingPlanMessageIndex, setAddingPlanMessageIndex] = useState<number | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
@@ -219,11 +240,15 @@ export default function CoachAI() {
   });
 
   useEffect(() => {
+    // Don't clobber optimistic messages while a reply is streaming — the query
+    // for a just-created conversation can resolve (empty) mid-stream.
+    if (isStreaming) return;
     if (conversation?.messages) {
       setStreamMessages(conversation.messages.map(m => ({ role: m.role as "user" | "assistant", content: m.content })));
     } else {
       setStreamMessages([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversation?.id, conversation?.messages?.length]);
 
   useEffect(() => {
@@ -293,13 +318,10 @@ export default function CoachAI() {
   }
 
   function startNewConversation() {
-    createConv.mutate({ data: { title: "New conversation" } }, {
-      onSuccess: (conv) => {
-        qc.invalidateQueries({ queryKey: getListOpenaiConversationsQueryKey() });
-        setSelectedId(conv.id);
-        setStreamMessages([]);
-      },
-    });
+    // A conversation is only created on the server when the first message is
+    // sent — "New chat" just returns to the greeting state.
+    setSelectedId(null);
+    setStreamMessages([]);
   }
 
   function handleDeleteConfirm() {
@@ -320,17 +342,33 @@ export default function CoachAI() {
     });
   }
 
-  async function sendMessage() {
-    if (!input.trim() || !selectedId || isStreaming) return;
-    const userContent = input.trim();
+  async function sendMessage(overrideContent?: string) {
+    const userContent = (overrideContent ?? input).trim();
+    if (!userContent || isStreaming) return;
     setInput("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
     shouldAutoScroll.current = true;
+
+    let convId = selectedId;
+    if (!convId) {
+      try {
+        const conv = await createConv.mutateAsync({ data: { title: "New conversation" } });
+        qc.invalidateQueries({ queryKey: getListOpenaiConversationsQueryKey() });
+        convId = conv.id;
+        setSelectedId(conv.id);
+      } catch {
+        toast({ title: "Error", description: "Failed to start a conversation", variant: "destructive" });
+        setInput(userContent);
+        return;
+      }
+    }
+
     setStreamMessages(prev => [...prev, { role: "user", content: userContent }]);
     setStreamMessages(prev => [...prev, { role: "assistant", content: "", streaming: true }]);
     setIsStreaming(true);
 
     try {
-      const response = await fetch(`/api/openai/conversations/${selectedId}/messages`, {
+      const response = await fetch(`/api/openai/conversations/${convId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -381,13 +419,13 @@ export default function CoachAI() {
         updated[lastIdx] = { role: "assistant", content: fullContent, streaming: false };
         return updated;
       });
-      qc.invalidateQueries({ queryKey: getGetOpenaiConversationQueryKey(selectedId) });
+      qc.invalidateQueries({ queryKey: getGetOpenaiConversationQueryKey(convId) });
       if (newTitle) {
         const listKey = getListOpenaiConversationsQueryKey();
         qc.setQueryData(listKey, (old: unknown) => {
           if (!Array.isArray(old)) return old;
           return old.map((c: { id: number; title?: string }) =>
-            c.id === selectedId ? { ...c, title: newTitle } : c
+            c.id === convId ? { ...c, title: newTitle } : c
           );
         });
       }
@@ -498,152 +536,187 @@ export default function CoachAI() {
     }
   }
 
+  const isCoach = profile?.userRole === "coach";
+  const firstName = profile?.name && profile.name.toLowerCase() !== "athlete" ? profile.name.split(" ")[0] : "";
+  const greeting = greetingFor(new Date());
+  const suggestions = isCoach ? COACH_SUGGESTIONS : ATHLETE_SUGGESTIONS;
+
+  const composer = (
+    <div className="flex items-end gap-2 rounded-2xl border border-border bg-card px-4 py-3 shadow-[0_8px_30px_-14px_rgba(0,0,0,0.25)] focus-within:border-primary/40 transition-colors">
+      <textarea
+        ref={textareaRef}
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        onInput={e => {
+          const t = e.currentTarget;
+          t.style.height = "auto";
+          t.style.height = `${Math.min(t.scrollHeight, 160)}px`;
+        }}
+        onKeyDown={handleKeyDown}
+        placeholder={isCoach ? "Ask AveraAI about your team or athletes…" : "Ask AveraAI about your training…"}
+        disabled={isStreaming}
+        rows={1}
+        data-testid="input-message"
+        className="flex-1 resize-none bg-transparent text-[15px] leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-60"
+      />
+      <button
+        onClick={() => sendMessage()}
+        disabled={!input.trim() || isStreaming}
+        data-testid="button-send-message"
+        aria-label="Send message"
+        className="shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 disabled:opacity-40 transition-all"
+      >
+        {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+      </button>
+    </div>
+  );
+
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden bg-background" data-testid="coach-page">
-      {/* Conversation sidebar — hidden on mobile; new chats start from the empty state */}
-      <div className="hidden md:flex w-56 border-r border-border flex-col shrink-0 bg-background">
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center gap-2 mb-3">
-            <Bot className="w-4 h-4 text-primary" />
-            <span className="text-sm font-semibold text-foreground">AveraAI</span>
-            <span className="text-xs text-muted-foreground">Coach Advisor</span>
-          </div>
-          <Button
-            onClick={startNewConversation}
-            disabled={createConv.isPending}
-            size="sm"
-            className="w-full gap-1.5 bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20"
-            data-testid="button-new-conversation"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            New Chat
-          </Button>
-        </div>
-        <div className="flex-1 overflow-auto py-2">
-          {convsLoading ? (
-            <div className="px-3 space-y-1.5">
-              {[...Array(4)].map((_, i) => <div key={i} className="h-9 bg-muted rounded animate-pulse" />)}
-            </div>
-          ) : !conversations?.length ? (
-            <p className="text-xs text-muted-foreground px-4 py-3">No conversations yet</p>
-          ) : (
-            conversations.map(conv => (
-              <div key={conv.id} className="group relative mx-1">
-                <button
-                  onClick={() => setSelectedId(conv.id)}
-                  data-testid={`conversation-${conv.id}`}
-                  className={`w-full text-left px-3 py-2 pr-8 text-xs rounded transition-colors ${
-                    selectedId === conv.id
-                      ? "bg-primary/15 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                  }`}
-                >
-                  <div className="font-medium truncate">{conv.title}</div>
-                  <div className="text-muted-foreground mt-0.5">{format(new Date(conv.createdAt), "MMM d")}</div>
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(conv.id); }}
-                  aria-label="Delete conversation"
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 transition-all"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Chat area */}
-      <div className="flex-1 flex flex-col">
-        {!selectedId ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-8">
-            <div className="w-14 h-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mb-5">
-              <Bot className="w-7 h-7 text-primary" />
-            </div>
-            <h2 className="text-xl font-semibold text-foreground mb-2">AveraAI — Coaching Advisor</h2>
-            <p className="text-sm text-muted-foreground text-center max-w-sm mb-6">
-              Ask about athlete load management, team injury risk, training periodization, or how to approach an athlete concern.
-            </p>
-            <Button
-              onClick={startNewConversation}
-              data-testid="button-start-chat"
-              className="gap-2 bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20"
+      {/* Collapsible conversation sidebar (desktop only, like before) */}
+      {sidebarOpen && (
+        <div className="hidden md:flex w-64 border-r border-border flex-col shrink-0 bg-background">
+          <div className="px-4 pt-4 pb-1 flex items-center justify-between">
+            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Chats</span>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Close chat history"
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
             >
-              <Plus className="w-4 h-4" />
-              Start a conversation
-            </Button>
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          </div>
+          <button
+            onClick={startNewConversation}
+            data-testid="button-new-conversation"
+            className="mx-2 mt-1 mb-2 flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-primary hover:bg-primary/10 transition-colors"
+          >
+            <SquarePen className="w-4 h-4" />
+            New chat
+          </button>
+          <div className="flex-1 overflow-auto px-2 pb-3 space-y-0.5">
+            {convsLoading ? (
+              <div className="px-1 space-y-1.5">
+                {[...Array(4)].map((_, i) => <div key={i} className="h-9 bg-muted rounded-lg animate-pulse" />)}
+              </div>
+            ) : !conversations?.length ? (
+              <p className="text-xs text-muted-foreground px-3 py-2">No conversations yet</p>
+            ) : (
+              conversations.map(conv => (
+                <div key={conv.id} className="group relative">
+                  <button
+                    onClick={() => setSelectedId(conv.id)}
+                    data-testid={`conversation-${conv.id}`}
+                    className={`w-full text-left px-3 py-2 pr-8 rounded-lg text-[13px] transition-colors ${
+                      selectedId === conv.id
+                        ? "bg-secondary text-foreground font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                    }`}
+                  >
+                    <div className="truncate">{conv.title}</div>
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(conv.id); }}
+                    aria-label="Delete conversation"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 transition-all"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Chat column */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Minimal top bar */}
+        <div className="flex items-center gap-2.5 px-4 py-3">
+          {!sidebarOpen && (
+            <button
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open chat history"
+              className="hidden md:inline-flex p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+            >
+              <PanelLeftOpen className="w-4 h-4" />
+            </button>
+          )}
+          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">AveraAI</span>
+        </div>
+
+        {!selectedId ? (
+          /* Greeting state — Claude/Gemini-style: greeting, composer, suggestions */
+          <div className="flex-1 flex flex-col items-center justify-center px-4 pb-20 overflow-auto">
+            <div className="w-full max-w-2xl">
+              <h1 className="font-display font-extrabold text-4xl tracking-[-0.01em] text-foreground text-center">
+                {greeting}{firstName ? (
+                  <>, <span className="text-primary">{isCoach ? `Coach ${firstName}` : firstName}</span></>
+                ) : ""}
+              </h1>
+              <p className="text-muted-foreground text-center mt-2.5 mb-8">
+                {isCoach ? "Your AI assistant for the whole roster." : "Your AI running coach."}
+              </p>
+              {composer}
+              <div className="flex flex-wrap justify-center gap-2 mt-6">
+                {suggestions.map(s => (
+                  <button
+                    key={s}
+                    onClick={() => sendMessage(s)}
+                    disabled={isStreaming || createConv.isPending}
+                    className="px-3.5 py-2 rounded-full border border-border bg-card text-[13px] text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors disabled:opacity-50"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           <>
             {/* Messages */}
-            <div ref={messagesRef} onScroll={handleMessagesScroll} className={`flex-1 p-6 space-y-4 ${streamMessages.length === 0 ? "overflow-hidden" : "overflow-auto"}`} data-testid="messages-container">
-              {streamMessages.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full">
-                  <p className="text-sm text-muted-foreground">Ask AveraAI anything about your team or athletes.</p>
-                </div>
-              )}
-              {streamMessages.map((msg, i) => (
-                <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`} data-testid={`message-${i}`}>
-                  {msg.role === "assistant" && (
-                    <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                      <Bot className="w-4 h-4 text-primary" />
+            <div ref={messagesRef} onScroll={handleMessagesScroll} className="flex-1 overflow-auto" data-testid="messages-container">
+              <div className="max-w-3xl mx-auto w-full px-4 py-4 space-y-6">
+                {streamMessages.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-16">
+                    Ask AveraAI anything about your {isCoach ? "team or athletes" : "training"}.
+                  </p>
+                )}
+                {streamMessages.map((msg, i) => (
+                  msg.role === "user" ? (
+                    <div key={i} className="flex justify-end" data-testid={`message-${i}`}>
+                      <div className="max-w-[85%] rounded-2xl rounded-br-md bg-secondary px-4 py-2.5 text-[15px] leading-relaxed text-foreground whitespace-pre-wrap">
+                        {msg.content}
+                      </div>
                     </div>
-                  )}
-                  <div className={`max-w-[80%] rounded-2xl px-5 py-3.5 text-sm leading-relaxed ${
-                    msg.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-tr-sm shadow-md whitespace-pre-wrap"
-                      : "bg-card border border-border text-foreground rounded-tl-sm shadow-sm"
-                  }`}>
-                    {msg.role === "assistant"
-                      ? (msg.content
-                          ? <AssistantMarkdown content={msg.content} />
-                          : (msg.streaming && <span className="inline-block w-2 h-4 bg-primary opacity-70 animate-pulse rounded-sm" />))
-                      : msg.content}
-                  </div>
-                  {msg.role === "assistant" && !msg.streaming && isTrainingPlanResponse(msg.content) && (
-                    <div className="flex justify-end mt-2">
-                      <Button
-                        size="icon"
-                        onClick={() => handleAddToTrainingPlan(msg, i)}
-                        disabled={addingPlanMessageIndex === i}
-                        className="h-7 px-3 text-[11px] bg-primary/10 text-primary hover:bg-primary/20"
-                      >
-                        {addingPlanMessageIndex === i ? <Loader2 className="w-3 h-3 animate-spin" /> : "Add"}
-                      </Button>
+                  ) : (
+                    <div key={i} className="text-[15px] leading-relaxed text-foreground" data-testid={`message-${i}`}>
+                      {msg.content
+                        ? <AssistantMarkdown content={msg.content} />
+                        : (msg.streaming && <span className="inline-block w-2 h-4 bg-primary opacity-70 animate-pulse rounded-sm" />)}
+                      {!msg.streaming && isTrainingPlanResponse(msg.content) && (
+                        <button
+                          onClick={() => handleAddToTrainingPlan(msg, i)}
+                          disabled={addingPlanMessageIndex === i}
+                          className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-primary/30 text-xs font-medium text-primary hover:bg-primary/10 transition-colors disabled:opacity-60"
+                        >
+                          {addingPlanMessageIndex === i
+                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                            : <Plus className="w-3 h-3" />}
+                          Add to training plans
+                        </button>
+                      )}
                     </div>
-                  )}
-                  {msg.role === "user" && (
-                    <div className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center shrink-0 mt-0.5">
-                      <User className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-              ))}
-              <div ref={bottomRef} />
+                  )
+                ))}
+                <div ref={bottomRef} />
+              </div>
             </div>
 
-            {/* Input */}
-            <div className="border-t border-border p-4 bg-background">
-              <div className="flex gap-2">
-                <Input
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask AveraAI about your team or athletes..."
-                  disabled={isStreaming}
-                  data-testid="input-message"
-                  className="flex-1 bg-muted border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/50"
-                />
-                <Button
-                  onClick={sendMessage}
-                  disabled={!input.trim() || isStreaming}
-                  data-testid="button-send-message"
-                  size="icon"
-                  className="bg-primary hover:bg-primary/80 text-[#F5F5F5]"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
+            {/* Floating composer */}
+            <div className="px-4 pb-5 pt-2">
+              <div className="max-w-3xl mx-auto">
+                {composer}
               </div>
             </div>
           </>
@@ -659,7 +732,7 @@ export default function CoachAI() {
               <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteId(null)} className="text-muted-foreground">
                 Cancel
               </Button>
-              <Button size="sm" onClick={handleDeleteConfirm} className="bg-red-500 hover:bg-red-600 text-foreground">
+              <Button size="sm" onClick={handleDeleteConfirm} className="bg-destructive hover:bg-destructive/90 text-white">
                 Delete
               </Button>
             </div>

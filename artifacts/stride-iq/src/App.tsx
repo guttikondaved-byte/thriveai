@@ -22,6 +22,7 @@ import Profile from "@/pages/profile";
 import Onboarding from "@/pages/onboarding";
 import Subscribe from "@/pages/subscribe";
 import CoachDashboard from "@/pages/coach-dashboard";
+import CoachAthleteDetail from "@/pages/coach-athlete";
 import CoachPlans from "@/pages/coach-plans";
 import Team from "@/pages/team";
 import Login from "@/pages/login";
@@ -40,6 +41,7 @@ import DemoTeam from "@/pages/demo/team";
 import DemoProfile from "@/pages/demo/profile";
 import DemoCoachLayout from "@/components/DemoCoachLayout";
 import DemoCoachDashboard from "@/pages/demo-coach/dashboard";
+import DemoCoachAthleteDetail from "@/pages/demo-coach/athlete";
 import DemoCoachTeam from "@/pages/demo-coach/team";
 import DemoCoachPlans from "@/pages/demo-coach/plans";
 import DemoCoachChat from "@/pages/demo-coach/coach";
@@ -322,6 +324,7 @@ function DemoCoachRouter() {
     <DemoCoachLayout>
       <Switch>
         <Route path="/demo-coach" component={DemoCoachDashboard} />
+        <Route path="/demo-coach/athletes/:userId" component={DemoCoachAthleteDetail} />
         <Route path="/demo-coach/team" component={DemoCoachTeam} />
         <Route path="/demo-coach/plans" component={DemoCoachPlans} />
         <Route path="/demo-coach/coach" component={DemoCoachChat} />
@@ -337,6 +340,7 @@ function CoachRouter() {
     <CoachLayout>
       <Switch>
         <Route path="/" component={CoachDashboard} />
+        <Route path="/athletes/:userId" component={CoachAthleteDetail} />
         <Route path="/team" component={Team} />
         <Route path="/plans" component={CoachPlans} />
         <Route path="/ai-assistant" component={Coach} />

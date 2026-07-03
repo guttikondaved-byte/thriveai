@@ -61,12 +61,13 @@ export default function DemoCoachLayout({ children }: { children: React.ReactNod
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-md text-[13px] font-semibold transition-colors ${
                   active
-                    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                    ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                 }`}
               >
+                {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-primary" />}
                 <Icon className={`w-4 h-4 shrink-0 ${active ? "opacity-100" : "opacity-70"}`} />
                 {label}
               </Link>
@@ -76,7 +77,7 @@ export default function DemoCoachLayout({ children }: { children: React.ReactNod
         <div className="px-4 py-4 border-t border-border">
           <button
             onClick={() => navigate("/sign-up?role=coach")}
-            className="w-full rounded-lg bg-primary text-primary-foreground text-sm font-semibold py-2.5 hover:bg-primary/90 transition-colors"
+            className="w-full rounded-lg bg-primary text-primary-foreground text-sm font-semibold py-2.5 hover:bg-primary/90 transition-colors shadow-[0_14px_30px_-12px_rgba(46,144,217,0.6)]"
           >
             Sign up free
           </button>

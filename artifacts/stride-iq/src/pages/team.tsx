@@ -3,6 +3,7 @@ import { Users, Copy, Check, Link as LinkIcon, UserPlus, ChevronRight, RefreshCw
 import { useGetAthleteProfile } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import AthleteProfileModal from "../components/AthleteProfileModal";
+import { PageHeader, Eyebrow } from "@/components/coach/PageHeader";
 
 interface TeamInfo {
   id: number;
@@ -343,17 +344,20 @@ export default function Team() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-foreground">{team.name}</h1>
-          {!isPrimaryCoach && (
-            <span className="text-xs font-medium text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">
-              Co-coach
-            </span>
-          )}
-        </div>
-        <span className="text-xs text-muted-foreground">{team.memberCount} member{team.memberCount !== 1 ? "s" : ""}</span>
-      </div>
+      <PageHeader
+        eyebrow="Athlete Roster"
+        title={
+          <span className="inline-flex items-center gap-2.5">
+            {team.name}
+            {!isPrimaryCoach && (
+              <span className="font-mono font-normal text-[10px] uppercase tracking-[0.12em] text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md">
+                Co-coach
+              </span>
+            )}
+          </span>
+        }
+        meta={`${team.memberCount} member${team.memberCount !== 1 ? "s" : ""}`}
+      />
 
       {/* Invite code card */}
       <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4">
@@ -367,7 +371,7 @@ export default function Team() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex-1 bg-secondary/50 border border-border rounded-lg px-5 py-3.5 font-mono text-xl font-bold text-primary tracking-[0.2em] text-center select-all">
+          <div className="flex-1 bg-secondary/50 border border-border rounded-lg px-5 py-3.5 font-mono text-2xl font-bold text-primary tracking-[0.2em] text-center select-all">
             {team.inviteCode}
           </div>
           <button
@@ -430,7 +434,7 @@ export default function Team() {
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-semibold text-foreground">Athletes</span>
+            <Eyebrow>Athletes</Eyebrow>
           </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             Strava
@@ -461,7 +465,7 @@ export default function Team() {
                   <div className="flex items-center gap-3 shrink-0">
                     {strava?.connected ? (
                       <div className="flex items-center gap-1.5">
-                          <span className="flex items-center gap-1 text-xs font-medium text-[#FC4C02] bg-[#FC4C02]/10 border border-[#FC4C02]/25 px-2 py-0.5 rounded-full">
+                          <span className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.1em] text-[#FC4C02] bg-[#FC4C02]/10 border border-[#FC4C02]/25 px-2 py-0.5 rounded-md">
                           <img src={`${window.location.origin}${basePath}/logo-mark.svg`} className="w-2.5 h-2.5" alt="Strava" />
                           Strava linked
                         </span>
@@ -472,7 +476,7 @@ export default function Team() {
                         )}
                       </div>
                     ) : (
-                      <span className="text-xs text-muted-foreground bg-secondary border border-border px-2 py-0.5 rounded-full">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground bg-secondary border border-border px-2 py-0.5 rounded-md">
                         No Strava
                       </span>
                     )}
@@ -487,7 +491,7 @@ export default function Team() {
 
       {/* Danger zone */}
       <div className="bg-card border border-border rounded-xl p-5">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Danger zone</p>
+        <Eyebrow className="mb-3">Danger zone</Eyebrow>
         {isPrimaryCoach ? (
           <>
             <button

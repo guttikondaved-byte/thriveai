@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { PageHeader, Eyebrow } from "@/components/coach/PageHeader";
 
 interface Athlete {
   userId: string;
@@ -270,15 +271,16 @@ export default function CoachPlans() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Training Plans</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Manage training plans for each athlete</p>
-        </div>
+      <div className="mb-8">
+        <PageHeader
+          eyebrow="Coach Tools"
+          title="Training Plans"
+          meta="Manage training plans for each athlete"
+          action={
         <Button
           onClick={averaFlow === "idle" || averaFlow === "error" ? buildWithAvera : undefined}
           disabled={averaFlow === "loading" || averaFlow === "applying"}
-          className="gap-2 bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 disabled:opacity-60"
+          className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_14px_30px_-12px_rgba(46,144,217,0.6)] disabled:opacity-60"
         >
           {(averaFlow === "loading" || averaFlow === "applying")
             ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -287,13 +289,13 @@ export default function CoachPlans() {
             : averaFlow === "applying" ? "Adding plan…"
             : "Build plan with Avera"}
         </Button>
+          }
+        />
       </div>
 
       {suggestions.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
-            Suggested Changes ({suggestions.length})
-          </h2>
+          <Eyebrow className="mb-3">Suggested Changes ({suggestions.length})</Eyebrow>
           <div className="space-y-3">
             {suggestions.map(s => (
               <div key={s.id} className="bg-background border border-primary/40 rounded-xl p-4">
@@ -323,7 +325,7 @@ export default function CoachPlans() {
                     onClick={() => reviewSuggestion(s.id, "approve")}
                     disabled={reviewingSuggestion === s.id}
                     size="sm"
-                    className="bg-primary hover:bg-primary/80 text-[#F5F5F5] gap-1.5"
+                    className="bg-primary hover:bg-primary/80 text-primary-foreground gap-1.5"
                   >
                     <Check className="w-3.5 h-3.5" />
                     Approve
@@ -416,7 +418,7 @@ export default function CoachPlans() {
                     onClick={applyAveraPlan}
                     disabled={averaFlow === "applying"}
                     size="sm"
-                    className="bg-primary hover:bg-primary/80 text-[#F5F5F5] gap-2"
+                    className="bg-primary hover:bg-primary/80 text-primary-foreground gap-2"
                   >
                     {averaFlow === "applying" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                     Add to Training Plan
@@ -470,7 +472,7 @@ export default function CoachPlans() {
                   className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20 flex items-center justify-center text-sm font-bold text-primary">
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-bold text-primary">
                       {athlete.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="text-left">
@@ -507,7 +509,7 @@ export default function CoachPlans() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-0.5">
                                 <p className="text-sm font-medium text-foreground truncate">{plan.name}</p>
-                                <span className={`text-xs px-2 py-0.5 rounded border font-medium shrink-0 ${STATUS_COLORS[plan.status] ?? ""}`}>
+                                <span className={`font-mono text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 rounded-md border shrink-0 ${STATUS_COLORS[plan.status] ?? ""}`}>
                                   {STATUS_LABELS[plan.status] ?? plan.status}
                                 </span>
                               </div>
@@ -541,7 +543,7 @@ export default function CoachPlans() {
                                 onClick={() => reviewPlan(plan.id, "approve")}
                                 disabled={reviewing === plan.id}
                                 size="sm"
-                                className="bg-primary hover:bg-primary/80 text-[#F5F5F5] gap-1.5"
+                                className="bg-primary hover:bg-primary/80 text-primary-foreground gap-1.5"
                               >
                                 <Check className="w-3.5 h-3.5" />
                                 Approve
@@ -563,7 +565,7 @@ export default function CoachPlans() {
                     {isCreating ? (
                       <div className="bg-background border border-primary/20 rounded-lg p-4 space-y-3">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-xs font-semibold text-primary uppercase tracking-wider">New Plan for {athlete.name}</p>
+                          <p className="font-mono text-[11px] text-primary uppercase tracking-[0.15em]">New Plan for {athlete.name}</p>
                           <button onClick={() => setShowFormFor(null)} className="text-muted-foreground hover:text-foreground">
                             <X className="w-4 h-4" />
                           </button>
@@ -622,7 +624,7 @@ export default function CoachPlans() {
                             onClick={() => createPlan(athlete.userId)}
                             disabled={submitting}
                             size="sm"
-                            className="bg-primary hover:bg-primary/80 text-[#F5F5F5]"
+                            className="bg-primary hover:bg-primary/80 text-primary-foreground"
                           >
                             {submitting ? "Creating..." : "Create Plan"}
                           </Button>

@@ -486,6 +486,7 @@ export default function Onboarding() {
                   placeholder="24"
                   className={inputCls(errors.athleteCount)}
                 />
+                <p className="text-xs text-muted-foreground mt-1">An estimate is okay — you can update this later.</p>
                 {errors.athleteCount && <p className="text-red-600 text-xs mt-1">{errors.athleteCount}</p>}
               </div>
 

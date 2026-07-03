@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Calendar, Bot, Loader2, X, Check, Pencil } from "lucide-react";
 import { DEMO_COACH_DATA } from "@/lib/demoData";
+import { PageHeader } from "@/components/coach/PageHeader";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "text-[#10b981] bg-[#10b981]/10 border-[#10b981]/20",
@@ -61,23 +62,26 @@ export default function DemoCoachPlans() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Training Plans</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Assigned across your roster</p>
-        </div>
-        <button
-          onClick={averaFlow === "idle" ? buildWithAvera : undefined}
-          disabled={averaFlow === "loading" || averaFlow === "applying"}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary text-sm font-semibold hover:bg-primary/20 disabled:opacity-60 transition-colors"
-        >
-          {averaFlow === "loading" || averaFlow === "applying" ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Bot className="w-4 h-4" />
-          )}
-          {averaFlow === "loading" ? "Avera is thinking…" : averaFlow === "applying" ? "Adding plan…" : "Build plan with Avera"}
-        </button>
+      <div className="mb-8">
+        <PageHeader
+          eyebrow="Coach Tools"
+          title="Training Plans"
+          meta="Assigned across your roster"
+          action={
+            <button
+              onClick={averaFlow === "idle" ? buildWithAvera : undefined}
+              disabled={averaFlow === "loading" || averaFlow === "applying"}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 shadow-[0_14px_30px_-12px_rgba(46,144,217,0.6)] disabled:opacity-60 transition-colors"
+            >
+              {averaFlow === "loading" || averaFlow === "applying" ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Bot className="w-4 h-4" />
+              )}
+              {averaFlow === "loading" ? "Avera is thinking…" : averaFlow === "applying" ? "Adding plan…" : "Build plan with Avera"}
+            </button>
+          }
+        />
       </div>
 
       {showAveraPanel && (
@@ -247,7 +251,7 @@ export default function DemoCoachPlans() {
                 <div className="text-right hidden sm:block">
                   <p className="text-xs font-medium text-foreground">{plan.weeklyMileage} mi/wk</p>
                 </div>
-                <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${STATUS_COLORS[plan.status]}`}>
+                <span className={`font-mono text-[10px] uppercase tracking-[0.1em] px-2.5 py-1 rounded-md border ${STATUS_COLORS[plan.status]}`}>
                   {plan.status}
                 </span>
                 <button
