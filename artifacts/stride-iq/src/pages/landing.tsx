@@ -1224,17 +1224,24 @@ export default function Landing() {
                 <p className="font-mono text-[11px] tracking-[0.16em] uppercase text-muted-foreground mb-1">
                   Company
                 </p>
-                {["Privacy Policy", "Terms of Service", "Contact"].map(
-                  (label) => (
-                    <a
-                      key={label}
-                      href="#"
-                      className="text-sm text-muted-foreground no-underline font-medium transition-colors hover:text-foreground"
-                    >
-                      {label}
-                    </a>
-                  ),
-                )}
+                <button
+                  onClick={() => navigate("/privacy")}
+                  className="text-sm text-muted-foreground font-medium bg-transparent border-0 cursor-pointer p-0 text-left transition-colors hover:text-foreground"
+                >
+                  Privacy Policy
+                </button>
+                <button
+                  onClick={() => navigate("/terms")}
+                  className="text-sm text-muted-foreground font-medium bg-transparent border-0 cursor-pointer p-0 text-left transition-colors hover:text-foreground"
+                >
+                  Terms of Service
+                </button>
+                <a
+                  href="mailto:thriveai78@gmail.com"
+                  className="text-sm text-muted-foreground no-underline font-medium transition-colors hover:text-foreground"
+                >
+                  Contact
+                </a>
               </div>
             </div>
           </div>

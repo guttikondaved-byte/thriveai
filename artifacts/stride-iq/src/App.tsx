@@ -27,6 +27,8 @@ import Team from "@/pages/team";
 import Login from "@/pages/login";
 import DemoLayout from "@/components/DemoLayout";
 import DemoChoose from "@/pages/demo/choose";
+import Privacy from "@/pages/privacy";
+import Terms from "@/pages/terms";
 import DemoDashboard from "@/pages/demo/dashboard";
 import DemoActivities from "@/pages/demo/activities";
 import DemoPlans from "@/pages/demo/plans";
@@ -515,6 +517,8 @@ function ClerkProviderWithRoutes() {
         <Route path="/sign-up" component={SignUpPage} />
         <Route path="/sign-up/*" component={SignUpPage} />
         <Route path="/demo/choose" component={DemoChoose} />
+        <Route path="/privacy" component={Privacy} />
+        <Route path="/terms" component={Terms} />
         <Route path="/demo" component={DemoRouter} />
         <Route path="/demo/*" component={DemoRouter} />
         <Route path="/demo-coach" component={DemoCoachRouter} />
