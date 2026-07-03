@@ -68,6 +68,18 @@ function useStravaSync() {
   });
 }
 
+function useStravaFullSync() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const r = await fetch("/api/strava/sync-all", { method: "POST" });
+      if (!r.ok) throw new Error("full sync failed");
+      return r.json() as Promise<{ imported: number; detailed: number; scanned: number }>;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: getListActivitiesQueryKey() }),
+  });
+}
+
 function useStravaDisconnect() {
   const qc = useQueryClient();
   return useMutation({
@@ -93,6 +105,7 @@ export default function Activities() {
   const createActivity = useCreateActivity();
   const stravaStatus = useStravaStatus();
   const stravaSync = useStravaSync();
+  const stravaFullSync = useStravaFullSync();
   const stravaDisconnect = useStravaDisconnect();
 
   // Show toast when redirected back from Strava OAuth
@@ -228,6 +241,22 @@ export default function Activities() {
             >
               <RefreshCw size={12} className={stravaSync.isPending ? "animate-spin" : ""} />
               {stravaSync.isPending ? "Syncing…" : "Sync now"}
+            </button>
+            <button
+              onClick={() => stravaFullSync.mutate(undefined, {
+                onSuccess: (d) => toast({
+                  title: `Imported ${d.imported} activities`,
+                  description: d.imported > 0
+                    ? "Your full Strava history is now in Thrive — intensity map and AI coaching just got smarter."
+                    : "Everything was already imported.",
+                }),
+                onError: () => toast({ title: "Full sync failed", variant: "destructive" }),
+              })}
+              disabled={stravaFullSync.isPending}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-[#FC4C02]/10 hover:bg-[#FC4C02]/20 text-[#FC4C02] border border-[#FC4C02]/30 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={12} className={stravaFullSync.isPending ? "animate-spin" : ""} />
+              {stravaFullSync.isPending ? "Importing history…" : "Sync full history"}
             </button>
             <button
               onClick={() => stravaDisconnect.mutate(undefined, {

@@ -1,5 +1,5 @@
 import { db, stravaTokensTable, activitiesTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc, isNotNull, sql } from "drizzle-orm";
 import { logger } from "./logger";
 
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
@@ -60,16 +60,68 @@ export async function getValidStravaToken(userId: string): Promise<string | null
   return data.access_token;
 }
 
+type StravaSplit = {
+  split: number;
+  distance: number;
+  elapsed_time: number;
+  moving_time: number;
+  elevation_difference: number | null;
+  average_speed: number;
+  average_heartrate?: number | null;
+  pace_zone?: number | null;
+};
+type StravaBestEffort = {
+  name: string;
+  elapsed_time: number;
+  distance: number;
+};
+export type StravaActivityPayload = {
+  id?: number;
+  type: string;
+  sport_type?: string;
+  distance: number;
+  moving_time: number;
+  elapsed_time?: number;
+  average_heartrate?: number;
+  max_heartrate?: number;
+  average_cadence?: number;
+  average_speed?: number;
+  max_speed?: number;
+  average_watts?: number;
+  calories?: number;
+  suffer_score?: number;
+  average_temp?: number;
+  total_elevation_gain?: number;
+  elev_high?: number;
+  elev_low?: number;
+  achievement_count?: number;
+  pr_count?: number;
+  kudos_count?: number;
+  comment_count?: number;
+  athlete_count?: number;
+  workout_type?: number | null;
+  name?: string;
+  description?: string;
+  start_date_local?: string;
+  timezone?: string;
+  gear?: { name?: string } | null;
+  map?: { summary_polyline?: string; polyline?: string } | null;
+  splits_standard?: StravaSplit[];
+  best_efforts?: StravaBestEffort[];
+};
+
+/**
+ * Import one Strava activity. When `prefetched` is supplied (a summary payload
+ * from the athlete/activities list) it is inserted directly WITHOUT the extra
+ * per-activity detail API call — that loses splits/best-efforts/calories but
+ * costs zero rate-limit budget, which is what makes full-history backfill
+ * feasible under Strava's ~100 reads/15min cap.
+ */
 export async function syncStravaActivity(
   userId: string,
   stravaActivityId: number,
+  prefetched?: StravaActivityPayload,
 ): Promise<void> {
-  const accessToken = await getValidStravaToken(userId);
-  if (!accessToken) {
-    logger.warn({ userId }, "No valid Strava token for activity sync");
-    return;
-  }
-
   // Avoid duplicate imports
   const existing = await db
     .select({ id: activitiesTable.id })
@@ -82,63 +134,24 @@ export async function syncStravaActivity(
     );
   if (existing.length > 0) return;
 
-  const resp = await fetch(`${STRAVA_API_BASE}/activities/${stravaActivityId}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
-  if (!resp.ok) {
-    logger.error({ status: resp.status, stravaActivityId }, "Failed to fetch Strava activity");
-    return;
+  let act: StravaActivityPayload;
+  if (prefetched) {
+    act = prefetched;
+  } else {
+    const accessToken = await getValidStravaToken(userId);
+    if (!accessToken) {
+      logger.warn({ userId }, "No valid Strava token for activity sync");
+      return;
+    }
+    const resp = await fetch(`${STRAVA_API_BASE}/activities/${stravaActivityId}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!resp.ok) {
+      logger.error({ status: resp.status, stravaActivityId }, "Failed to fetch Strava activity");
+      return;
+    }
+    act = (await resp.json()) as StravaActivityPayload;
   }
-
-  type StravaSplit = {
-    split: number;
-    distance: number;
-    elapsed_time: number;
-    moving_time: number;
-    elevation_difference: number | null;
-    average_speed: number;
-    average_heartrate?: number | null;
-    pace_zone?: number | null;
-  };
-  type StravaBestEffort = {
-    name: string;
-    elapsed_time: number;
-    distance: number;
-  };
-  const act = (await resp.json()) as {
-    type: string;
-    sport_type?: string;
-    distance: number;
-    moving_time: number;
-    elapsed_time?: number;
-    average_heartrate?: number;
-    max_heartrate?: number;
-    average_cadence?: number;
-    average_speed?: number;
-    max_speed?: number;
-    average_watts?: number;
-    calories?: number;
-    suffer_score?: number;
-    average_temp?: number;
-    total_elevation_gain?: number;
-    elev_high?: number;
-    elev_low?: number;
-    achievement_count?: number;
-    pr_count?: number;
-    kudos_count?: number;
-    comment_count?: number;
-    athlete_count?: number;
-    workout_type?: number | null;
-    name?: string;
-    description?: string;
-    start_date_local?: string;
-    timezone?: string;
-    gear?: { name?: string } | null;
-    map?: { summary_polyline?: string; polyline?: string } | null;
-    splits_standard?: StravaSplit[];
-    best_efforts?: StravaBestEffort[];
-  };
 
   // Only import running activities — skip rides, swims, weights, yoga, etc.
   const activityType = RUN_TYPE_MAP[act.type];
@@ -215,9 +228,183 @@ export async function syncStravaActivity(
     ...(act.workout_type !== undefined && act.workout_type !== null ? { workoutType: act.workout_type } : {}),
     ...(splits ? { splits } : {}),
     ...(bestEfforts ? { bestEfforts } : {}),
+    // Summary imports still owe a detail fetch; the backfill job tops them up.
+    detailsSynced: !prefetched,
   });
 
   logger.info({ userId, stravaActivityId }, "Synced Strava activity");
+}
+
+/**
+ * Gradual detail top-up for summary-only imports.
+ *
+ * Fetches the full detail payload (splits, best efforts, calories, description)
+ * for activities imported without it, newest first, up to `budget` per run —
+ * sized to fit inside Strava's ~100 reads/15min window. Every row is marked
+ * `detailsSynced` exactly once (including 404s/disconnected users), so no API
+ * call is ever spent twice on the same activity. When nothing is pending this
+ * costs zero API calls.
+ */
+export async function backfillStravaDetails(budget = 80): Promise<{ updated: number; pending: number }> {
+  const pendingRows = await db
+    .select({
+      id: activitiesTable.id,
+      userId: activitiesTable.userId,
+      stravaActivityId: activitiesTable.stravaActivityId,
+    })
+    .from(activitiesTable)
+    .where(and(eq(activitiesTable.detailsSynced, false), isNotNull(activitiesTable.stravaActivityId)))
+    .orderBy(desc(activitiesTable.activityDate))
+    .limit(budget);
+
+  let updated = 0;
+  const tokenByUser = new Map<string, string | null>();
+
+  for (const row of pendingRows) {
+    if (!row.userId || !row.stravaActivityId) {
+      await db.update(activitiesTable).set({ detailsSynced: true }).where(eq(activitiesTable.id, row.id));
+      continue;
+    }
+
+    let token = tokenByUser.get(row.userId);
+    if (token === undefined) {
+      token = await getValidStravaToken(row.userId);
+      tokenByUser.set(row.userId, token);
+    }
+    if (!token) {
+      // User disconnected Strava — details are unreachable forever; stop retrying.
+      await db.update(activitiesTable).set({ detailsSynced: true }).where(eq(activitiesTable.id, row.id));
+      continue;
+    }
+
+    const resp = await fetch(`${STRAVA_API_BASE}/activities/${row.stravaActivityId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (resp.status === 429) {
+      logger.warn({ updated }, "Strava rate limit hit during detail backfill — stopping until next run");
+      break;
+    }
+    if (!resp.ok) {
+      // Gone/private/etc — mark done so we never burn another call on it.
+      logger.warn({ status: resp.status, stravaActivityId: row.stravaActivityId }, "Detail backfill fetch failed; marking done");
+      await db.update(activitiesTable).set({ detailsSynced: true }).where(eq(activitiesTable.id, row.id));
+      continue;
+    }
+
+    const act = (await resp.json()) as StravaActivityPayload;
+    const num = (v: number | undefined | null): string | undefined =>
+      v === undefined || v === null ? undefined : String(v);
+
+    const splits = act.splits_standard?.length
+      ? act.splits_standard.map((s) => ({
+          split: s.split,
+          distance: s.distance,
+          elapsedTime: s.elapsed_time,
+          movingTime: s.moving_time,
+          elevationDifference: s.elevation_difference ?? null,
+          averageSpeed: s.average_speed,
+          averageHeartrate: s.average_heartrate ?? null,
+          paceZone: s.pace_zone ?? null,
+        }))
+      : undefined;
+    const bestEfforts = act.best_efforts?.length
+      ? act.best_efforts.map((b) => ({ name: b.name, elapsedTime: b.elapsed_time, distance: b.distance }))
+      : undefined;
+    const polyline = (act.map?.polyline ?? act.map?.summary_polyline) || undefined;
+
+    await db
+      .update(activitiesTable)
+      .set({
+        ...(splits ? { splits } : {}),
+        ...(bestEfforts ? { bestEfforts } : {}),
+        ...(num(act.calories) ? { calories: num(act.calories) } : {}),
+        ...(act.description ? { description: act.description } : {}),
+        ...(act.gear?.name ? { gearName: act.gear.name } : {}),
+        ...(polyline ? { mapPolyline: polyline } : {}),
+        detailsSynced: true,
+      })
+      .where(eq(activitiesTable.id, row.id));
+    updated++;
+  }
+
+  const [{ pending }] = await db
+    .select({ pending: sql<number>`count(*)::int` })
+    .from(activitiesTable)
+    .where(and(eq(activitiesTable.detailsSynced, false), isNotNull(activitiesTable.stravaActivityId)));
+
+  if (updated > 0 || pending > 0) {
+    logger.info({ updated, pending }, "Strava detail backfill run complete");
+  }
+  return { updated, pending };
+}
+
+/**
+ * Backfill the athlete's ENTIRE Strava history.
+ *
+ * Strategy (built around Strava's ~100 reads/15min rate limit):
+ * 1. Page through /athlete/activities at 200/page — 1 request per 200
+ *    activities, so even years of history costs a handful of calls.
+ * 2. The newest `detailBudget` new runs get the full per-activity detail fetch
+ *    (splits, best efforts, calories) — these power HR zones + Best Efforts.
+ * 3. Everything older is inserted straight from the summary payload (date,
+ *    distance, duration, HR, suffer score, elevation…) at zero extra API cost —
+ *    exactly what the intensity map, ACWR, and AI context need.
+ */
+export async function syncStravaFullHistory(
+  userId: string,
+  detailBudget = 60,
+): Promise<{ imported: number; detailed: number; scanned: number } | { error: string }> {
+  const accessToken = await getValidStravaToken(userId);
+  if (!accessToken) return { error: "Strava not connected" };
+
+  // Every strava id we already have, so re-runs only fetch what's missing.
+  const existingRows = await db
+    .select({ sid: activitiesTable.stravaActivityId })
+    .from(activitiesTable)
+    .where(eq(activitiesTable.userId, userId));
+  const have = new Set(existingRows.map((r) => r.sid).filter((v): v is number => v != null));
+
+  // Page through the full activity list (newest first).
+  const summaries: StravaActivityPayload[] = [];
+  for (let page = 1; page <= 20; page++) {
+    const resp = await fetch(
+      `${STRAVA_API_BASE}/athlete/activities?per_page=200&page=${page}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+    if (!resp.ok) {
+      logger.error({ status: resp.status, page, userId }, "Strava full-history page fetch failed");
+      break;
+    }
+    const batch = (await resp.json()) as StravaActivityPayload[];
+    if (batch.length === 0) break;
+    summaries.push(...batch);
+    if (batch.length < 200) break;
+  }
+
+  const newRuns = summaries.filter(
+    (a) => a.id != null && RUN_TYPE_MAP[a.type] && !have.has(a.id),
+  );
+
+  let imported = 0;
+  let detailed = 0;
+  for (let i = 0; i < newRuns.length; i++) {
+    const a = newRuns[i];
+    try {
+      if (i < detailBudget) {
+        await syncStravaActivity(userId, a.id!); // full detail fetch
+        detailed++;
+      } else {
+        await syncStravaActivity(userId, a.id!, a); // summary insert, no API call
+      }
+      imported++;
+    } catch (err) {
+      logger.error({ err, stravaActivityId: a.id, userId }, "Full-history import failed for activity");
+    }
+  }
+
+  logger.info({ userId, imported, detailed, scanned: summaries.length }, "Strava full-history sync complete");
+  return { imported, detailed, scanned: summaries.length };
 }
 
 export function getWebhookCallbackUrl(): string {

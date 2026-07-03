@@ -1,5 +1,5 @@
-import { useGetDashboardSummary } from "@workspace/api-client-react";
-import { AlertTriangle, Activity, TrendingUp, X } from "lucide-react";
+import { useGetDashboardSummary, useGetInjuryRiskDashboard } from "@workspace/api-client-react";
+import { AlertTriangle, Activity, TrendingUp, X, Mountain } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
@@ -33,6 +33,43 @@ const RISK_COLORS: Record<string, string> = {
   high: "bg-red-500/10 text-red-600 border-red-500/20",
   critical: "bg-red-600/20 text-red-300 border-red-600/30",
 };
+
+function formatDuration(totalSeconds: number): string {
+  const s = Math.max(0, Math.round(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+  return `${m}:${String(sec).padStart(2, "0")}`;
+}
+
+/** All-time fastest times at standard distances, from Strava best-effort data. */
+function BestEffortsCard() {
+  const { data } = useGetInjuryRiskDashboard();
+  const segments = data?.segments ?? [];
+  if (segments.length === 0) return null;
+
+  return (
+    <div className="bg-card border border-border rounded-lg p-5 mt-4" data-testid="card-best-efforts">
+      <h2 className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-4">
+        <Mountain className="w-3.5 h-3.5" /> Best Efforts
+      </h2>
+      <div className="space-y-3">
+        {segments.map((s) => (
+          <div key={s.name} className="flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-sm font-medium text-foreground truncate">{s.name}</span>
+              {s.isPr && (
+                <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 text-[9px] font-bold uppercase tracking-wider shrink-0" title="Set on your latest run">New</span>
+              )}
+            </div>
+            <span className="text-sm font-semibold text-foreground tabular-nums shrink-0">{formatDuration(s.prTimeSeconds)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function StatCard({ label, value, sub, icon: Icon }: { label: string; value: string | number; sub?: string; icon: React.ElementType }) {
   return (
@@ -167,6 +204,9 @@ export default function Dashboard() {
               </p>
             </div>
           )}
+
+          {/* Best efforts (Strava PRs) */}
+          <BestEffortsCard />
         </div>
 
         {/* Recent activities */}

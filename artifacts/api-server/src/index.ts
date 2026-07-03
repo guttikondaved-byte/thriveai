@@ -5,6 +5,7 @@ import {
   getStravaWebhookSubscription,
   deleteStravaWebhookSubscription,
   getWebhookCallbackUrl,
+  backfillStravaDetails,
 } from "./lib/strava";
 
 const rawPort = process.env["PORT"];
@@ -60,6 +61,20 @@ app.listen(port, async (err) => {
       logger.warn({ err: e }, "Could not check/register Strava webhook");
     }
   }
+
+  // Gradual Strava detail backfill: tops up splits/best-efforts for
+  // summary-only imports, 80 per 15-minute window (inside Strava's read
+  // rate limit). Costs zero API calls when nothing is pending.
+  const BACKFILL_INTERVAL_MS = 15 * 60 * 1000;
+  const runBackfill = async () => {
+    try {
+      await backfillStravaDetails(80);
+    } catch (e) {
+      logger.warn({ err: e }, "Strava detail backfill run failed");
+    }
+  };
+  setTimeout(runBackfill, 30_000); // first run shortly after boot
+  setInterval(runBackfill, BACKFILL_INTERVAL_MS);
 });
 
 /**

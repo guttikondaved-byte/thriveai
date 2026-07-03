@@ -23,7 +23,6 @@ import {
   Plus,
   Activity,
   HeartPulse,
-  Mountain,
   Stethoscope,
   FileDown,
   Share2,
@@ -296,7 +295,6 @@ export default function Alerts() {
   const hrMaxSeconds = Math.max(1, ...hrZones.map((z) => z.seconds));
   const hasHrData = hrZones.some((z) => z.seconds > 0);
 
-  const segments = dashboard?.segments ?? [];
 
   return (
     <div
@@ -540,8 +538,8 @@ export default function Alerts() {
             </div>
           </div>
 
-          {/* Strava HR zones + Segments */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 items-start">
+          {/* Strava HR zones */}
+          <div className="mb-8">
             <div className={`${CARD} p-6`}>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-base font-bold text-foreground flex items-center gap-2">
@@ -567,43 +565,6 @@ export default function Alerts() {
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground py-6 text-center">No heart-rate data in the last 7 days. Sync runs with HR from Strava to populate zones.</p>
-              )}
-            </div>
-
-            <div className={`${CARD} p-8`}>
-              <h3 className="text-lg font-bold text-foreground flex items-center gap-2 mb-6">
-                <Mountain className="w-5 h-5 text-muted-foreground" /> Best Efforts
-                <InfoTip title="Best Efforts">
-                  <p>Your fastest times at standard distances (e.g. 1 km, 1 mile, 5 km), pulled from Strava's best-effort data.</p>
-                  <p><strong>Current</strong> is your most recent effort at that distance; <strong>Best</strong> is your all-time PR. A "PR" tag means your latest run set a new record.</p>
-                </InfoTip>
-              </h3>
-              {segments.length > 0 ? (
-                <div className="space-y-5">
-                  {segments.map((s) => (
-                    <div key={s.name}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-semibold text-foreground">{s.name}</span>
-                        {s.isPr && (
-                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 text-[9px] font-bold uppercase tracking-wider">PR</span>
-                        )}
-                      </div>
-                      <div className="flex items-baseline gap-3">
-                        <div>
-                          <p className="text-lg font-bold text-foreground tabular-nums">{formatDuration(s.currentTimeSeconds)}</p>
-                          <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Current</p>
-                        </div>
-                        <div className="text-muted-foreground/60">·</div>
-                        <div>
-                          <p className="text-sm font-semibold text-muted-foreground tabular-nums">{formatDuration(s.prTimeSeconds)}</p>
-                          <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Best</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground py-8 text-center">No best-effort data yet. Sync runs from Strava to see PRs.</p>
               )}
             </div>
           </div>

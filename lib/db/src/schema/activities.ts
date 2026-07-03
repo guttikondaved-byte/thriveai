@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, numeric, timestamp, date, bigint, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, numeric, timestamp, date, bigint, jsonb, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./auth";
@@ -60,6 +60,11 @@ export const activitiesTable = pgTable("activities", {
   workoutType: integer("workout_type"),
   splits: jsonb("splits").$type<ActivitySplit[]>(),
   bestEfforts: jsonb("best_efforts").$type<ActivityBestEffort[]>(),
+  // True once the full Strava detail payload (splits, best efforts, calories)
+  // has been fetched for this activity. Summary-only imports start false and
+  // are topped up by the gradual detail-backfill job without re-fetching
+  // anything twice.
+  detailsSynced: boolean("details_synced").notNull().default(false),
 });
 
 export const insertActivitySchema = createInsertSchema(activitiesTable).omit({ id: true, createdAt: true });

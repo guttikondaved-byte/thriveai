@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import {
   getValidStravaToken,
   syncStravaActivity,
+  syncStravaFullHistory,
   registerStravaWebhook,
   getStravaWebhookSubscription,
   getWebhookCallbackUrl,
@@ -262,6 +263,22 @@ router.post("/strava/sync", async (req, res): Promise<void> => {
   }
 
   res.json({ synced });
+});
+
+// ── Full-history sync: backfill every Strava activity ever ─────────────────
+
+router.post("/strava/sync-all", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const result = await syncStravaFullHistory(req.user!.id);
+  if ("error" in result) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+  res.json(result);
 });
 
 export default router;
