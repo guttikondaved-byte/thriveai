@@ -893,11 +893,17 @@ router.post("/openai/conversations/:id/messages", async (req: Request, res): Pro
 
   if (!planCreatedId) {
     try {
+      const finalMessages = [{ role: "system" as const, content: systemPrompt }, ...chatMessages];
+      // Full prompt sent to the model, verbatim — for debugging/observability.
+      logger.info(
+        { model: COACH_MODEL, temperature: COACH_TEMPERATURE, userRole: profile?.userRole ?? null, messages: finalMessages },
+        "AveraAI final prompt",
+      );
       const stream = await client.chat.completions.create({
         model: COACH_MODEL,
         temperature: COACH_TEMPERATURE,
         max_tokens: 2048,
-        messages: [{ role: "system", content: systemPrompt }, ...chatMessages],
+        messages: finalMessages,
         stream: true,
       });
 
