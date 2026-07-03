@@ -12,6 +12,7 @@ import {
   notificationsTable,
   teamsTable,
   teamMembershipsTable,
+  teamCoachesTable,
   usersTable,
 } from "@workspace/db";
 import {
@@ -177,9 +178,18 @@ function serializeMessage(m: typeof messages.$inferSelect) {
   return { ...m, createdAt: m.createdAt.toISOString() };
 }
 
+// A coach's team is either the one they own, or one they joined as a co-coach.
+async function getTeamForCoach(userId: string) {
+  const [ownTeam] = await db.select().from(teamsTable).where(eq(teamsTable.coachUserId, userId)).orderBy(desc(teamsTable.createdAt)).limit(1);
+  if (ownTeam) return ownTeam;
+  const [coCoach] = await db.select({ teamId: teamCoachesTable.teamId }).from(teamCoachesTable).where(eq(teamCoachesTable.coachUserId, userId)).limit(1);
+  if (!coCoach) return undefined;
+  const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, coCoach.teamId)).limit(1);
+  return team;
+}
+
 async function buildCoachContext(userId: string): Promise<string> {
-  const coachTeam = await db.select().from(teamsTable).where(eq(teamsTable.coachUserId, userId)).orderBy(desc(teamsTable.createdAt)).limit(1);
-  const team = coachTeam[0];
+  const team = await getTeamForCoach(userId);
   if (!team) return "=== COACHING CONTEXT ===\nYou have no team yet.\n========================\n";
 
   const memberships = await db
@@ -643,8 +653,7 @@ function addDaysISO(iso: string, days: number): string {
 }
 
 async function getCoachTeamRoster(userId: string) {
-  const coachTeam = await db.select().from(teamsTable).where(eq(teamsTable.coachUserId, userId)).orderBy(desc(teamsTable.createdAt)).limit(1);
-  const team = coachTeam[0];
+  const team = await getTeamForCoach(userId);
   if (!team) return null;
   const memberships = await db
     .select({ athleteUserId: teamMembershipsTable.athleteUserId })

@@ -17,5 +17,18 @@ export const teamMembershipsTable = pgTable("team_memberships", {
   joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Additional coaches on a team, beyond the primary teams.coachUserId. Joined via
+// the same invite-code flow athletes use — if the joining account is a coach,
+// they become a co-coach instead of an athlete member. Co-coaches get full
+// operational access (roster, plans, AveraAI) but can't delete the team or
+// regenerate its invite code — those stay primary-coach-only.
+export const teamCoachesTable = pgTable("team_coaches", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull().references(() => teamsTable.id, { onDelete: "cascade" }),
+  coachUserId: text("coach_user_id").notNull().references(() => usersTable.id),
+  joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type Team = typeof teamsTable.$inferSelect;
 export type TeamMembership = typeof teamMembershipsTable.$inferSelect;
+export type TeamCoach = typeof teamCoachesTable.$inferSelect;

@@ -17,6 +17,7 @@ import {
   athleteProfileTable,
   teamMembershipsTable,
   teamsTable,
+  teamCoachesTable,
   trainingPlansTable,
   injuryAlertsTable,
   conversations,
@@ -498,6 +499,10 @@ router.delete("/account", async (req: Request, res: Response): Promise<void> => 
       // This user's own team memberships (as an athlete)
       await tx.delete(teamMembershipsTable).where(eq(teamMembershipsTable.athleteUserId, userId));
 
+      // This user's co-coach membership on someone else's team (team_coaches on
+      // teams they OWN cascades automatically when the team row is deleted below).
+      await tx.delete(teamCoachesTable).where(eq(teamCoachesTable.coachUserId, userId));
+
       // Teams this user coaches: other athletes' memberships reference team_id with no
       // cascade, so delete every membership for those teams before deleting the teams.
       const ownedTeams = await tx
@@ -547,6 +552,7 @@ router.delete("/account", async (req: Request, res: Response): Promise<void> => 
             await tx.delete(injuryAlertsTable).where(eq(injuryAlertsTable.userId, u.id));
             await tx.delete(trainingPlansTable).where(eq(trainingPlansTable.userId, u.id));
             await tx.delete(teamMembershipsTable).where(eq(teamMembershipsTable.athleteUserId, u.id));
+            await tx.delete(teamCoachesTable).where(eq(teamCoachesTable.coachUserId, u.id));
             const owned = await tx.select({ id: teamsTable.id }).from(teamsTable).where(eq(teamsTable.coachUserId, u.id));
             if (owned.length > 0) {
               const ids = owned.map(t => t.id);

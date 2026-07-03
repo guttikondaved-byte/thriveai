@@ -8,6 +8,7 @@ import {
   athleteProfileTable,
   teamMembershipsTable,
   teamsTable,
+  teamCoachesTable,
   notificationsTable,
 } from "@workspace/db";
 
@@ -21,13 +22,27 @@ async function getCoachMemberIds(req: Request): Promise<string[] | "unauthorized
     .where(eq(athleteProfileTable.userId, req.user.id))
     .limit(1);
   if (profile?.userRole !== "coach") return "forbidden";
-  const [team] = await db
+
+  const [ownTeam] = await db
     .select()
     .from(teamsTable)
     .where(eq(teamsTable.coachUserId, req.user.id))
     .orderBy(desc(teamsTable.createdAt))
     .limit(1);
+
+  let team = ownTeam;
+  if (!team) {
+    const [coCoach] = await db
+      .select({ teamId: teamCoachesTable.teamId })
+      .from(teamCoachesTable)
+      .where(eq(teamCoachesTable.coachUserId, req.user.id))
+      .limit(1);
+    if (coCoach) {
+      [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, coCoach.teamId)).limit(1);
+    }
+  }
   if (!team) return [];
+
   const memberships = await db
     .select({ athleteUserId: teamMembershipsTable.athleteUserId })
     .from(teamMembershipsTable)

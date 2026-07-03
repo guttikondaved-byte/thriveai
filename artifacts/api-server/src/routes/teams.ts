@@ -1,9 +1,19 @@
 import { Router, type IRouter } from "express";
-import { db, teamsTable, teamMembershipsTable, usersTable, athleteProfileTable, notificationsTable, stravaTokensTable, activitiesTable, injuryAlertsTable } from "@workspace/db";
+import { db, teamsTable, teamMembershipsTable, teamCoachesTable, usersTable, athleteProfileTable, notificationsTable, stravaTokensTable, activitiesTable, injuryAlertsTable } from "@workspace/db";
 import { eq, and, inArray, desc, gte } from "drizzle-orm";
 import crypto from "crypto";
 
 const router: IRouter = Router();
+
+// A user has coach access to a team if they're its primary coach or a co-coach.
+async function isTeamCoach(teamId: number, userId: string): Promise<boolean> {
+  const [team] = await db.select({ coachUserId: teamsTable.coachUserId }).from(teamsTable).where(eq(teamsTable.id, teamId)).limit(1);
+  if (team?.coachUserId === userId) return true;
+  const [co] = await db.select().from(teamCoachesTable)
+    .where(and(eq(teamCoachesTable.teamId, teamId), eq(teamCoachesTable.coachUserId, userId)))
+    .limit(1);
+  return !!co;
+}
 
 function generateInviteCode(): string {
   return crypto.randomBytes(4).toString("hex").toUpperCase();
@@ -82,8 +92,21 @@ router.get("/teams/my", async (req, res): Promise<void> => {
   if (coachTeam.length > 0) {
     const t = coachTeam[0];
     const members = await db.select().from(teamMembershipsTable).where(eq(teamMembershipsTable.teamId, t.id));
-    res.json({ team: { id: t.id, name: t.name, inviteCode: t.inviteCode, memberCount: members.length, createdAt: t.createdAt.toISOString() } });
+    res.json({ team: { id: t.id, name: t.name, inviteCode: t.inviteCode, memberCount: members.length, createdAt: t.createdAt.toISOString(), isPrimaryCoach: true } });
     return;
+  }
+
+  const coCoachOf = await db.select({ teamId: teamCoachesTable.teamId })
+    .from(teamCoachesTable)
+    .where(eq(teamCoachesTable.coachUserId, req.user.id))
+    .limit(1);
+  if (coCoachOf.length > 0) {
+    const [t] = await db.select().from(teamsTable).where(eq(teamsTable.id, coCoachOf[0].teamId));
+    if (t) {
+      const members = await db.select().from(teamMembershipsTable).where(eq(teamMembershipsTable.teamId, t.id));
+      res.json({ team: { id: t.id, name: t.name, inviteCode: t.inviteCode, memberCount: members.length, createdAt: t.createdAt.toISOString(), isPrimaryCoach: false } });
+      return;
+    }
   }
 
   const membership = await db.select({ teamId: teamMembershipsTable.teamId })
@@ -131,6 +154,34 @@ router.post("/teams/join", async (req, res): Promise<void> => {
     return;
   }
 
+  const [profile] = await db.select({ userRole: athleteProfileTable.userRole })
+    .from(athleteProfileTable)
+    .where(eq(athleteProfileTable.userId, req.user.id))
+    .limit(1);
+
+  // A coach joining another coach's team becomes a co-coach, not an athlete member.
+  if (profile?.userRole === "coach") {
+    if (team.coachUserId === req.user.id) {
+      res.status(400).json({ error: "This is your own team" });
+      return;
+    }
+    const existingCoach = await db.select().from(teamCoachesTable)
+      .where(and(eq(teamCoachesTable.teamId, team.id), eq(teamCoachesTable.coachUserId, req.user.id)))
+      .limit(1);
+    if (existingCoach.length === 0) {
+      await db.insert(teamCoachesTable).values({ teamId: team.id, coachUserId: req.user.id });
+      await db.insert(notificationsTable).values({
+        userId: team.coachUserId,
+        type: "team_join",
+        title: "New co-coach joined",
+        message: `${req.user.firstName ?? "A coach"} joined your team "${team.name}" as a co-coach.`,
+      });
+    }
+    const members = await db.select().from(teamMembershipsTable).where(eq(teamMembershipsTable.teamId, team.id));
+    res.json({ id: team.id, name: team.name, inviteCode: team.inviteCode, memberCount: members.length, createdAt: team.createdAt.toISOString(), role: "coach" });
+    return;
+  }
+
   const existing = await db.select().from(teamMembershipsTable)
     .where(and(eq(teamMembershipsTable.teamId, team.id), eq(teamMembershipsTable.athleteUserId, req.user.id)))
     .limit(1);
@@ -166,7 +217,7 @@ router.get("/teams/:teamId/members", async (req, res): Promise<void> => {
   }
 
   const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId)).limit(1);
-  if (!team || team.coachUserId !== req.user.id) {
+  if (!team || !(await isTeamCoach(teamId, req.user.id))) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -253,7 +304,7 @@ router.get("/teams/:teamId/strava-status", async (req, res): Promise<void> => {
   }
 
   const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId)).limit(1);
-  if (!team || team.coachUserId !== req.user.id) {
+  if (!team || !(await isTeamCoach(teamId, req.user.id))) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -298,7 +349,7 @@ router.get("/teams/:teamId/members/:userId/profile", async (req, res): Promise<v
   const athleteUserId = req.params.userId;
 
   const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId)).limit(1);
-  if (!team || team.coachUserId !== req.user.id) {
+  if (!team || !(await isTeamCoach(teamId, req.user.id))) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
@@ -449,7 +500,17 @@ router.delete("/teams/leave", async (req, res): Promise<void> => {
     .where(eq(teamMembershipsTable.athleteUserId, req.user.id))
     .returning();
 
-  if (deleted.length === 0) {
+  if (deleted.length > 0) {
+    res.status(204).end();
+    return;
+  }
+
+  // Not an athlete member — check if they're leaving as a co-coach instead.
+  const deletedCoach = await db.delete(teamCoachesTable)
+    .where(eq(teamCoachesTable.coachUserId, req.user.id))
+    .returning();
+
+  if (deletedCoach.length === 0) {
     res.status(404).json({ error: "You are not a member of any team" });
     return;
   }
