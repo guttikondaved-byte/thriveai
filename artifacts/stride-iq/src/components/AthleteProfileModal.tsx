@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, Activity, AlertTriangle, Heart, Target } from "lucide-react";
+import { X, Activity, AlertTriangle, Heart, Target, ShieldAlert } from "lucide-react";
 
 
 export interface AthleteProfileDetail {
@@ -50,6 +50,7 @@ export default function AthleteProfileModal({ teamId, userId, onClose }: Props) 
   const [data, setData] = useState<AthleteProfileDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [scrollToAlerts, setScrollToAlerts] = useState(false);
 
   function load() {
     setLoading(true);
@@ -131,12 +132,24 @@ export default function AthleteProfileModal({ teamId, userId, onClose }: Props) 
                   <p className="text-[11px] text-muted-foreground">Joined {new Date(data.joinedAt).toLocaleDateString()}</p>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="p-1.5 rounded-lg hover:bg-secondary transition-colors shrink-0"
-              >
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {data.alerts.length > 0 && (
+                  <button
+                    onClick={() => setScrollToAlerts(!scrollToAlerts)}
+                    className="p-2 rounded-lg hover:bg-secondary transition-colors flex items-center gap-1.5 px-3 text-sm font-medium text-amber-600 bg-amber-500/10 border border-amber-500/20"
+                    title="View injury alerts"
+                  >
+                    <ShieldAlert className="w-4 h-4" />
+                    <span>{data.alerts.length}</span>
+                  </button>
+                )}
+                <button
+                  onClick={onClose}
+                  className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
+                >
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
             </div>
 
             {/* Stat grid */}
@@ -215,7 +228,7 @@ export default function AthleteProfileModal({ teamId, userId, onClose }: Props) 
 
             {/* Risk alerts */}
             {data.alerts.length > 0 && (
-              <div>
+              <div className={`transition-colors rounded-lg p-3 ${scrollToAlerts ? "bg-amber-500/10 border border-amber-500/30" : ""}`}>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
                   <AlertTriangle className="w-3 h-3 text-amber-500" /> Active Risk Alerts
                 </p>
@@ -231,6 +244,9 @@ export default function AthleteProfileModal({ teamId, userId, onClose }: Props) 
                         }`}>{a.riskLevel}</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">{a.message}</p>
+                      {a.recommendation && (
+                        <p className="text-xs text-foreground mt-2 font-medium">{a.recommendation}</p>
+                      )}
                     </div>
                   ))}
                 </div>
