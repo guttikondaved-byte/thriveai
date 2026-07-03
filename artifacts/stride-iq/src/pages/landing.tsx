@@ -433,7 +433,7 @@ export default function Landing() {
               "radial-gradient(ellipse 55% 60% at 78% 50%,rgba(46,144,217,0.20) 0%,transparent 64%)",
           }}
         />
-        <div className={cn(WRAP, "pt-[clamp(24px,4vw,48px)] pb-[clamp(72px,9vw,136px)]", "relative")}>
+        <div className={cn(WRAP, "pt-[clamp(24px,4vw,48px)] pb-[clamp(48px,6vw,96px)]", "relative")}>
           <div
             className="flex flex-col lg:flex-row lg:items-center"
             style={{ gap: "clamp(40px,5vw,64px)" }}
