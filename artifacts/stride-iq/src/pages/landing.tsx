@@ -382,9 +382,9 @@ export default function Landing() {
               onClick={() => setMenuOpen((o) => !o)}
               className="flex flex-col justify-center gap-[5px] w-[42px] h-[42px] items-center bg-transparent border-0 cursor-pointer"
             >
-              <span className="w-[22px] h-0.5 bg-card rounded-[2px]" />
-              <span className="w-[22px] h-0.5 bg-card rounded-[2px]" />
-              <span className="w-[22px] h-0.5 bg-card rounded-[2px]" />
+              <span className="w-[22px] h-0.5 bg-foreground rounded-[2px]" />
+              <span className="w-[22px] h-0.5 bg-foreground rounded-[2px]" />
+              <span className="w-[22px] h-0.5 bg-foreground rounded-[2px]" />
             </button>
           </div>
         </div>

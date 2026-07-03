@@ -1,5 +1,6 @@
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, Bot, Settings, Calendar, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, Users, Bot, Settings, Calendar, ArrowLeft, Menu, X } from "lucide-react";
 
 const navItems = [
   { href: "/demo-coach", label: "Team Dashboard", icon: LayoutDashboard },
@@ -11,13 +12,38 @@ const navItems = [
 
 export default function DemoCoachLayout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location]);
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      {/* Sidebar */}
-      <aside className="hidden lg:flex w-60 shrink-0 border-r border-border bg-background flex-col">
-        <div className="px-6 py-5 border-b border-border flex items-center gap-2">
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 z-30 bg-black/60 lg:hidden"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar — static on desktop, slide-in drawer on mobile */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-64 max-w-[80vw] border-r border-border bg-background flex flex-col transform transition-transform duration-200 lg:static lg:w-60 lg:translate-x-0 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="px-6 py-5 border-b border-border flex items-center justify-between">
           <img src="/logo.svg" alt="Thrive" className="w-10 h-10" />
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="lg:hidden text-muted-foreground hover:text-foreground"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
         <div className="px-3 pt-3 space-y-0.5">
           <button
@@ -28,7 +54,7 @@ export default function DemoCoachLayout({ children }: { children: React.ReactNod
             Switch demo
           </button>
         </div>
-        <nav className="flex-1 py-4 px-3 space-y-0.5">
+        <nav className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto">
           {navItems.map(({ href, label, icon: Icon }) => {
             const active = href === "/demo-coach" ? location === "/demo-coach" : location.startsWith(href);
             return (
@@ -58,15 +84,15 @@ export default function DemoCoachLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 min-w-0 overflow-auto">
+      <main className="flex-1 min-w-0 overflow-auto" data-testid="main-content">
         {/* Demo banner */}
         <div className="sticky top-0 z-20 flex flex-wrap items-center justify-center gap-3 bg-primary px-4 py-3 text-center">
           <button
-            onClick={() => navigate("/")}
-            className="lg:hidden flex items-center gap-1.5 text-xs font-semibold text-white/90 hover:text-white transition-colors"
+            onClick={() => setMobileOpen(true)}
+            className="lg:hidden absolute left-4 text-white/90 hover:text-white transition-colors"
+            aria-label="Open menu"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back
+            <Menu className="w-5 h-5" />
           </button>
           <p className="text-sm font-semibold text-white">
             You're viewing the coach demo with sample data
