@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Bot, Send, Loader2 } from "lucide-react";
+import { Bot, Send, Loader2, ArrowUp } from "lucide-react";
 
 type Message = { role: "user" | "assistant"; text: string };
 
@@ -91,22 +91,22 @@ export default function DemoCoach() {
           <Send className="w-4 h-4 text-primary shrink-0" />
         </button>
       ) : (
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-2">
+        <div className="flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 shadow-[0_8px_30px_-14px_rgba(0,0,0,0.25)] focus-within:border-primary/40 transition-colors">
           <input
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleSend()}
             placeholder="Ask AveraAI a training question…"
             disabled={sending}
-            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none py-2 disabled:opacity-50"
+            className="flex-1 bg-transparent text-[15px] leading-6 text-foreground placeholder:text-muted-foreground outline-none disabled:opacity-50"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || sending}
             aria-label="Send"
-            className="shrink-0 text-primary disabled:opacity-30 disabled:cursor-not-allowed"
+            className="shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 disabled:opacity-40 transition-all"
           >
-            <Send className="w-4 h-4" />
+            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
           </button>
         </div>
       )}
