@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { TrendingUp, Users, Activity, ChevronRight } from "lucide-react";
+import { TrendingUp, Users, Activity, ChevronRight, Link as LinkIcon, Check } from "lucide-react";
 import { useGetAthleteProfile, useGetCurrentAuthUser } from "@workspace/api-client-react";
 import { getFocusConfig } from "@/lib/coachingFocus";
 import { RiskBadge, RISK_CONFIG, type RiskLevel } from "@/components/coach/RiskBadge";
@@ -41,6 +41,8 @@ export default function CoachDashboard() {
   const [team, setTeam] = useState<TeamInfo | null>(null);
   const [members, setMembers] = useState<RosterMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
   const { data: authData } = useGetCurrentAuthUser();
   const { data: profile } = useGetAthleteProfile();
   const focus = getFocusConfig(profile?.primaryGoal);
@@ -68,6 +70,14 @@ export default function CoachDashboard() {
       })
       .catch(() => setLoading(false));
   }, []);
+
+  const inviteLink = team ? `${window.location.origin}${basePath}/join/${team.inviteCode}` : "";
+  function copyInviteLink() {
+    if (!team) return;
+    navigator.clipboard.writeText(inviteLink);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  }
 
   const weeklyMiles = members.map(m => m.weeklyDistanceKm);
   const avgMiles = members.length > 0 ? (weeklyMiles.reduce((a, b) => a + b, 0) / members.length) : 0;
@@ -108,10 +118,30 @@ export default function CoachDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <StatCard label="Total Athletes" value={members.length} sub="On your team" icon={Users} />
         <StatCard label={focus.distanceLabel} value={avgMiles.toFixed(1)} sub="avg mi this week" icon={Activity} />
         <StatCard label="Avg Workouts" value={avgWorkouts != null ? avgWorkouts.toFixed(1) : "—"} sub={avgWorkouts != null ? "per athlete this week" : "no data yet"} icon={TrendingUp} />
+      </div>
+
+      {/* Invite link — free for the first 25 athletes */}
+      <div className="bg-card border border-border rounded-xl p-4 mb-10 shadow-sm flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+            <LinkIcon className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">Invite athletes — free for your first 25</p>
+            <p className="text-xs text-muted-foreground truncate">{inviteLink}</p>
+          </div>
+        </div>
+        <button
+          onClick={copyInviteLink}
+          className="p-2.5 px-4 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 shrink-0 shadow-sm"
+        >
+          {linkCopied ? <Check className="w-4 h-4" /> : <LinkIcon className="w-4 h-4" />}
+          <span className="text-sm font-medium">{linkCopied ? "Copied" : "Copy link"}</span>
+        </button>
       </div>
 
       <div className="mb-6">

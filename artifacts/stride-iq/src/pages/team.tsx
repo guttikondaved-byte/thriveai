@@ -40,6 +40,7 @@ export default function Team() {
   const [teamName, setTeamName] = useState("");
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [inviteInput, setInviteInput] = useState("");
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
@@ -146,6 +147,17 @@ export default function Team() {
     navigator.clipboard.writeText(team.inviteCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  const inviteLink = team
+    ? `${window.location.origin}${basePath.replace(/\/$/, "")}/join/${team.inviteCode}`
+    : "";
+
+  function copyLink() {
+    if (!team) return;
+    navigator.clipboard.writeText(inviteLink);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
   }
 
   function regenerateCode() {
@@ -370,9 +382,31 @@ export default function Team() {
           </div>
           <div>
             <p className="text-sm font-semibold text-foreground">Invite Athletes</p>
-            <p className="text-xs text-muted-foreground">Share this code with athletes to add them to your roster.</p>
+            <p className="text-xs text-muted-foreground">Share a link or code to add athletes — free for your first 25.</p>
           </div>
         </div>
+
+        {/* Shareable invite link */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 min-w-0 bg-secondary/50 border border-border rounded-lg px-4 py-3 text-sm text-foreground truncate select-all">
+            {inviteLink}
+          </div>
+          <button
+            onClick={copyLink}
+            className="p-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-2 shrink-0 shadow-sm"
+            title="Copy invite link"
+          >
+            {linkCopied ? <Check className="w-4 h-4" /> : <LinkIcon className="w-4 h-4" />}
+            <span className="text-sm font-medium">{linkCopied ? "Copied" : "Copy link"}</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="h-px flex-1 bg-border" />
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">or share the code</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+
         <div className="flex items-center gap-3">
           <div className="flex-1 bg-secondary/50 border border-border rounded-lg px-5 py-3.5 font-mono text-2xl font-bold text-primary tracking-[0.2em] text-center select-all">
             {team.inviteCode}

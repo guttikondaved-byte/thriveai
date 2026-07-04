@@ -1,5 +1,5 @@
 import { Router, type Request, type IRouter } from "express";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import Stripe from "stripe";
 import { db, athleteProfileTable, teamsTable, teamMembershipsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
@@ -38,6 +38,20 @@ function isAccessActive(
   if (!isActiveStatus(status)) return false;
   if (!periodEnd) return true;
   return periodEnd.getTime() > Date.now();
+}
+
+/**
+ * Whether the user is an athlete on at least one coach's team. Team athletes
+ * are covered by their coach's plan (free up to 25, then the coach pays per
+ * extra athlete), so they never need their own subscription to use the app.
+ */
+async function isCoveredByTeam(userId: string): Promise<boolean> {
+  const [membership] = await db
+    .select({ id: teamMembershipsTable.id })
+    .from(teamMembershipsTable)
+    .where(eq(teamMembershipsTable.athleteUserId, userId))
+    .limit(1);
+  return !!membership;
 }
 
 /**
@@ -400,9 +414,21 @@ router.get("/stripe/subscription", async (req: Request, res): Promise<void> => {
     .limit(1);
 
   const status = profile?.status ?? null;
+
+  // Athletes on a coach's team are covered by that coach's plan and don't need
+  // their own subscription. Only check membership when the profile's own
+  // subscription isn't already active, so we avoid the extra query for
+  // self-paying users.
+  let isActive = isAccessActive(status, profile?.currentPeriodEnd);
+  let effectiveStatus = status;
+  if (!isActive && (await isCoveredByTeam(req.user.id))) {
+    isActive = true;
+    effectiveStatus = "team";
+  }
+
   res.json({
-    status,
-    isActive: isAccessActive(status, profile?.currentPeriodEnd),
+    status: effectiveStatus,
+    isActive,
     currentPeriodEnd: profile?.currentPeriodEnd ? profile.currentPeriodEnd.toISOString() : null,
   });
 });

@@ -26,6 +26,7 @@ import CoachAthleteDetail from "@/pages/coach-athlete";
 import CoachPlans from "@/pages/coach-plans";
 import Team from "@/pages/team";
 import Login from "@/pages/login";
+import Join, { PENDING_INVITE_KEY } from "@/pages/join";
 import DemoLayout from "@/components/DemoLayout";
 import DemoChoose from "@/pages/demo/choose";
 import Privacy from "@/pages/privacy";
@@ -366,6 +367,11 @@ function AppContent() {
   const role = profile?.userRole ?? null;
   // Only check subscription once the user has a role (finished onboarding).
   const { data: subscription, isLoading: subLoading } = useSubscription(!!role);
+  // True while we auto-join a team from an invite link stashed before sign-up,
+  // so we show a spinner instead of briefly flashing the paywall gate.
+  const [joiningTeam, setJoiningTeam] = useState(
+    () => !!sessionStorage.getItem(PENDING_INVITE_KEY),
+  );
 
   function isApiError(err: unknown): err is { status: number } {
     return Boolean(
@@ -409,6 +415,33 @@ function AppContent() {
     };
   }, [qc]);
 
+  // Consume a stashed invite once the user has finished onboarding (has a role),
+  // joining them to their coach's team. Team athletes are covered by the coach's
+  // plan, so this also flips the subscription gate to "active".
+  useEffect(() => {
+    const code = sessionStorage.getItem(PENDING_INVITE_KEY);
+    if (!code) return;
+    if (isLoading || !role) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await fetch("/api/teams/join", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ inviteCode: code }),
+        });
+      } catch {
+        // Non-fatal: they can still join manually from the Team page.
+      }
+      sessionStorage.removeItem(PENDING_INVITE_KEY);
+      if (cancelled) return;
+      await qc.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY });
+      setJoiningTeam(false);
+    })();
+    return () => { cancelled = true; };
+  }, [role, isLoading, qc]);
+
   useEffect(() => {
     if (isLoading) return;
     const needsOnboarding = !profile?.userRole;
@@ -438,7 +471,7 @@ function AppContent() {
   // subscription before granting access to the app. This is the payment step at
   // the end of the signup flow. Fail open on a transient subscription-load error
   // so a flaky check never locks out paying users.
-  if (reconcilingCheckout || subLoading) return <Spinner />;
+  if (reconcilingCheckout || subLoading || joiningTeam) return <Spinner />;
   if (subscription && !subscription.isActive) {
     return <Subscribe planType={role === "coach" ? "coach" : "athlete"} />;
   }
@@ -527,6 +560,7 @@ function ClerkProviderWithRoutes() {
         <Route path="/demo/*" component={DemoRouter} />
         <Route path="/demo-coach" component={DemoCoachRouter} />
         <Route path="/demo-coach/*" component={DemoCoachRouter} />
+        <Route path="/join/:inviteCode" component={Join} />
         <Route component={HomeContent} />
       </Switch>
     </ClerkProvider>
