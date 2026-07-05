@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { requireActiveAccess } from "../middlewares/requireActiveAccess";
 import healthRouter from "./health";
 import athleteRouter from "./athlete";
 import activitiesRouter from "./activities";
@@ -19,6 +20,9 @@ const router: IRouter = Router();
 
 router.use(authRouter);
 router.use(healthRouter);
+// Backend backstop for the paywall/trial gate — see requireActiveAccess for
+// the exemption list (auth, profile, billing, and team-join stay open).
+router.use(requireActiveAccess);
 router.use(athleteRouter);
 router.use(activitiesRouter);
 router.use(plansRouter);
