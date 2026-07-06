@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Send, Loader2, ArrowUp } from "lucide-react";
+import { Send, Loader2, ArrowUp, Mic } from "lucide-react";
 import { DEMO_DATA } from "@/lib/demoData";
+import { useDemoVoiceInput } from "@/hooks/useDemoVoiceInput";
+import { useToast } from "@/hooks/use-toast";
 
 type Message = { role: "user" | "assistant"; text: string };
 
@@ -21,24 +23,57 @@ const SUGGESTION_REPLIES = [
   "Strength work 2x a week (focused on hips, glutes, and core) is one of the best things a runner can do to reduce injury risk and improve running economy.",
 ];
 
-// Fallback for anything free-typed that isn't a greeting or an exact
-// suggestion match — a real reply grounded in your actual data, not a
-// canned script, is one of the first things you get once you sign up.
-const FALLBACK_REPLY =
-  "Pacing your long runs 60-90 seconds slower than race pace builds aerobic endurance without accumulating excess fatigue. Most runners go too fast on easy days. Once you sign up, AveraAI answers questions like this using your actual training data, not general advice.";
-
 const GREETING_RE = /^(hi|hey|hello|hiya|howdy|yo|sup|good\s?(morning|afternoon|evening))\b/i;
 const GREETING_REPLY = "Hey! I'm AveraAI, your AI running coach. Ask me about pacing, recovery, injury risk, or anything else about your training.";
+
+// Keyword-driven fallback for anything free-typed that isn't a greeting or an
+// exact suggestion match. Grounded in Jordan's actual demo data (mileage, HRV,
+// alerts, PRs) rather than a single generic canned line, so typing off-script
+// still gets a specific, data-aware answer instead of an empty-feeling reply.
+const KEYWORD_REPLIES: Array<{ re: RegExp; reply: () => string }> = [
+  {
+    re: /\b(injur|hurt|pain|sore|ache|knee|calf|hip|shin)\w*/i,
+    reply: () => {
+      const alert = DEMO_DATA.activeAlerts[0];
+      return `${alert.bodyPart} is your one active alert right now (${alert.riskLevel} risk) — ${alert.message.toLowerCase()} ${alert.recommendation} Your overall risk score is ${DEMO_DATA.riskDashboard.riskScore}/100 (${DEMO_DATA.riskDashboard.riskLabel.toLowerCase()}).`;
+    },
+  },
+  {
+    re: /\b(mileage|volume|distance|how (far|much)|weekly (miles|km))\b/i,
+    reply: () =>
+      `You're at ${DEMO_DATA.weeklyDistanceKm}km across ${DEMO_DATA.weeklyRuns} runs this week, against a ${DEMO_DATA.weeklyMileageGoal}km goal. Your workload ratio is ${DEMO_DATA.riskDashboard.workload.ratio} right now — anything above 1.3 means you're ramping faster than your body is conditioned for, so there's a little room before that's a concern.`,
+  },
+  {
+    re: /\b(hrv|recover\w*|sleep|rest day|resting heart rate)\b/i,
+    reply: () =>
+      `Your HRV this week has ranged from ${Math.min(...DEMO_DATA.weeklyHrv.map(d => d.value))} to ${Math.max(...DEMO_DATA.weeklyHrv.map(d => d.value))}ms, and today's reading is ${DEMO_DATA.hrv}ms against a resting heart rate of ${DEMO_DATA.restingHeartRate}bpm. That's a fairly normal range — a sustained drop of 10%+ from your baseline for several days in a row is the bigger signal to back off, not a single low day.`,
+  },
+  {
+    re: /\b(pace|speed|5k|10k|half|marathon|race|pr|time)\b/i,
+    reply: () =>
+      `Your current PRs are ${DEMO_DATA.pr5k} for 5K, ${DEMO_DATA.pr10k} for 10K, and ${DEMO_DATA.prHalf} for the half. You're averaging ${DEMO_DATA.avgPaceMinPerKm} min/km across your recent runs — dropping meaningful time usually comes from adding one quality session a week (tempo or intervals) without sacrificing your easy-day volume.`,
+  },
+  {
+    re: /\b(plan|schedule|this week|program)\b/i,
+    reply: () => {
+      const p = DEMO_DATA.averaWeeklyPlanProposal;
+      return `Given your active knee alert, I'd suggest something like "${p.name}": ${p.rationale} That plan tops out at ${p.weeklyMileage}km for the week, down from your usual ${DEMO_DATA.weeklyMileageGoal}km goal.`;
+    },
+  },
+];
 
 function demoReplyFor(text: string): string {
   if (GREETING_RE.test(text)) return GREETING_REPLY;
   const suggestionIndex = SUGGESTIONS.indexOf(text);
   if (suggestionIndex !== -1) return SUGGESTION_REPLIES[suggestionIndex];
-  return FALLBACK_REPLY;
+  const matched = KEYWORD_REPLIES.find(({ re }) => re.test(text));
+  if (matched) return matched.reply();
+  return `Once you sign up, AveraAI answers questions like this by actually looking at your training data — mileage, HRV, pace trends, and any open injury alerts — instead of general advice. Right now your risk score is ${DEMO_DATA.riskDashboard.riskScore}/100 (${DEMO_DATA.riskDashboard.riskLabel.toLowerCase()}), so try asking about your injury risk, mileage, recovery, or race times to see what that looks like.`;
 }
 
 export default function DemoCoach() {
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -46,6 +81,14 @@ export default function DemoCoach() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const limitReached = demoMessagesSent >= MAX_DEMO_MESSAGES;
+
+  const voice = useDemoVoiceInput((transcript) => {
+    setInput(prev => (prev.trim() ? `${prev.trim()} ${transcript}` : transcript));
+  });
+
+  useEffect(() => {
+    if (voice.error) toast({ title: "Voice input failed", description: voice.error, variant: "destructive" });
+  }, [voice.error, toast]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -79,10 +122,25 @@ export default function DemoCoach() {
         value={input}
         onChange={e => setInput(e.target.value)}
         onKeyDown={e => e.key === "Enter" && handleSend()}
-        placeholder="Ask AveraAI a training question…"
+        placeholder={voice.recording ? "Listening…" : "Ask AveraAI a training question…"}
         disabled={sending}
         className="flex-1 bg-transparent text-[15px] leading-6 text-foreground placeholder:text-muted-foreground outline-none disabled:opacity-50"
       />
+      {voice.supported && (
+        <button
+          type="button"
+          onClick={voice.toggle}
+          disabled={sending}
+          aria-label={voice.recording ? "Stop recording" : "Start voice input"}
+          className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${
+            voice.recording
+              ? "bg-destructive text-destructive-foreground animate-pulse"
+              : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+          }`}
+        >
+          <Mic className="w-4 h-4" />
+        </button>
+      )}
       <button
         onClick={() => handleSend()}
         disabled={!input.trim() || sending}

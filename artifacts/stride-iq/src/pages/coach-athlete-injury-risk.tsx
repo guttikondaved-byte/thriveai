@@ -25,6 +25,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useListAlertComments, useCreateAlertComment, getListAlertCommentsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { DEMO_ALERT_COMMENTS } from "@/lib/demoData";
 
 const RISK_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; icon: React.ElementType }> = {
   low: { label: "Low Risk", color: "text-emerald-600", bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: Shield },
@@ -131,6 +132,54 @@ function AlertComments({ alertId }: { alertId: number }) {
         <button
           onClick={() => note.trim() && createComment.mutate({ id: alertId, data: { content: note.trim() } })}
           disabled={createComment.isPending || !note.trim()}
+          className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors disabled:opacity-50 shrink-0"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DemoAlertComments({ alertId }: { alertId: number }) {
+  const { toast } = useToast();
+  const [note, setNote] = useState("");
+  const [comments, setComments] = useState(() => DEMO_ALERT_COMMENTS[alertId] ?? []);
+
+  function send() {
+    const content = note.trim();
+    if (!content) return;
+    setComments((prev) => [...prev, { id: Date.now(), content, createdAt: new Date().toISOString() }]);
+    setNote("");
+    toast({ title: "Note sent to athlete" });
+  }
+
+  return (
+    <div className="mt-4 pt-4 border-t border-border">
+      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
+        <MessageSquare className="w-3.5 h-3.5" /> Coach Notes
+      </p>
+      {comments.length > 0 && (
+        <div className="space-y-2 mb-3">
+          {comments.map((c) => (
+            <div key={c.id} className="bg-secondary/50 rounded-xl px-4 py-2.5">
+              <p className="text-sm text-foreground">{c.content}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{format(new Date(c.createdAt), "MMM d, HH:mm")}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Leave a note for the athlete…"
+          maxLength={1000}
+          className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+        <button
+          onClick={send}
+          disabled={!note.trim()}
           className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors disabled:opacity-50 shrink-0"
         >
           Send
@@ -619,7 +668,7 @@ export function InjuryRiskView({
                       <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1 font-bold">Recommendation</p>
                       <p className="text-sm text-foreground">{alert.recommendation}</p>
                     </div>
-                    {!demo && <AlertComments alertId={alert.id} />}
+                    {demo ? <DemoAlertComments alertId={alert.id} /> : <AlertComments alertId={alert.id} />}
                   </div>
                 );
               })}

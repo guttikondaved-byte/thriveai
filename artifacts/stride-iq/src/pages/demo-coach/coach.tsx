@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Send, Loader2, ArrowUp } from "lucide-react";
+import { Send, Loader2, ArrowUp, Mic } from "lucide-react";
+import { DEMO_COACH_DATA } from "@/lib/demoData";
+import { useDemoVoiceInput } from "@/hooks/useDemoVoiceInput";
+import { useToast } from "@/hooks/use-toast";
 
 type Message = { role: "user" | "assistant"; text: string };
 
@@ -20,24 +23,70 @@ const SUGGESTION_REPLIES = [
   "Consistency of training days matters as much as total volume. Athletes who spread miles across more days per week tend to have lower injury rates than those who cram the same volume into fewer, harder days.",
 ];
 
-// Fallback for anything free-typed that isn't a greeting or an exact
-// suggestion match — once you sign up, AveraAI answers using your actual
-// roster data, not a canned script.
-const FALLBACK_REPLY =
-  "Once you sign up, AveraAI can generate a full training plan proposal for any athlete on your roster based on their actual data, not just general coaching guidance.";
-
 const GREETING_RE = /^(hi|hey|hello|hiya|howdy|yo|sup|good\s?(morning|afternoon|evening))\b/i;
 const GREETING_REPLY = "Hey! I'm AveraAI, your AI assistant for the whole roster. Ask me about any athlete's training load, injury risk, or recovery.";
+
+const roster = DEMO_COACH_DATA.roster;
+const highRisk = roster.filter(m => m.riskLevel === "high" || m.riskLevel === "medium");
+
+// Keyword-driven fallback for anything free-typed that isn't a greeting or an
+// exact suggestion match. Grounded in the actual roster fixture (names,
+// mileage, HRV, risk levels) rather than one generic canned line, so typing
+// off-script still gets a specific, data-aware answer.
+const KEYWORD_REPLIES: Array<{ re: RegExp; reply: () => string }> = [
+  {
+    re: /\b(injur|risk|hurt|pain|overtrain\w*)\b/i,
+    reply: () => {
+      if (highRisk.length === 0) return "Nobody on your roster has an elevated risk level right now — everyone's tracking at low risk.";
+      const names = highRisk.map(m => `${m.name} (${m.riskLevel} risk)`).join(", ");
+      const worst = highRisk.find(m => m.riskLevel === "high") ?? highRisk[0];
+      return `${names} are currently flagged. ${worst.name.split(" ")[0]} stands out most — ${worst.weeklyDistanceKm}km this week across ${worst.weeklyWorkouts} sessions, with HRV at ${worst.hrv}ms. I'd cut their next couple of sessions to easy pace and check in on sleep before ramping back up.`;
+    },
+  },
+  {
+    re: /\b(mileage|volume|load|distance|training load)\b/i,
+    reply: () => {
+      const totalKm = roster.reduce((sum, m) => sum + m.weeklyDistanceKm, 0);
+      const sorted = [...roster].sort((a, b) => b.weeklyDistanceKm - a.weeklyDistanceKm);
+      return `Your ${roster.length} athletes logged ${Math.round(totalKm)}km combined this week. ${sorted[0].name} leads at ${sorted[0].weeklyDistanceKm}km, while ${sorted[sorted.length - 1].name} is lowest at ${sorted[sorted.length - 1].weeklyDistanceKm}km. Worth checking whether that gap matches their actual training phases.`;
+    },
+  },
+  {
+    re: /\b(hrv|recover\w*|resting heart rate)\b/i,
+    reply: () => {
+      const sorted = [...roster].sort((a, b) => a.hrv - b.hrv);
+      return `${sorted[0].name} has the lowest HRV on your roster at ${sorted[0].hrv}ms (resting HR ${sorted[0].restingHeartRate}bpm) — worth a check-in. ${sorted[sorted.length - 1].name} is highest at ${sorted[sorted.length - 1].hrv}ms. A sustained drop of 10%+ from an athlete's own baseline over several days matters more than comparing across people.`;
+    },
+  },
+  {
+    re: /\b(plan|schedule|program|assign)\b/i,
+    reply: () => {
+      const p = DEMO_COACH_DATA.averaPlanProposal;
+      return `Based on ${p.athleteName}'s recent load, I'd propose "${p.name}": ${p.rationale} That's ${p.weeklyMileage} miles/week over a ${p.sessions.length}-session block.`;
+    },
+  },
+  {
+    re: /\b(roster|team|summar|overview)\b/i,
+    reply: () => {
+      const byRisk = { low: 0, medium: 0, high: 0 } as Record<string, number>;
+      roster.forEach(m => { byRisk[m.riskLevel] = (byRisk[m.riskLevel] ?? 0) + 1; });
+      return `${DEMO_COACH_DATA.team.name} has ${roster.length} athletes: ${byRisk.low ?? 0} at low risk, ${byRisk.medium ?? 0} at medium, ${byRisk.high ?? 0} at high. ${DEMO_COACH_DATA.plans.filter(p => p.status === "active").length} training plans are currently active.`;
+    },
+  },
+];
 
 function demoReplyFor(text: string): string {
   if (GREETING_RE.test(text)) return GREETING_REPLY;
   const suggestionIndex = SUGGESTIONS.indexOf(text);
   if (suggestionIndex !== -1) return SUGGESTION_REPLIES[suggestionIndex];
-  return FALLBACK_REPLY;
+  const matched = KEYWORD_REPLIES.find(({ re }) => re.test(text));
+  if (matched) return matched.reply();
+  return `Once you sign up, AveraAI answers questions like this by actually looking at your roster's data — mileage, HRV, and injury risk per athlete — instead of general advice. Try asking who's at risk, about training load, recovery, or your roster summary to see what that looks like.`;
 }
 
 export default function DemoCoachChat() {
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -45,6 +94,14 @@ export default function DemoCoachChat() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const limitReached = demoMessagesSent >= MAX_DEMO_MESSAGES;
+
+  const voice = useDemoVoiceInput((transcript) => {
+    setInput(prev => (prev.trim() ? `${prev.trim()} ${transcript}` : transcript));
+  });
+
+  useEffect(() => {
+    if (voice.error) toast({ title: "Voice input failed", description: voice.error, variant: "destructive" });
+  }, [voice.error, toast]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -78,10 +135,25 @@ export default function DemoCoachChat() {
         value={input}
         onChange={e => setInput(e.target.value)}
         onKeyDown={e => e.key === "Enter" && handleSend()}
-        placeholder="Ask AveraAI about your roster…"
+        placeholder={voice.recording ? "Listening…" : "Ask AveraAI about your roster…"}
         disabled={sending}
         className="flex-1 bg-transparent text-[15px] leading-6 text-foreground placeholder:text-muted-foreground outline-none disabled:opacity-50"
       />
+      {voice.supported && (
+        <button
+          type="button"
+          onClick={voice.toggle}
+          disabled={sending}
+          aria-label={voice.recording ? "Stop recording" : "Start voice input"}
+          className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${
+            voice.recording
+              ? "bg-destructive text-destructive-foreground animate-pulse"
+              : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+          }`}
+        >
+          <Mic className="w-4 h-4" />
+        </button>
+      )}
       <button
         onClick={() => handleSend()}
         disabled={!input.trim() || sending}

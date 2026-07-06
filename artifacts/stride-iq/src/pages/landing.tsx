@@ -998,7 +998,7 @@ export default function Landing() {
                   className="font-display font-extrabold leading-[1.05] text-foreground"
                   style={{ fontSize: "clamp(46px,6vw,64px)" }}
                 >
-                  $10
+                  $4.99
                 </span>
                 <span className="text-muted-foreground text-lg mb-[9px]">/ month</span>
               </div>
@@ -1044,7 +1044,7 @@ export default function Landing() {
                   className="font-display font-extrabold leading-[1.05] text-foreground"
                   style={{ fontSize: "clamp(46px,6vw,64px)" }}
                 >
-                  $100
+                  $99
                 </span>
                 <span className="text-muted-foreground text-lg mb-[9px]">/ month</span>
               </div>

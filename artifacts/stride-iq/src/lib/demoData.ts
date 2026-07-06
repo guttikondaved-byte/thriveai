@@ -436,6 +436,17 @@ export function getDemoAthleteDetail(userId: string): AthleteDetail | null {
   };
 }
 
+// ── Fake coach comments seeded onto a couple of demo alerts, so the demo
+// showcases the coach-comment thread without hitting any real endpoint.
+export const DEMO_ALERT_COMMENTS: Record<number, Array<{ id: number; content: string; createdAt: string }>> = {
+  2: [
+    { id: 1, content: "Saw this come through — let's dial back tomorrow's long run and keep it conversational pace.", createdAt: "2026-07-02T12:15:00Z" },
+  ],
+  3: [
+    { id: 2, content: "Keep up with the eccentric calf raises daily until this clears.", createdAt: "2026-06-30T18:00:00Z" },
+  ],
+};
+
 // ── Coach-side per-athlete injury-risk dashboard fixture ───────────────────
 // Mirrors the shape of GET /teams/:teamId/members/:userId/injury-risk with
 // plausible values derived from the roster entry's riskLevel, so the demo
