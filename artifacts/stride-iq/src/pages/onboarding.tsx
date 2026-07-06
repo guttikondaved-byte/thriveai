@@ -121,7 +121,7 @@ const inputCls = (error?: string) =>
     error ? "border-red-500" : "border-border focus:border-primary"
   }`;
 
-export default function Onboarding() {
+export default function Onboarding({ onDone }: { onDone?: () => void } = {}) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormData>(() => {
     const stored = sessionStorage.getItem("thrive_pending_role");
@@ -254,10 +254,9 @@ export default function Onboarding() {
     // If athlete chose Strava, kick off OAuth before landing on dashboard
     if (form.dataSource === "strava") {
       window.open("/api/strava/connect", "_blank", "noopener,noreferrer");
-      navigate("/");
-    } else {
-      navigate("/");
     }
+    onDone?.();
+    navigate("/");
   }
 
   const isLastStep = step === steps.length - 1;

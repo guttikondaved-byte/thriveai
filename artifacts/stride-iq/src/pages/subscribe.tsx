@@ -11,7 +11,19 @@ import { PaywallCard } from "@/components/PaywallCard";
  * active subscription/trial. Keeps the reverse-trial CTA front and centre and
  * always offers a way out (sign out) so nobody gets trapped.
  */
-export default function Subscribe({ planType }: { planType: "athlete" | "coach" }) {
+interface SubscribeProps {
+  planType: "athlete" | "coach";
+  /**
+   * Flips AppContent's forceOnboarding flag directly, in the same click
+   * handler as the navigate() below — without this, the paywall gate would
+   * still render on the very next tick (it doesn't know about "redo" intent
+   * from the URL alone) before the redirect effect's own detection caught up,
+   * causing a visible flash back to this same paywall screen.
+   */
+  onRedoSurvey?: () => void;
+}
+
+export default function Subscribe({ planType, onRedoSurvey }: SubscribeProps) {
   const { signOut } = useClerk();
   const [, navigate] = useLocation();
   const qc = useQueryClient();
@@ -63,7 +75,10 @@ export default function Subscribe({ planType }: { planType: "athlete" | "coach" 
           <span className="text-foreground">•</span>
           <button
             type="button"
-            onClick={() => navigate("/onboarding")}
+            onClick={() => {
+              onRedoSurvey?.();
+              navigate("/onboarding");
+            }}
             className="hover:text-foreground transition-colors"
           >
             Redo survey

@@ -367,6 +367,15 @@ function AppContent() {
   const role = profile?.userRole ?? null;
   // Only check subscription once the user has a role (finished onboarding).
   const { data: subscription, isLoading: subLoading } = useSubscription(!!role);
+  // True while an already-onboarded user is redoing the survey (e.g. via
+  // "Redo survey" on the paywall gate). Without this, a role-having user
+  // navigating to /onboarding would just get bounced straight back by the
+  // redirect effect below, and even if not, the paywall gate renders
+  // unconditionally whenever role is set and the subscription is inactive —
+  // so Onboarding could never actually show. Set by the redirect effect
+  // below (not a separate effect) so there's no same-tick ordering race
+  // between "detect redo" and "bounce away from /onboarding".
+  const [forceOnboarding, setForceOnboarding] = useState(false);
   // True while we auto-join a team from an invite link stashed before sign-up,
   // so we show a spinner instead of briefly flashing the paywall gate.
   const [joiningTeam, setJoiningTeam] = useState(
@@ -448,22 +457,27 @@ function AppContent() {
     // Force users with no saved role through the signup survey. This covers
     // brand-new accounts AND deleted-and-recreated ones: deletion wipes the
     // athlete_profile, so a recreated account has no role and must onboard
-    // again from scratch. Once a role exists, leave /onboarding for the app.
+    // again from scratch. Once a role exists and they land on /onboarding
+    // anyway (the Redo Survey button, a stale link, etc.), treat it as an
+    // intentional redo rather than bouncing them away.
     if (needsOnboarding && location !== "/onboarding") {
       navigate("/onboarding");
-    } else if (!needsOnboarding && location === "/onboarding") {
-      navigate("/");
+    } else if (!needsOnboarding && location === "/onboarding" && !forceOnboarding) {
+      setForceOnboarding(true);
     }
-  }, [profile, isLoading, location, navigate]);
+  }, [profile, isLoading, location, navigate, forceOnboarding]);
 
   if (isLoading) return <Spinner />;
 
   const needsOnboarding = !role;
 
   // Render the survey directly for role-less accounts so we never flash the
-  // dashboard (or the paywall) before the redirect effect above runs.
-  if (needsOnboarding) {
-    return <Onboarding />;
+  // dashboard (or the paywall) before the redirect effect above runs. Also
+  // takes over for an already-onboarded user actively redoing the survey
+  // (forceOnboarding) — otherwise the subscription gate right below would
+  // render the paywall instead, since it doesn't know about "redo" intent.
+  if (needsOnboarding || forceOnboarding) {
+    return <Onboarding onDone={() => setForceOnboarding(false)} />;
   }
 
   // ── Subscription gate ──
@@ -473,12 +487,19 @@ function AppContent() {
   // so a flaky check never locks out paying users.
   if (reconcilingCheckout || subLoading || joiningTeam) return <Spinner />;
   if (subscription && !subscription.isActive) {
-    return <Subscribe planType={role === "coach" ? "coach" : "athlete"} />;
+    return (
+      <Subscribe
+        planType={role === "coach" ? "coach" : "athlete"}
+        onRedoSurvey={() => setForceOnboarding(true)}
+      />
+    );
   }
 
   return (
     <Switch>
-      <Route path="/onboarding" component={Onboarding} />
+      <Route path="/onboarding">
+        <Onboarding onDone={() => setForceOnboarding(false)} />
+      </Route>
       <Route>
         {profile?.userRole === "coach" ? <CoachRouter /> : <AthleteRouter />}
       </Route>
