@@ -15,10 +15,6 @@ const coachAdditionalPriceId = process.env.STRIPE_PRICE_ID_COACH_ADDITIONAL;
 const stripeClient = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: "2022-11-15" }) : null;
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-// Free-trial length. The trial is granted directly (no card, no Stripe) via
-// /stripe/start-trial; Stripe checkout is a straight paid subscription.
-const TRIAL_DAYS = 3;
-
 /**
  * Persist the latest Stripe subscription state onto the athlete profile.
  * Keyed by our internal userId (carried on subscription metadata) so we never
@@ -422,9 +418,6 @@ router.get("/stripe/health", async (req: Request, res): Promise<void> => {
     coachBasePriceConfigured: !!coachBasePriceId,
     coachAdditionalPriceConfigured: !!coachAdditionalPriceId,
     stripePriceMode,
-    // Single source of truth for the trial length — the frontend reads this
-    // instead of hardcoding its own copy, so the two can't drift apart.
-    trialDays: TRIAL_DAYS,
     timestamp: new Date().toISOString(),
   };
 
@@ -525,61 +518,6 @@ router.post("/stripe/refresh", async (req: Request, res): Promise<void> => {
     );
     res.status(500).json({ error: "Unable to refresh subscription.", code: "refresh_failed" });
   }
-});
-
-/**
- * ── Start the free trial ──
- * Grants a time-limited trial directly (no card, no Stripe) so users can get
- * into the app immediately. Idempotent for an already-active trial; once a
- * trial has been used and expired, the user must subscribe instead.
- */
-router.post("/stripe/start-trial", async (req: Request, res): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  const [profile] = await db
-    .select({
-      status: athleteProfileTable.subscriptionStatus,
-      currentPeriodEnd: athleteProfileTable.subscriptionCurrentPeriodEnd,
-    })
-    .from(athleteProfileTable)
-    .where(eq(athleteProfileTable.userId, req.user.id))
-    .limit(1);
-
-  // Already have access (active trial/subscription) — nothing to do.
-  if (isAccessActive(profile?.status, profile?.currentPeriodEnd)) {
-    res.json({
-      status: profile!.status,
-      isActive: true,
-      currentPeriodEnd: profile?.currentPeriodEnd ? profile.currentPeriodEnd.toISOString() : null,
-    });
-    return;
-  }
-
-  // Anyone with a prior billing period on record — a trial that ran its
-  // course, OR a real subscription that was later canceled — can't get a
-  // fresh trial; they must subscribe. Checking currentPeriodEnd rather than
-  // `status === "trialing"` closes a gap where trial → subscribe → cancel
-  // left status as "canceled", which the old check didn't recognize as
-  // "already had a trial" and would silently grant a second free trial.
-  if (profile?.currentPeriodEnd) {
-    res.status(409).json({
-      error: "Your free trial has already been used. Please subscribe to continue.",
-      code: "trial_used",
-    });
-    return;
-  }
-
-  const end = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
-  await db
-    .update(athleteProfileTable)
-    .set({ subscriptionStatus: "trialing", subscriptionCurrentPeriodEnd: end })
-    .where(eq(athleteProfileTable.userId, req.user.id));
-
-  logger.info({ userId: req.user.id, trialEnds: end.toISOString() }, "Free trial started");
-  res.json({ status: "trialing", isActive: true, currentPeriodEnd: end.toISOString() });
 });
 
 /**

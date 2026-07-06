@@ -37,7 +37,7 @@ export default function Terms() {
 
           <h2>Subscriptions &amp; Billing</h2>
           <ul>
-            <li>Thrive offers a free trial period, after which continued access requires an active subscription.</li>
+            <li>Access requires an active subscription.</li>
             <li>Subscriptions are billed through Stripe on a recurring basis until canceled.</li>
             <li>Coach subscriptions include a base number of athletes, with per-athlete pricing beyond that.</li>
             <li>You can cancel anytime; access continues until the end of your current billing period.</li>

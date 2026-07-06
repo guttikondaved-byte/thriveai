@@ -8,8 +8,7 @@ import { PaywallCard } from "@/components/PaywallCard";
 
 /**
  * Full-screen access gate shown when a user has finished onboarding but has no
- * active subscription/trial. Keeps the reverse-trial CTA front and centre and
- * always offers a way out (sign out) so nobody gets trapped.
+ * active subscription. Always offers a way out (sign out) so nobody gets trapped.
  */
 interface SubscribeProps {
   planType: "athlete" | "coach";
@@ -56,8 +55,7 @@ export default function Subscribe({ planType, onRedoSurvey }: SubscribeProps) {
           <img src="/logo.svg" alt="Thrive" className="h-7 w-auto mb-5" />
           <h1 className="text-2xl font-bold text-foreground mb-2">Activate your account</h1>
           <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-            Start your free trial to unlock your {planType === "coach" ? "coach portal" : "training dashboard"}.
-            You won't be charged until the trial ends.
+            Subscribe to unlock your {planType === "coach" ? "coach portal" : "training dashboard"}.
           </p>
         </div>
 
