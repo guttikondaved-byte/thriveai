@@ -27,7 +27,7 @@ import {
   ListOpenaiMessagesResponse,
 } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
-import OpenAI from "openai";
+import OpenAI, { toFile } from "openai";
 
 const router: IRouter = Router();
 
@@ -35,6 +35,21 @@ const apiKey = process.env.GLM_API_KEY;
 const openaiClient = apiKey
   ? new OpenAI({ apiKey, baseURL: "https://open.bigmodel.cn/api/paas/v4/" })
   : null;
+
+// Voice input for AveraAI uses real OpenAI (Whisper-family transcription) via
+// OPENAI_API_KEY, separate from the GLM client above which only does chat
+// completions against a GLM-compatible endpoint that doesn't support audio.
+const transcriptionApiKey = process.env.OPENAI_API_KEY;
+const transcriptionClient = transcriptionApiKey ? new OpenAI({ apiKey: transcriptionApiKey }) : null;
+
+function audioExtensionFor(contentType: string): string {
+  if (contentType.includes("webm")) return "webm";
+  if (contentType.includes("mp4")) return "mp4";
+  if (contentType.includes("aac")) return "aac";
+  if (contentType.includes("mpeg") || contentType.includes("mp3")) return "mp3";
+  if (contentType.includes("wav")) return "wav";
+  return "webm";
+}
 
 // Model is overridable via env so you can point coaching/plan generation at a
 // stronger model (e.g. GLM_COACH_MODEL=glm-4.6) WITHOUT a code change — but the
@@ -521,6 +536,47 @@ async function buildUserContext(userId: string, userRole?: string | null): Promi
   if (userRole === "coach") return buildCoachContext(userId);
   return buildAthleteContext(userId);
 }
+
+// ── Voice input ──────────────────────────────────────────────────────────────
+// Transcribes a recorded voice message into text for the AveraAI composer.
+// Expects the raw audio bytes as the request body (see app.ts for the
+// route-specific raw body parser — this can't go through express.json()).
+
+router.post("/openai/transcribe", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  if (!transcriptionClient) {
+    res.status(503).json({
+      error: "Voice input is not available. Please contact support.",
+      code: "transcription_not_configured",
+    });
+    return;
+  }
+
+  const buffer = req.body;
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    res.status(400).json({ error: "No audio was received." });
+    return;
+  }
+
+  try {
+    const contentType = req.headers["content-type"] ?? "";
+    const file = await toFile(buffer, `voice-input.${audioExtensionFor(contentType)}`);
+    const transcription = await transcriptionClient.audio.transcriptions.create({
+      file,
+      model: "gpt-4o-mini-transcribe",
+    });
+    res.json({ text: transcription.text });
+  } catch (err) {
+    logger.error(
+      { userId: req.user.id, err: err instanceof Error ? err.message : String(err) },
+      "Voice transcription failed",
+    );
+    res.status(500).json({ error: "Couldn't transcribe that. Please try again or type your message." });
+  }
+});
 
 // ── List conversations ──────────────────────────────────────────────────────
 

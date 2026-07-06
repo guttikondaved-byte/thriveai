@@ -11,10 +11,11 @@ import {
 } from "@workspace/api-client-react";
 import { useGetAthleteProfile } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Loader2, ArrowUp, PanelLeftOpen, PanelLeftClose, SquarePen } from "lucide-react";
+import { Plus, Trash2, Loader2, ArrowUp, PanelLeftOpen, PanelLeftClose, SquarePen, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
+import { useVoiceRecorder } from "@workspace/integrations-openai-ai-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -219,6 +220,8 @@ export default function CoachAI() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [addingPlanMessageIndex, setAddingPlanMessageIndex] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const recorder = useVoiceRecorder();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -529,6 +532,49 @@ export default function CoachAI() {
     }
   }
 
+  async function handleMicClick() {
+    if (isStreaming || transcribing) return;
+
+    if (recorder.state === "recording") {
+      const blob = await recorder.stopRecording();
+      setTranscribing(true);
+      try {
+        const res = await fetch("/api/openai/transcribe", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": blob.type || "audio/webm" },
+          body: blob,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error ?? "Couldn't transcribe that. Please try again.");
+        const text = (data.text ?? "").trim();
+        if (text) {
+          setInput(prev => (prev.trim() ? `${prev.trim()} ${text}` : text));
+          textareaRef.current?.focus();
+        }
+      } catch (err) {
+        toast({
+          title: "Voice input failed",
+          description: err instanceof Error ? err.message : "Please try again or type your message.",
+          variant: "destructive",
+        });
+      } finally {
+        setTranscribing(false);
+      }
+      return;
+    }
+
+    try {
+      await recorder.startRecording();
+    } catch {
+      toast({
+        title: "Microphone access needed",
+        description: "Allow microphone access in your browser to use voice input.",
+        variant: "destructive",
+      });
+    }
+  }
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -553,12 +599,30 @@ export default function CoachAI() {
           t.style.height = `${Math.min(t.scrollHeight, 160)}px`;
         }}
         onKeyDown={handleKeyDown}
-        placeholder={isCoach ? "Ask AveraAI about your team or athletes…" : "Ask AveraAI about your training…"}
+        placeholder={
+          recorder.state === "recording"
+            ? "Listening…"
+            : isCoach ? "Ask AveraAI about your team or athletes…" : "Ask AveraAI about your training…"
+        }
         disabled={isStreaming}
         rows={1}
         data-testid="input-message"
         className="flex-1 resize-none bg-transparent text-[15px] leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-60"
       />
+      <button
+        type="button"
+        onClick={handleMicClick}
+        disabled={isStreaming || transcribing}
+        data-testid="button-voice-input"
+        aria-label={recorder.state === "recording" ? "Stop recording" : "Start voice input"}
+        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${
+          recorder.state === "recording"
+            ? "bg-destructive text-destructive-foreground animate-pulse"
+            : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+        }`}
+      >
+        {transcribing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4" />}
+      </button>
       <button
         onClick={() => sendMessage()}
         disabled={!input.trim() || isStreaming}

@@ -45,6 +45,10 @@ app.use(cookieParser());
 // as read, so express.json() below skips it.
 app.use("/api/stripe/webhook", express.raw({ type: "*/*" }));
 
+// Voice input posts the recorded audio blob directly as the body (not JSON),
+// so it also needs the raw parser ahead of express.json() below.
+app.use("/api/openai/transcribe", express.raw({ type: "audio/*", limit: "10mb" }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
