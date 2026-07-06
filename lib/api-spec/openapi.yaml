@@ -241,6 +241,58 @@ paths:
         "404":
           description: Not found
 
+  /alerts/{id}/comments:
+    get:
+      operationId: listAlertComments
+      tags: [alerts]
+      summary: List a coach's comments on an injury alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InjuryAlertComment"
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+    post:
+      operationId: createAlertComment
+      tags: [alerts]
+      summary: Leave a coach comment on an athlete's injury alert
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAlertCommentBody"
+      responses:
+        "201":
+          description: Created comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InjuryAlertComment"
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
   /dashboard/summary:
     get:
       operationId: getDashboardSummary
@@ -1277,6 +1329,37 @@ components:
         - recommendation
         - acknowledged
         - createdAt
+
+    InjuryAlertComment:
+      type: object
+      properties:
+        id:
+          type: integer
+        alertId:
+          type: integer
+        coachUserId:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - alertId
+        - coachUserId
+        - content
+        - createdAt
+
+    CreateAlertCommentBody:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+        - content
 
     DashboardSummary:
       type: object

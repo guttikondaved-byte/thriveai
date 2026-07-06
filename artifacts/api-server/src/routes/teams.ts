@@ -9,7 +9,7 @@ import { computeInjuryRiskDashboard } from "./injuryRisk";
 const router: IRouter = Router();
 
 // A user has coach access to a team if they're its primary coach or a co-coach.
-async function isTeamCoach(teamId: number, userId: string): Promise<boolean> {
+export async function isTeamCoach(teamId: number, userId: string): Promise<boolean> {
   const [team] = await db.select({ coachUserId: teamsTable.coachUserId }).from(teamsTable).where(eq(teamsTable.id, teamId)).limit(1);
   if (team?.coachUserId === userId) return true;
   const [co] = await db.select().from(teamCoachesTable)

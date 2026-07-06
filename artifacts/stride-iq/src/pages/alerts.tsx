@@ -7,6 +7,7 @@ import {
   useGetInjuryRiskDashboard,
   useCreateSorenessEntry,
   getGetInjuryRiskDashboardQueryKey,
+  useListAlertComments,
 } from "@workspace/api-client-react";
 import type {
   SorenessEntry,
@@ -118,6 +119,26 @@ function InfoTip({ title, children }: { title: string; children: React.ReactNode
         <div className="text-xs text-muted-foreground leading-relaxed space-y-2">{children}</div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function AlertComments({ alertId }: { alertId: number }) {
+  const { data: comments } = useListAlertComments(alertId);
+  if (!comments || comments.length === 0) return null;
+  return (
+    <div className="mt-4 pt-4 border-t border-border">
+      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
+        <MessageSquare className="w-3.5 h-3.5" /> Coach Notes
+      </p>
+      <div className="space-y-2">
+        {comments.map((c) => (
+          <div key={c.id} className="bg-secondary/50 rounded-xl px-4 py-2.5">
+            <p className="text-sm text-foreground">{c.content}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">{format(new Date(c.createdAt), "MMM d, HH:mm")}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -738,6 +759,7 @@ export default function Alerts() {
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         Acknowledge
                       </Button>
+                      <AlertComments alertId={alert.id} />
                     </div>
                   );
                 })}

@@ -412,6 +412,22 @@ export interface InjuryAlert {
   createdAt: string;
 }
 
+export interface InjuryAlertComment {
+  id: number;
+  alertId: number;
+  coachUserId: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface CreateAlertCommentBody {
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  content: string;
+}
+
 export type DashboardSummaryTrainingLoad = typeof DashboardSummaryTrainingLoad[keyof typeof DashboardSummaryTrainingLoad];
 
 

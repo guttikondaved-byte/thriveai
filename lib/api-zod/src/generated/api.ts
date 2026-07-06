@@ -331,6 +331,39 @@ export const AcknowledgeAlertResponse = zod.object({
 
 
 /**
+ * @summary List a coach's comments on an injury alert
+ */
+export const ListAlertCommentsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListAlertCommentsResponseItem = zod.object({
+  "id": zod.number(),
+  "alertId": zod.number(),
+  "coachUserId": zod.string(),
+  "content": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListAlertCommentsResponse = zod.array(ListAlertCommentsResponseItem)
+
+
+/**
+ * @summary Leave a coach comment on an athlete's injury alert
+ */
+export const CreateAlertCommentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const createAlertCommentBodyContentMax = 1000;
+
+
+
+export const CreateAlertCommentBody = zod.object({
+  "content": zod.string().min(1).max(createAlertCommentBodyContentMax)
+})
+
+
+/**
  * @summary Get dashboard summary stats
  */
 export const GetDashboardSummaryResponse = zod.object({

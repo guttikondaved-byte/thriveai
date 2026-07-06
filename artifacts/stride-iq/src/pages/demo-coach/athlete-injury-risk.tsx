@@ -12,6 +12,7 @@ export default function DemoCoachAthleteInjuryRisk({ params }: { params: { userI
       loading={false}
       error={dashboard ? null : "Athlete not found."}
       backHref={`/demo-coach/athletes/${params.userId}`}
+      demo
     />
   );
 }

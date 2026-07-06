@@ -26,6 +26,7 @@ import type {
   AthleteProfileInput,
   AuthUserEnvelope,
   BeginBrowserLoginParams,
+  CreateAlertCommentBody,
   CreateSorenessBody,
   CreateTeamBody,
   DashboardSummary,
@@ -35,6 +36,7 @@ import type {
   HealthStatus,
   Injury,
   InjuryAlert,
+  InjuryAlertComment,
   InjuryInput,
   InjuryRiskDashboard,
   IntensityMap,
@@ -969,6 +971,155 @@ export const useAcknowledgeAlert = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getAcknowledgeAlertMutationOptions(options));
+    }
+
+export const getListAlertCommentsUrl = (id: number,) => {
+
+
+
+
+  return `/api/alerts/${id}/comments`
+}
+
+/**
+ * @summary List a coach's comments on an injury alert
+ */
+export const listAlertComments = async (id: number, options?: RequestInit): Promise<InjuryAlertComment[]> => {
+
+  return customFetch<InjuryAlertComment[]>(getListAlertCommentsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAlertCommentsQueryKey = (id: number,) => {
+    return [
+    `/api/alerts/${id}/comments`
+    ] as const;
+    }
+
+
+export const getListAlertCommentsQueryOptions = <TData = Awaited<ReturnType<typeof listAlertComments>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAlertComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAlertCommentsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAlertComments>>> = ({ signal }) => listAlertComments(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAlertComments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAlertCommentsQueryResult = NonNullable<Awaited<ReturnType<typeof listAlertComments>>>
+export type ListAlertCommentsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List a coach's comments on an injury alert
+ */
+
+export function useListAlertComments<TData = Awaited<ReturnType<typeof listAlertComments>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAlertComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAlertCommentsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateAlertCommentUrl = (id: number,) => {
+
+
+
+
+  return `/api/alerts/${id}/comments`
+}
+
+/**
+ * @summary Leave a coach comment on an athlete's injury alert
+ */
+export const createAlertComment = async (id: number,
+    createAlertCommentBody: CreateAlertCommentBody, options?: RequestInit): Promise<InjuryAlertComment> => {
+
+  return customFetch<InjuryAlertComment>(getCreateAlertCommentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createAlertCommentBody,)
+  }
+);}
+
+
+
+
+export const getCreateAlertCommentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAlertComment>>, TError,{id: number;data: BodyType<CreateAlertCommentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAlertComment>>, TError,{id: number;data: BodyType<CreateAlertCommentBody>}, TContext> => {
+
+const mutationKey = ['createAlertComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAlertComment>>, {id: number;data: BodyType<CreateAlertCommentBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createAlertComment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAlertCommentMutationResult = NonNullable<Awaited<ReturnType<typeof createAlertComment>>>
+    export type CreateAlertCommentMutationBody = BodyType<CreateAlertCommentBody>
+    export type CreateAlertCommentMutationError = ErrorType<void>
+
+    /**
+ * @summary Leave a coach comment on an athlete's injury alert
+ */
+export const useCreateAlertComment = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAlertComment>>, TError,{id: number;data: BodyType<CreateAlertCommentBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAlertComment>>,
+        TError,
+        {id: number;data: BodyType<CreateAlertCommentBody>},
+        TContext
+      > => {
+      return useMutation(getCreateAlertCommentMutationOptions(options));
     }
 
 export const getGetDashboardSummaryUrl = () => {
