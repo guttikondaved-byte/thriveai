@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { ArrowLeft, Activity, AlertTriangle, Heart, Target, TrendingUp, Flame, Timer } from "lucide-react";
 import { StatCard } from "@/components/coach/StatCard";
 import { Eyebrow } from "@/components/coach/PageHeader";
+import { IntensityGrid, type IntensityDay } from "@/components/coach/IntensityGrid";
 
 type RiskLevel = "high" | "medium" | "low";
 
@@ -47,6 +48,8 @@ export interface AthleteDetail {
   totalActivities: number;
   totalDistanceKm: number;
   weeklyTrend: Array<{ weekStart: string; distanceKm: number; workouts: number }>;
+  intensityMap: IntensityDay[];
+  intensityMonthLabel: string;
   recentActivities: AthleteActivity[];
   alerts: Array<{
     id: number;
@@ -254,6 +257,10 @@ export function AthleteDetailView({ data, onBack }: { data: AthleteDetail; onBac
             </div>
           )}
         </div>
+      </div>
+
+      <div className="mb-6">
+        <IntensityGrid days={data.intensityMap} monthLabel={data.intensityMonthLabel} />
       </div>
 
       {/* Risk alerts */}

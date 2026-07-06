@@ -3,6 +3,7 @@ import { db, teamsTable, teamMembershipsTable, teamCoachesTable, usersTable, ath
 import { eq, and, inArray, desc, gte } from "drizzle-orm";
 import crypto from "crypto";
 import { syncCoachTeamSubscriptionQuantity } from "./stripe";
+import { maxDailyLoad, buildMonthlyIntensityMap } from "../lib/workloadRatio";
 
 const router: IRouter = Router();
 
@@ -390,14 +391,19 @@ router.get("/teams/:teamId/members/:userId/profile", async (req, res): Promise<v
     ));
   const weeklyDistanceKm = last7.reduce((sum, a) => sum + Number(a.distanceKm ?? 0), 0);
 
-  // All-time totals + last-8-weeks trend
-  const allActivities = await db.select({
-    distanceKm: activitiesTable.distanceKm,
-    activityDate: activitiesTable.activityDate,
-  })
+  // All-time totals + last-8-weeks trend. Full rows (not just distanceKm) since
+  // the intensity map below also needs perceivedEffort/durationMinutes/id.
+  const allActivities = await db.select()
     .from(activitiesTable)
     .where(eq(activitiesTable.userId, athleteUserId));
   const totalDistanceKm = allActivities.reduce((sum, a) => sum + Number(a.distanceKm ?? 0), 0);
+
+  // Current month's training-load heatmap, scored against this athlete's
+  // all-time hardest day so scores are comparable month to month.
+  const now = new Date();
+  const allTimeMaxLoad = maxDailyLoad(allActivities);
+  const intensityMap = buildMonthlyIntensityMap(allActivities, now.getFullYear(), now.getMonth(), allTimeMaxLoad);
+  const intensityMonthLabel = now.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   const weeklyTrend: Array<{ weekStart: string; distanceKm: number; workouts: number }> = [];
   for (let w = 7; w >= 0; w--) {
@@ -444,6 +450,8 @@ router.get("/teams/:teamId/members/:userId/profile", async (req, res): Promise<v
     totalActivities: allActivities.length,
     totalDistanceKm,
     weeklyTrend,
+    intensityMap,
+    intensityMonthLabel,
     recentActivities: recentActivities.map(a => ({
       id: a.id,
       type: a.type,

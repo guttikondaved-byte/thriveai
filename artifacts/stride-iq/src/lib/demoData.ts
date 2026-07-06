@@ -403,6 +403,9 @@ export function getDemoAthleteDetail(userId: string): AthleteDetail | null {
   }
   recentActivities.sort((a, b) => b.activityDate.localeCompare(a.activityDate));
 
+  const intensityMonthLabel = today.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const intensityMap = generateDemoIntensityMonth(today.getFullYear(), today.getMonth() + 1, true);
+
   return {
     userId: member.userId,
     name: member.name,
@@ -426,6 +429,8 @@ export function getDemoAthleteDetail(userId: string): AthleteDetail | null {
     totalActivities: recentActivities.length + 38,
     totalDistanceKm: Math.round(member.weeklyDistanceKm * 14),
     weeklyTrend,
+    intensityMap,
+    intensityMonthLabel,
     recentActivities,
     alerts: member.riskLevel === "low" ? [] : extras.alerts,
   };
