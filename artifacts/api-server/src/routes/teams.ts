@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, teamsTable, teamMembershipsTable, teamCoachesTable, usersTable, athleteProfileTable, notificationsTable, stravaTokensTable, activitiesTable, injuryAlertsTable } from "@workspace/db";
 import { eq, and, inArray, desc, gte } from "drizzle-orm";
 import crypto from "crypto";
+import { syncCoachTeamSubscriptionQuantity } from "./stripe";
 
 const router: IRouter = Router();
 
@@ -199,6 +200,10 @@ router.post("/teams/join", async (req, res): Promise<void> => {
       title: "New athlete joined",
       message: `${req.user.firstName ?? "An athlete"} joined your team "${team.name}".`,
     });
+
+    // Fire-and-forget: keep the coach's Stripe "extra athlete" quantity in
+    // sync with the new roster size. Never block the join on this.
+    syncCoachTeamSubscriptionQuantity(team.coachUserId).catch(() => {});
   }
 
   const members = await db.select().from(teamMembershipsTable).where(eq(teamMembershipsTable.teamId, team.id));
@@ -526,6 +531,8 @@ router.delete("/teams", async (req, res): Promise<void> => {
   await db.delete(teamsTable)
     .where(eq(teamsTable.id, team.id));
 
+  syncCoachTeamSubscriptionQuantity(req.user.id).catch(() => {});
+
   res.status(204).end();
 });
 
@@ -541,6 +548,12 @@ router.delete("/teams/leave", async (req, res): Promise<void> => {
     .returning();
 
   if (deleted.length > 0) {
+    const [team] = await db.select({ coachUserId: teamsTable.coachUserId })
+      .from(teamsTable)
+      .where(eq(teamsTable.id, deleted[0].teamId))
+      .limit(1);
+    if (team) syncCoachTeamSubscriptionQuantity(team.coachUserId).catch(() => {});
+
     res.status(204).end();
     return;
   }

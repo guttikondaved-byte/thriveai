@@ -43,6 +43,77 @@ async function persistSubscription(
 }
 
 /**
+ * Keep a coach's Stripe subscription quantity for the "extra athlete" line
+ * item in sync with their actual roster size. The checkout session only sets
+ * this once, at signup time — without this, a coach who grows past 25
+ * athletes after subscribing (or shrinks back under 25) would never see
+ * their bill change. Called after any roster change (join/leave/delete).
+ * Best-effort: errors are logged but never surfaced to the caller, since
+ * roster changes shouldn't fail just because Stripe reconciliation hiccuped.
+ */
+export async function syncCoachTeamSubscriptionQuantity(coachUserId: string): Promise<void> {
+  if (!stripeClient || !coachAdditionalPriceId) return;
+
+  try {
+    const [profile] = await db
+      .select({
+        stripeSubscriptionId: athleteProfileTable.stripeSubscriptionId,
+        subscriptionStatus: athleteProfileTable.subscriptionStatus,
+      })
+      .from(athleteProfileTable)
+      .where(eq(athleteProfileTable.userId, coachUserId))
+      .limit(1);
+
+    // Only real Stripe subscriptions need reconciling — the free trial has no
+    // underlying Stripe object, so there's nothing to sync until they pay.
+    if (!profile?.stripeSubscriptionId || !isActiveStatus(profile.subscriptionStatus) || profile.subscriptionStatus === "trialing") {
+      return;
+    }
+
+    const [team] = await db
+      .select({ id: teamsTable.id })
+      .from(teamsTable)
+      .where(eq(teamsTable.coachUserId, coachUserId))
+      .orderBy(desc(teamsTable.createdAt))
+      .limit(1);
+    const memberCount = team
+      ? (await db.select().from(teamMembershipsTable).where(eq(teamMembershipsTable.teamId, team.id))).length
+      : 0;
+    const desiredExtra = Math.max(0, memberCount - 25);
+
+    const sub = await stripeClient.subscriptions.retrieve(profile.stripeSubscriptionId);
+    const existingItem = sub.items.data.find((item) => item.price.id === coachAdditionalPriceId);
+
+    if (desiredExtra === 0) {
+      if (existingItem) {
+        await stripeClient.subscriptions.update(profile.stripeSubscriptionId, {
+          items: [{ id: existingItem.id, deleted: true }],
+        });
+        logger.info({ coachUserId, memberCount }, "Removed extra-athlete line item (roster back to 25 or fewer)");
+      }
+      return;
+    }
+
+    if (existingItem) {
+      if (existingItem.quantity === desiredExtra) return;
+      await stripeClient.subscriptions.update(profile.stripeSubscriptionId, {
+        items: [{ id: existingItem.id, quantity: desiredExtra }],
+      });
+    } else {
+      await stripeClient.subscriptions.update(profile.stripeSubscriptionId, {
+        items: [{ price: coachAdditionalPriceId, quantity: desiredExtra }],
+      });
+    }
+    logger.info({ coachUserId, memberCount, desiredExtra }, "Synced extra-athlete subscription quantity");
+  } catch (err) {
+    logger.error(
+      { coachUserId, err: err instanceof Error ? err.message : String(err) },
+      "Failed to sync coach subscription quantity to roster size",
+    );
+  }
+}
+
+/**
  * Resolve the internal userId for a Stripe subscription. Prefers the
  * `userId` we stamp on subscription metadata; falls back to the customer's
  * metadata so older sessions still reconcile.
