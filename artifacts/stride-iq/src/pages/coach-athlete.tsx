@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
-import { ArrowLeft, Activity, AlertTriangle, Heart, Target, TrendingUp, Flame, Timer } from "lucide-react";
+import { useLocation, Link } from "wouter";
+import { ArrowLeft, Activity, AlertTriangle, Heart, Target, TrendingUp, Flame, Timer, ShieldAlert } from "lucide-react";
 import { StatCard } from "@/components/coach/StatCard";
 import { Eyebrow } from "@/components/coach/PageHeader";
 import { IntensityGrid, type IntensityDay } from "@/components/coach/IntensityGrid";
@@ -140,10 +140,10 @@ export default function CoachAthleteDetail({ params }: { params: { userId: strin
     );
   }
 
-  return <AthleteDetailView data={data} onBack={() => navigate("/")} />;
+  return <AthleteDetailView data={data} onBack={() => navigate("/")} injuryRiskHref={`/athletes/${data.userId}/injury-risk`} />;
 }
 
-export function AthleteDetailView({ data, onBack }: { data: AthleteDetail; onBack: () => void }) {
+export function AthleteDetailView({ data, onBack, injuryRiskHref }: { data: AthleteDetail; onBack: () => void; injuryRiskHref: string }) {
   const [hoveredWeek, setHoveredWeek] = useState<number | null>(null);
   const maxWeekMiles = Math.max(...data.weeklyTrend.map(w => w.distanceKm), 1);
 
@@ -168,15 +168,24 @@ export function AthleteDetailView({ data, onBack }: { data: AthleteDetail; onBac
             <p className="text-sm text-muted-foreground truncate">{data.email ? `${data.email} · ` : ""}Joined {new Date(data.joinedAt).toLocaleDateString()}</p>
           </div>
         </div>
-        {data.alerts.length > 0 && (
-          <a
-            href="#alerts"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-md font-display font-semibold text-xs uppercase tracking-[0.06em] text-amber-600 bg-amber-500/10 border border-amber-500/20 shrink-0"
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href={injuryRiskHref}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-md font-display font-semibold text-xs uppercase tracking-[0.06em] text-primary bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors"
           >
-            <AlertTriangle className="w-4 h-4" />
-            {data.alerts.length} alert{data.alerts.length !== 1 ? "s" : ""}
-          </a>
-        )}
+            <ShieldAlert className="w-4 h-4" />
+            Injury Risk Analysis
+          </Link>
+          {data.alerts.length > 0 && (
+            <a
+              href="#alerts"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-md font-display font-semibold text-xs uppercase tracking-[0.06em] text-amber-600 bg-amber-500/10 border border-amber-500/20"
+            >
+              <AlertTriangle className="w-4 h-4" />
+              {data.alerts.length} alert{data.alerts.length !== 1 ? "s" : ""}
+            </a>
+          )}
+        </div>
       </div>
 
       {/* Stat grid */}

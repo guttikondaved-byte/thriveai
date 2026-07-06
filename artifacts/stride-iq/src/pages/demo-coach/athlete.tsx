@@ -20,5 +20,11 @@ export default function DemoCoachAthleteDetail({ params }: { params: { userId: s
     );
   }
 
-  return <AthleteDetailView data={data} onBack={() => navigate("/demo-coach")} />;
+  return (
+    <AthleteDetailView
+      data={data}
+      onBack={() => navigate("/demo-coach")}
+      injuryRiskHref={`/demo-coach/athletes/${data.userId}/injury-risk`}
+    />
+  );
 }

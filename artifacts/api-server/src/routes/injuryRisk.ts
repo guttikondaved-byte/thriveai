@@ -47,13 +47,12 @@ function buildInsight(riskBand: RiskBand, ratio: number | null, maxRecentSorenes
   return "Your training load and recovery markers look balanced. Continue with your current plan.";
 }
 
-router.get("/injury-risk/dashboard", async (req: Request, res): Promise<void> => {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  const userId = req.user.id;
-
+/**
+ * Computes the full injury-risk dashboard for a given user. Shared by the
+ * athlete's own /injury-risk/dashboard and the coach-scoped team route below,
+ * so the two can never compute this differently.
+ */
+export async function computeInjuryRiskDashboard(userId: string) {
   const [profileRows, activities, allActivities, openAlerts, recentSoreness] = await Promise.all([
     db.select().from(athleteProfileTable).where(eq(athleteProfileTable.userId, userId)).limit(1),
     // 40 days covers the 30-day fitness trend (which needs a 7-day trailing tail).
@@ -134,25 +133,31 @@ router.get("/injury-risk/dashboard", async (req: Request, res): Promise<void> =>
   const lastUpdated =
     timestamps.length > 0 ? new Date(Math.max(...timestamps.map((d) => d.getTime()))) : new Date();
 
-  res.json(
-    GetInjuryRiskDashboardResponse.parse({
-      riskScore: risk.score,
-      riskBand: risk.band,
-      riskLabel: risk.label,
-      insight: buildInsight(risk.band, workload.ratio, maxRecentSoreness),
-      lastUpdated: lastUpdated.toISOString(),
-      workload,
-      hrvCurrent: profile?.hrv ? Number(profile.hrv) : null,
-      intensityMap,
-      weeklyRelativeEffort,
-      activityConsistency,
-      fitnessTrend,
-      heartRateZones,
-      segments,
-      alerts: openAlerts.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() })),
-      soreness: recentSoreness.map((s) => ({ ...s, createdAt: s.createdAt.toISOString() })),
-    }),
-  );
+  return GetInjuryRiskDashboardResponse.parse({
+    riskScore: risk.score,
+    riskBand: risk.band,
+    riskLabel: risk.label,
+    insight: buildInsight(risk.band, workload.ratio, maxRecentSoreness),
+    lastUpdated: lastUpdated.toISOString(),
+    workload,
+    hrvCurrent: profile?.hrv ? Number(profile.hrv) : null,
+    intensityMap,
+    weeklyRelativeEffort,
+    activityConsistency,
+    fitnessTrend,
+    heartRateZones,
+    segments,
+    alerts: openAlerts.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() })),
+    soreness: recentSoreness.map((s) => ({ ...s, createdAt: s.createdAt.toISOString() })),
+  });
+}
+
+router.get("/injury-risk/dashboard", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  res.json(await computeInjuryRiskDashboard(req.user.id));
 });
 
 router.get("/injury-risk/intensity-map", async (req: Request, res): Promise<void> => {

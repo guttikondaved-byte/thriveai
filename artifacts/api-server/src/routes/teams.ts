@@ -4,6 +4,7 @@ import { eq, and, inArray, desc, gte } from "drizzle-orm";
 import crypto from "crypto";
 import { syncCoachTeamSubscriptionQuantity } from "./stripe";
 import { maxDailyLoad, buildMonthlyIntensityMap } from "../lib/workloadRatio";
+import { computeInjuryRiskDashboard } from "./injuryRisk";
 
 const router: IRouter = Router();
 
@@ -478,6 +479,39 @@ router.get("/teams/:teamId/members/:userId/profile", async (req, res): Promise<v
       createdAt: al.createdAt.toISOString(),
     })),
   });
+});
+
+// GET /teams/:teamId/members/:userId/injury-risk — coach views a single
+// athlete's full injury-risk dashboard (gauge, workload ratio, HR zones,
+// etc.) — the same computation the athlete sees on their own /alerts page.
+router.get("/teams/:teamId/members/:userId/injury-risk", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const teamId = Number(req.params.teamId);
+  if (isNaN(teamId)) {
+    res.status(400).json({ error: "Invalid team id" });
+    return;
+  }
+  const athleteUserId = req.params.userId;
+
+  const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId)).limit(1);
+  if (!team || !(await isTeamCoach(teamId, req.user.id))) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const [membership] = await db.select()
+    .from(teamMembershipsTable)
+    .where(and(eq(teamMembershipsTable.teamId, teamId), eq(teamMembershipsTable.athleteUserId, athleteUserId)))
+    .limit(1);
+  if (!membership) {
+    res.status(404).json({ error: "Athlete is not a member of this team" });
+    return;
+  }
+
+  res.json(await computeInjuryRiskDashboard(athleteUserId));
 });
 
 // PATCH /teams/code — coach regenerates their team's invite code

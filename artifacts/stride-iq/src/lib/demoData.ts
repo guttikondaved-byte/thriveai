@@ -435,3 +435,74 @@ export function getDemoAthleteDetail(userId: string): AthleteDetail | null {
     alerts: member.riskLevel === "low" ? [] : extras.alerts,
   };
 }
+
+// ── Coach-side per-athlete injury-risk dashboard fixture ───────────────────
+// Mirrors the shape of GET /teams/:teamId/members/:userId/injury-risk with
+// plausible values derived from the roster entry's riskLevel, so the demo
+// visually matches what a coach sees for a real athlete without needing a
+// full second copy of the real training-load math.
+export function getDemoInjuryRiskDashboard(userId: string) {
+  const member = DEMO_COACH_DATA.roster.find(m => m.userId === userId);
+  const extras = DEMO_ATHLETE_EXTRAS[userId];
+  if (!member || !extras) return null;
+
+  const RISK_BAND_FOR: Record<string, { score: number; band: string; label: string }> = {
+    low: { score: 18, band: "low", label: "Low Risk" },
+    medium: { score: 42, band: "moderate", label: "Moderate Risk" },
+    high: { score: 68, band: "high", label: "High Risk" },
+  };
+  const riskInfo = RISK_BAND_FOR[member.riskLevel] ?? RISK_BAND_FOR.low;
+
+  const insight = member.riskLevel === "high"
+    ? `${member.name.split(" ")[0]}'s workload ratio is elevated and HRV has dropped from baseline. Recommend cutting volume ~25% this week and keeping sessions at easy pace.`
+    : member.riskLevel === "medium"
+    ? `${member.name.split(" ")[0]} is showing a few early risk signals. Worth a check-in before their next hard session.`
+    : `${member.name.split(" ")[0]}'s training load and recovery markers look balanced.`;
+
+  const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const today = new Date();
+  const dailyBase = member.weeklyDistanceKm * 10; // rough session-load scale
+  const daily = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - (6 - i));
+    const cycle = i % 3;
+    const load = cycle === 1 ? 0 : Math.round(dailyBase * (0.5 + ((i * 13) % 40) / 100));
+    return { date: d.toISOString().slice(0, 10), day: dayLabels[d.getDay()], load, baseline: Math.round(dailyBase * 0.65) };
+  });
+  const ratio = member.riskLevel === "high" ? 1.42 : member.riskLevel === "medium" ? 1.15 : 0.92;
+
+  const effortTotal = member.riskLevel === "high" ? 420 : member.riskLevel === "medium" ? 260 : 140;
+  const effortBand = effortTotal >= 350 ? "high" : effortTotal >= 150 ? "moderate" : "low";
+
+  const trendSeries = Array.from({ length: 30 }, (_, i) => Math.round(dailyBase * (0.6 + (Math.sin(i / 4) + 1) * 0.2)));
+  const trendPct = member.riskLevel === "high" ? -8 : member.riskLevel === "medium" ? 3 : 6;
+
+  const hrMax = 220 - extras.age;
+  const heartRateZones = [1, 2, 3, 4, 5].map(zone => {
+    const share = member.riskLevel === "high" ? [0.15, 0.2, 0.25, 0.25, 0.15] : [0.3, 0.3, 0.2, 0.15, 0.05];
+    return { zone, label: ["Recovery", "Aerobic", "Tempo", "Threshold", "Anaerobic"][zone - 1], seconds: Math.round(share[zone - 1] * 3600 * (member.weeklyWorkouts / 4)) };
+  });
+
+  const soreness = extras.alerts.map((a, i) => ({
+    bodyPart: a.bodyPart,
+    painScore: a.riskLevel === "high" ? 7 : a.riskLevel === "medium" ? 4 : 2,
+    createdAt: a.createdAt,
+  }));
+
+  return {
+    riskScore: riskInfo.score,
+    riskBand: riskInfo.band,
+    riskLabel: riskInfo.label,
+    insight,
+    lastUpdated: new Date().toISOString(),
+    workload: { daily, ratio },
+    intensityMap: [],
+    weeklyRelativeEffort: { total: effortTotal, band: effortBand },
+    activityConsistency: { daysActive: member.weeklyWorkouts, totalDays: 7, pct: Math.round((member.weeklyWorkouts / 7) * 100) },
+    fitnessTrend: { series: trendSeries, changePct: trendPct },
+    heartRateZones,
+    segments: [],
+    alerts: member.riskLevel === "low" ? [] : extras.alerts,
+    soreness,
+  };
+}
