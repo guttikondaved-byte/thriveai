@@ -1,6 +1,6 @@
 import { useParams, Link } from "wouter";
 import BackButton from "@/components/BackButton";
-import { useGetActivity } from "@workspace/api-client-react";
+import { useGetActivity, getGetActivityQueryKey } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import {
   ArrowLeft, MapPin, Clock, TrendingUp, Heart, Activity as ActivityIcon,
@@ -66,7 +66,7 @@ export default function ActivityDetail() {
   const params = useParams<{ id: string }>();
   const id = parseInt(params.id ?? "", 10);
   const { data: activity, isLoading, isError } = useGetActivity(id, {
-    query: { enabled: Number.isFinite(id) },
+    query: { queryKey: getGetActivityQueryKey(id), enabled: Number.isFinite(id) },
   });
 
   if (isLoading) {

@@ -422,6 +422,9 @@ router.get("/stripe/health", async (req: Request, res): Promise<void> => {
     coachBasePriceConfigured: !!coachBasePriceId,
     coachAdditionalPriceConfigured: !!coachAdditionalPriceId,
     stripePriceMode,
+    // Single source of truth for the trial length — the frontend reads this
+    // instead of hardcoding its own copy, so the two can't drift apart.
+    trialDays: TRIAL_DAYS,
     timestamp: new Date().toISOString(),
   };
 
@@ -555,8 +558,13 @@ router.post("/stripe/start-trial", async (req: Request, res): Promise<void> => {
     return;
   }
 
-  // A previously-used (now expired) trial can't be restarted — they must subscribe.
-  if (profile?.status === "trialing" && profile?.currentPeriodEnd) {
+  // Anyone with a prior billing period on record — a trial that ran its
+  // course, OR a real subscription that was later canceled — can't get a
+  // fresh trial; they must subscribe. Checking currentPeriodEnd rather than
+  // `status === "trialing"` closes a gap where trial → subscribe → cancel
+  // left status as "canceled", which the old check didn't recognize as
+  // "already had a trial" and would silently grant a second free trial.
+  if (profile?.currentPeriodEnd) {
     res.status(409).json({
       error: "Your free trial has already been used. Please subscribe to continue.",
       code: "trial_used",

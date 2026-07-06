@@ -3,7 +3,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck, Sparkles, Loader2, ChevronRight } from "lucide-react";
 import { SUBSCRIPTION_QUERY_KEY } from "@/hooks/use-subscription";
 
-const TRIAL_DAYS = 3;
+// Fallback only — the real value is read from /api/stripe/health so this
+// can never silently drift from the backend's actual trial length.
+const DEFAULT_TRIAL_DAYS = 3;
 
 interface PaywallCardProps {
   planType: "athlete" | "coach";
@@ -40,13 +42,18 @@ export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
   // backend — otherwise it just errors with "Payment system not available". This
   // auto-enables the button once the Stripe keys are set, no code change needed.
   const [stripeAvailable, setStripeAvailable] = useState(true);
+  const [trialDays, setTrialDays] = useState(DEFAULT_TRIAL_DAYS);
   const copy = PLAN_COPY[planType];
 
   useEffect(() => {
     let cancelled = false;
     fetch("/api/stripe/health", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (!cancelled) setStripeAvailable(Boolean(d?.configured)); })
+      .then((d) => {
+        if (cancelled) return;
+        setStripeAvailable(Boolean(d?.configured));
+        if (typeof d?.trialDays === "number") setTrialDays(d.trialDays);
+      })
       .catch(() => { if (!cancelled) setStripeAvailable(false); });
     return () => { cancelled = true; };
   }, []);
@@ -128,7 +135,7 @@ export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm font-bold text-foreground">Start free for {TRIAL_DAYS} days</p>
+              <p className="text-sm font-bold text-foreground">Start free for {trialDays} days</p>
               <span className="text-[10px] font-bold uppercase tracking-wide text-primary bg-primary/15 px-2 py-0.5 rounded-full">
                 No card
               </span>

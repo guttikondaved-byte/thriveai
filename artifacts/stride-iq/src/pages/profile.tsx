@@ -1,4 +1,4 @@
-import { useGetAthleteProfile, useUpdateAthleteProfile, getGetAthleteProfileQueryKey } from "@workspace/api-client-react";
+import { useGetAthleteProfile, useUpdateAthleteProfile, useGetCurrentAuthUser, getGetAthleteProfileQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -301,6 +301,9 @@ function CoachProfile() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { data: profile, isLoading } = useGetAthleteProfile();
+  // Email lives on the auth user, not the athlete_profile row — the profile
+  // has no email field.
+  const { data: authData } = useGetCurrentAuthUser();
   const updateProfile = useUpdateAthleteProfile();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -365,7 +368,7 @@ function CoachProfile() {
             <div>
               <p className="text-sm font-semibold text-foreground">{profile?.name ?? "Coach"}</p>
               <p className="text-xs text-primary font-medium uppercase tracking-wider">Thrive Coach</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{profile?.email ?? ""}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{authData?.user?.email ?? ""}</p>
             </div>
           </div>
 

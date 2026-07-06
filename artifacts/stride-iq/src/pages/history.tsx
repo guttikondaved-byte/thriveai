@@ -177,6 +177,11 @@ export default function History() {
   const { toast } = useToast();
 
   const { data: profile, isLoading: profileLoading } = useGetAthleteProfile();
+  // Captured here (before any narrowing) so the fallback cast below doesn't
+  // collapse to `undefined` — `typeof profile` inline inside `profile ?? (...)`
+  // gets control-flow-narrowed to just "undefined" on that branch, which
+  // can't be cast from `{}`. Naming the type first avoids that.
+  type ProfileData = typeof profile;
   const { data: injuries = [], isLoading: injuriesLoading } = useListInjuries();
 
   const updateProfile = useUpdateAthleteProfile({
@@ -220,7 +225,7 @@ export default function History() {
     updateProfile.mutate({ data: { healthNotes: notesText ?? "" } });
   };
 
-  const pr = profile ?? ({} as typeof profile);
+  const pr = profile ?? ({} as ProfileData);
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "records", label: "Personal Records", icon: <Trophy className="w-4 h-4" /> },
