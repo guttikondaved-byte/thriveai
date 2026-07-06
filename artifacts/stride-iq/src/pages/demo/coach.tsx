@@ -18,9 +18,9 @@ const SUGGESTIONS = [
 ];
 
 const SUGGESTION_REPLIES = [
-  "Keep easy runs at a conversational pace, cap weekly mileage increases around 20%, and prioritize sleep and protein for recovery.",
-  "That depends on how your body is responding day to day. Soreness that eases within 24-48 hours is normal, but sharp or one-sided pain is a sign to back off and rest.",
-  "Strength work 2x a week (focused on hips, glutes, and core) is one of the best things a runner can do to reduce injury risk and improve running economy.",
+  `You're at ${DEMO_DATA.weeklyDistanceKm}km this week against a ${DEMO_DATA.weeklyMileageGoal}km goal, with your ${DEMO_DATA.currentPlanName} plan due for a long run and an easy day or two. Keep easy runs at a conversational pace, cap weekly mileage increases around 20%, and prioritize sleep and protein for recovery.`,
+  `Your workload ratio is ${DEMO_DATA.riskDashboard.workload.ratio} right now (1.3+ means you're ramping faster than your body's conditioned for), and you have one active alert — ${DEMO_DATA.activeAlerts[0].bodyPart.toLowerCase()}, ${DEMO_DATA.activeAlerts[0].riskLevel} risk. That's not overtraining yet, but it's worth watching: soreness that eases within 24-48 hours is normal, sharp or one-sided pain is a sign to back off and rest.`,
+  `Your current 5K PR is ${DEMO_DATA.pr5k}, averaging ${DEMO_DATA.avgPaceMinPerKm} min/km across recent runs. Strength work 2x a week (focused on hips, glutes, and core) is one of the best things a runner can do to reduce injury risk and improve running economy — which is usually what closes the gap between your training pace and race pace.`,
 ];
 
 const GREETING_RE = /^(hi|hey|hello|hiya|howdy|yo|sup|good\s?(morning|afternoon|evening))\b/i;

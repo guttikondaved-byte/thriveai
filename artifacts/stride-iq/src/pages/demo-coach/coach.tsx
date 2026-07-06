@@ -18,9 +18,20 @@ const SUGGESTIONS = [
 ];
 
 const SUGGESTION_REPLIES = [
-  "Look at pairing weekly mileage with HRV trends per athlete. A mileage jump alongside a dropping HRV is the clearest early warning sign of overreaching.",
-  "For a roster this size, a simple rule of thumb: no athlete should increase weekly volume more than 20% week over week, regardless of how good they're feeling.",
-  "Consistency of training days matters as much as total volume. Athletes who spread miles across more days per week tend to have lower injury rates than those who cram the same volume into fewer, harder days.",
+  (() => {
+    const flagged = DEMO_COACH_DATA.roster.filter(m => m.riskLevel === "high" || m.riskLevel === "medium");
+    if (flagged.length === 0) return "Nobody on your roster is flagged this week — everyone's tracking at low risk.";
+    const names = flagged.map(m => `${m.name} (${m.riskLevel} risk)`).join(", ");
+    return `${names}. Look at pairing weekly mileage with HRV trends for each — a mileage jump alongside a dropping HRV is the clearest early warning sign of overreaching.`;
+  })(),
+  (() => {
+    const totalKm = DEMO_COACH_DATA.roster.reduce((sum, m) => sum + m.weeklyDistanceKm, 0);
+    return `Your ${DEMO_COACH_DATA.roster.length} athletes logged ${Math.round(totalKm)}km combined this week. As a rule of thumb for a roster this size: no athlete should increase weekly volume more than 20% week over week, regardless of how good they're feeling.`;
+  })(),
+  (() => {
+    const lowest = [...DEMO_COACH_DATA.roster].sort((a, b) => a.hrv - b.hrv)[0];
+    return `${lowest.name} has the lowest HRV on your roster right now at ${lowest.hrv}ms. When an athlete's HRV drops from their own baseline for several days in a row, cut their next couple of sessions to easy pace, drop volume ~20-25% for the week, and check in on sleep before ramping back up. A single low reading isn't a signal on its own — it's the sustained drop that matters.`;
+  })(),
 ];
 
 const GREETING_RE = /^(hi|hey|hello|hiya|howdy|yo|sup|good\s?(morning|afternoon|evening))\b/i;
