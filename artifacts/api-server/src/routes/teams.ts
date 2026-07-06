@@ -4,7 +4,7 @@ import { eq, and, inArray, desc, gte } from "drizzle-orm";
 import crypto from "crypto";
 import { syncCoachTeamSubscriptionQuantity } from "./stripe";
 import { maxDailyLoad, buildMonthlyIntensityMap } from "../lib/workloadRatio";
-import { computeInjuryRiskDashboard } from "./injuryRisk";
+import { computeInjuryRiskDashboard, computeWhatIfScenarios } from "./injuryRisk";
 
 const router: IRouter = Router();
 
@@ -301,6 +301,57 @@ router.get("/teams/:teamId/members", async (req, res): Promise<void> => {
   })));
 });
 
+// POST /teams/:teamId/broadcast — coach sends one message to every athlete on
+// the team at once (an in-app notification each), instead of messaging them
+// one by one via a per-athlete comment.
+router.post("/teams/:teamId/broadcast", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const teamId = Number(req.params.teamId);
+  if (isNaN(teamId)) {
+    res.status(400).json({ error: "Invalid team id" });
+    return;
+  }
+  const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
+  if (!message) {
+    res.status(400).json({ error: "Message is required" });
+    return;
+  }
+  if (message.length > 1000) {
+    res.status(400).json({ error: "Message must be 1000 characters or fewer" });
+    return;
+  }
+
+  const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId)).limit(1);
+  if (!team || !(await isTeamCoach(teamId, req.user.id))) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const memberships = await db
+    .select({ athleteUserId: teamMembershipsTable.athleteUserId })
+    .from(teamMembershipsTable)
+    .where(eq(teamMembershipsTable.teamId, teamId));
+
+  if (memberships.length === 0) {
+    res.status(400).json({ error: "This team has no athletes to message yet." });
+    return;
+  }
+
+  await db.insert(notificationsTable).values(
+    memberships.map((m) => ({
+      userId: m.athleteUserId,
+      type: "team_broadcast",
+      title: `Message from ${team.name}`,
+      message,
+    })),
+  );
+
+  res.status(201).json({ ok: true, recipientCount: memberships.length });
+});
+
 // GET /teams/:teamId/strava-status — coach sees which athletes have Strava connected
 router.get("/teams/:teamId/strava-status", async (req, res): Promise<void> => {
   if (!req.isAuthenticated()) {
@@ -512,6 +563,39 @@ router.get("/teams/:teamId/members/:userId/injury-risk", async (req, res): Promi
   }
 
   res.json(await computeInjuryRiskDashboard(athleteUserId));
+});
+
+// GET /teams/:teamId/members/:userId/injury-risk/what-if — coach explores
+// "what if this athlete ran N km more/less this week", same math as the
+// athlete's own what-if simulator.
+router.get("/teams/:teamId/members/:userId/injury-risk/what-if", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const teamId = Number(req.params.teamId);
+  if (isNaN(teamId)) {
+    res.status(400).json({ error: "Invalid team id" });
+    return;
+  }
+  const athleteUserId = req.params.userId;
+
+  const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId)).limit(1);
+  if (!team || !(await isTeamCoach(teamId, req.user.id))) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const [membership] = await db.select()
+    .from(teamMembershipsTable)
+    .where(and(eq(teamMembershipsTable.teamId, teamId), eq(teamMembershipsTable.athleteUserId, athleteUserId)))
+    .limit(1);
+  if (!membership) {
+    res.status(404).json({ error: "Athlete is not a member of this team" });
+    return;
+  }
+
+  res.json(await computeWhatIfScenarios(athleteUserId));
 });
 
 // PATCH /teams/code — coach regenerates their team's invite code

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, Copy, Check, Link as LinkIcon, UserPlus, ChevronRight, RefreshCw, Trash2, LogOut, AlertTriangle } from "lucide-react";
+import { Users, Copy, Check, Link as LinkIcon, UserPlus, ChevronRight, RefreshCw, Trash2, LogOut, AlertTriangle, MessageSquare } from "lucide-react";
 import { useGetAthleteProfile } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import AthleteProfileModal from "../components/AthleteProfileModal";
@@ -52,6 +52,10 @@ export default function Team() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
+
+  const [showBroadcastForm, setShowBroadcastForm] = useState(false);
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [broadcasting, setBroadcasting] = useState(false);
 
   useEffect(() => {
     fetch("/api/teams/my", { credentials: "include" })
@@ -175,6 +179,32 @@ export default function Team() {
       .catch(() => {
         setRegenerating(false);
         toast({ title: "Failed to regenerate code", variant: "destructive" });
+      });
+  }
+
+  function sendBroadcast() {
+    if (!team || !broadcastMessage.trim() || broadcasting) return;
+    setBroadcasting(true);
+    fetch(`/api/teams/${team.id}/broadcast`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: broadcastMessage.trim() }),
+    })
+      .then(async r => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data.error ?? "Failed to send message");
+        return data as { recipientCount: number };
+      })
+      .then(data => {
+        setBroadcasting(false);
+        setBroadcastMessage("");
+        setShowBroadcastForm(false);
+        toast({ title: "Message sent", description: `Delivered to ${data.recipientCount} athlete${data.recipientCount === 1 ? "" : "s"}.` });
+      })
+      .catch((err: Error) => {
+        setBroadcasting(false);
+        toast({ title: "Couldn't send message", description: err.message, variant: "destructive" });
       });
   }
 
@@ -444,6 +474,58 @@ export default function Team() {
           </div>
         )}
       </div>
+
+      {/* Broadcast message to whole team */}
+      {totalMembers > 0 && (
+        <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <MessageSquare className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Message your team</p>
+                <p className="text-xs text-muted-foreground">Send one note to all {totalMembers} athlete{totalMembers !== 1 ? "s" : ""} at once.</p>
+              </div>
+            </div>
+            {!showBroadcastForm && (
+              <button
+                onClick={() => setShowBroadcastForm(true)}
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shrink-0"
+              >
+                Message team
+              </button>
+            )}
+          </div>
+          {showBroadcastForm && (
+            <div>
+              <textarea
+                value={broadcastMessage}
+                onChange={(e) => setBroadcastMessage(e.target.value)}
+                rows={3}
+                maxLength={1000}
+                placeholder="e.g. Great work this week, everyone — keep next week's long runs easy pace."
+                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+              />
+              <div className="flex justify-end gap-2 mt-3">
+                <button
+                  onClick={() => { setShowBroadcastForm(false); setBroadcastMessage(""); }}
+                  className="px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={sendBroadcast}
+                  disabled={broadcasting || !broadcastMessage.trim()}
+                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                >
+                  {broadcasting ? "Sending…" : `Send to ${totalMembers} athlete${totalMembers !== 1 ? "s" : ""}`}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Strava summary banner */}
       {totalMembers > 0 && (

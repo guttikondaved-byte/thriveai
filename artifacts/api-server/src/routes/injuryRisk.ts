@@ -10,10 +10,10 @@ import {
   teamMembershipsTable,
   notificationsTable,
 } from "@workspace/db";
-import { GetInjuryRiskDashboardResponse, GetInjuryRiskIntensityMapResponse, CreateSorenessEntryBody } from "@workspace/api-zod";
+import { GetInjuryRiskDashboardResponse, GetInjuryRiskIntensityMapResponse, GetInjuryRiskWhatIfResponse, CreateSorenessEntryBody } from "@workspace/api-zod";
 import { assessInjuryRisk } from "../lib/injuryRiskCalculator";
 import { computeWorkloadRatio, buildMonthlyIntensityMap, maxDailyLoad } from "../lib/workloadRatio";
-import { computeRiskIndex, type RiskBand } from "../lib/riskIndex";
+import { computeRiskIndex, acwrComponentFor, bandFor, type RiskBand } from "../lib/riskIndex";
 import {
   computeWeeklyRelativeEffort,
   computeActivityConsistency,
@@ -151,6 +151,104 @@ export async function computeInjuryRiskDashboard(userId: string) {
     soreness: recentSoreness.map((s) => ({ ...s, createdAt: s.createdAt.toISOString() })),
   });
 }
+
+const WHAT_IF_DELTA_KM = [-10, -5, 0, 5, 10, 15, 20];
+
+/**
+ * "What if I ran N km more/less this week?" — recomputes the ACWR-driven
+ * slice of the risk score for a range of hypothetical weekly-mileage deltas,
+ * holding the other score components (recent-run analysis, open alerts,
+ * soreness) fixed at their current values. Reuses the exact same
+ * acwrComponentFor/bandFor math as the real dashboard score so the "current"
+ * scenario always matches what the athlete sees elsewhere — it's not a
+ * separately-tuned approximation.
+ */
+export async function computeWhatIfScenarios(userId: string) {
+  const [profileRows, activities, openAlerts, recentSoreness] = await Promise.all([
+    db.select().from(athleteProfileTable).where(eq(athleteProfileTable.userId, userId)).limit(1),
+    db
+      .select()
+      .from(activitiesTable)
+      .where(and(eq(activitiesTable.userId, userId), gte(activitiesTable.activityDate, getDateNDaysAgo(27))))
+      .orderBy(desc(activitiesTable.activityDate)),
+    db
+      .select()
+      .from(injuryAlertsTable)
+      .where(and(eq(injuryAlertsTable.userId, userId), eq(injuryAlertsTable.acknowledged, false)))
+      .orderBy(desc(injuryAlertsTable.createdAt)),
+    db
+      .select()
+      .from(sorenessLogsTable)
+      .where(and(eq(sorenessLogsTable.userId, userId), gte(sorenessLogsTable.loggedDate, getDateNDaysAgo(13))))
+      .orderBy(desc(sorenessLogsTable.createdAt)),
+  ]);
+
+  const profile = profileRows[0] ?? null;
+  const workload = computeWorkloadRatio(activities);
+
+  const recentActivities = activities.filter((a) => a.activityDate && a.activityDate >= getDateNDaysAgo(7));
+  const prevWeekActivities = activities.filter(
+    (a) => a.activityDate && a.activityDate >= getDateNDaysAgo(14) && a.activityDate < getDateNDaysAgo(7),
+  );
+  const previousWeekKm = prevWeekActivities.reduce((sum, a) => sum + (a.distanceKm ? Number(a.distanceKm) : 0), 0);
+  const actualWeeklyKm = recentActivities.reduce((sum, a) => sum + (a.distanceKm ? Number(a.distanceKm) : 0), 0);
+
+  const recentActivityRiskScores: number[] = [];
+  for (const activity of recentActivities) {
+    try {
+      const assessment = await assessInjuryRisk(activity, profile, previousWeekKm, recentActivities);
+      recentActivityRiskScores.push(assessment.riskScore);
+    } catch (err) {
+      logger.error({ err, userId, activityId: activity.id }, "Injury risk recompute failed for what-if");
+    }
+  }
+  const activityComponent =
+    recentActivityRiskScores.length > 0
+      ? recentActivityRiskScores.reduce((sum, s) => sum + s, 0) / recentActivityRiskScores.length
+      : 0;
+
+  const alertsComponent = openAlerts.reduce(
+    (max, a) => Math.max(max, { low: 10, medium: 25, high: 45, critical: 70 }[a.riskLevel] ?? 0),
+    0,
+  );
+  const maxRecentSoreness = recentSoreness.length > 0 ? Math.max(...recentSoreness.map((s) => s.painScore)) : null;
+  const sorenessComponent = maxRecentSoreness !== null ? (maxRecentSoreness / 10) * 100 : 0;
+
+  // Load-per-km ratio for this athlete's own week, so a hypothetical +/- km
+  // delta scales acute load the same way their actual training does. Falls
+  // back to the distance-only session-load estimate (10 per km) used
+  // elsewhere when there's no mileage yet to derive a ratio from.
+  const loadPerKm = actualWeeklyKm > 0 ? workload.acuteLoad / actualWeeklyKm : 10;
+
+  const scenarios = WHAT_IF_DELTA_KM.map((deltaKm) => {
+    const hypotheticalWeeklyKm = Math.max(0, actualWeeklyKm + deltaKm);
+    const hypotheticalAcuteLoad = Math.max(0, workload.acuteLoad + deltaKm * loadPerKm);
+    const hypotheticalRatio =
+      workload.ratio !== null && workload.chronicWeeklyAvg > 0
+        ? Math.round((hypotheticalAcuteLoad / workload.chronicWeeklyAvg) * 100) / 100
+        : null;
+    const acwrComponent = acwrComponentFor(hypotheticalRatio);
+    const score = Math.round(
+      Math.min(100, Math.max(0, activityComponent * 0.45 + acwrComponent * 0.25 + alertsComponent * 0.2 + sorenessComponent * 0.1)),
+    );
+    const { band, label } = bandFor(score);
+    return { deltaKm, weeklyKm: Math.round(hypotheticalWeeklyKm * 10) / 10, ratio: hypotheticalRatio, score, band, label };
+  });
+
+  return {
+    actualWeeklyKm: Math.round(actualWeeklyKm * 10) / 10,
+    hasEnoughHistory: workload.ratio !== null,
+    scenarios,
+  };
+}
+
+router.get("/injury-risk/what-if", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  res.json(GetInjuryRiskWhatIfResponse.parse(await computeWhatIfScenarios(req.user.id)));
+});
 
 router.get("/injury-risk/dashboard", async (req: Request, res): Promise<void> => {
   if (!req.isAuthenticated()) {

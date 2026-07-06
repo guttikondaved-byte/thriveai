@@ -8,6 +8,7 @@ import {
   useCreateSorenessEntry,
   getGetInjuryRiskDashboardQueryKey,
   useListAlertComments,
+  useGetInjuryRiskWhatIf,
 } from "@workspace/api-client-react";
 import type {
   SorenessEntry,
@@ -49,6 +50,7 @@ import {
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { BODY_PARTS } from "@/lib/bodyParts";
+import { WhatIfRiskSlider } from "@/components/WhatIfRiskSlider";
 
 const RISK_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; icon: React.ElementType }> = {
   low: { label: "Low Risk", color: "text-emerald-600", bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: Shield },
@@ -263,6 +265,7 @@ export default function Alerts() {
   const acknowledge = useAcknowledgeAlert();
 
   const { data: dashboard, isLoading: dashboardLoading } = useGetInjuryRiskDashboard();
+  const { data: whatIf, isLoading: whatIfLoading } = useGetInjuryRiskWhatIf();
   const createSoreness = useCreateSorenessEntry({
     mutation: {
       onSuccess: () => {
@@ -501,6 +504,11 @@ export default function Alerts() {
                 {dailyLoads.map((d) => <span key={d.date} className="flex-1 text-center">{d.day}</span>)}
               </div>
             </div>
+          </div>
+
+          {/* What-If Risk Simulator */}
+          <div className="mb-8">
+            <WhatIfRiskSlider data={whatIf} loading={whatIfLoading} athleteLabel="your" />
           </div>
 
           {/* Weekly Relative Effort + Activity Consistency + Training Insight */}

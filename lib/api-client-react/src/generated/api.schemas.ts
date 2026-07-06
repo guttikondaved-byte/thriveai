@@ -478,6 +478,32 @@ export interface WorkloadDailyLoad {
   baseline: number;
 }
 
+export type InjuryRiskWhatIfScenariosItemBand = typeof InjuryRiskWhatIfScenariosItemBand[keyof typeof InjuryRiskWhatIfScenariosItemBand];
+
+
+export const InjuryRiskWhatIfScenariosItemBand = {
+  low: 'low',
+  moderate: 'moderate',
+  high: 'high',
+  critical: 'critical',
+} as const;
+
+export type InjuryRiskWhatIfScenariosItem = {
+  deltaKm: number;
+  weeklyKm: number;
+  /** @nullable */
+  ratio: number | null;
+  score: number;
+  band: InjuryRiskWhatIfScenariosItemBand;
+  label: string;
+};
+
+export interface InjuryRiskWhatIf {
+  actualWeeklyKm: number;
+  hasEnoughHistory: boolean;
+  scenarios: InjuryRiskWhatIfScenariosItem[];
+}
+
 export type IntensityMapDaysItem = {
   date: string;
   day: string;

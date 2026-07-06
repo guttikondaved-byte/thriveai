@@ -522,6 +522,23 @@ export const GetInjuryRiskIntensityMapResponse = zod.object({
 
 
 /**
+ * @summary What-if risk simulator — projected score for hypothetical weekly-mileage deltas
+ */
+export const GetInjuryRiskWhatIfResponse = zod.object({
+  "actualWeeklyKm": zod.number(),
+  "hasEnoughHistory": zod.boolean(),
+  "scenarios": zod.array(zod.object({
+  "deltaKm": zod.number(),
+  "weeklyKm": zod.number(),
+  "ratio": zod.number().nullable(),
+  "score": zod.number(),
+  "band": zod.enum(['low', 'moderate', 'high', 'critical']),
+  "label": zod.string()
+}))
+})
+
+
+/**
  * @summary Log a self-reported soreness entry for a body part
  */
 export const createSorenessEntryBodyPainScoreMin = 0;

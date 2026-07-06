@@ -338,6 +338,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/IntensityMap"
 
+  /injury-risk/what-if:
+    get:
+      operationId: getInjuryRiskWhatIf
+      tags: [injury-risk]
+      summary: What-if risk simulator — projected score for hypothetical weekly-mileage deltas
+      responses:
+        "200":
+          description: What-if scenarios
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InjuryRiskWhatIf"
+
   /injury-risk/soreness:
     post:
       operationId: createSorenessEntry
@@ -1444,6 +1457,43 @@ components:
         - day
         - load
         - baseline
+
+    InjuryRiskWhatIf:
+      type: object
+      properties:
+        actualWeeklyKm:
+          type: number
+        hasEnoughHistory:
+          type: boolean
+        scenarios:
+          type: array
+          items:
+            type: object
+            properties:
+              deltaKm:
+                type: number
+              weeklyKm:
+                type: number
+              ratio:
+                type: ["number", "null"]
+              score:
+                type: integer
+              band:
+                type: string
+                enum: [low, moderate, high, critical]
+              label:
+                type: string
+            required:
+              - deltaKm
+              - weeklyKm
+              - ratio
+              - score
+              - band
+              - label
+      required:
+        - actualWeeklyKm
+        - hasEnoughHistory
+        - scenarios
 
     IntensityMap:
       type: object

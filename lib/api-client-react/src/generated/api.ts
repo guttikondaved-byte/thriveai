@@ -39,6 +39,7 @@ import type {
   InjuryAlertComment,
   InjuryInput,
   InjuryRiskDashboard,
+  InjuryRiskWhatIf,
   IntensityMap,
   JoinTeamBody,
   ListActivitiesParams,
@@ -1348,6 +1349,83 @@ export function useGetInjuryRiskIntensityMap<TData = Awaited<ReturnType<typeof g
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetInjuryRiskIntensityMapQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetInjuryRiskWhatIfUrl = () => {
+
+
+
+
+  return `/api/injury-risk/what-if`
+}
+
+/**
+ * @summary What-if risk simulator — projected score for hypothetical weekly-mileage deltas
+ */
+export const getInjuryRiskWhatIf = async ( options?: RequestInit): Promise<InjuryRiskWhatIf> => {
+
+  return customFetch<InjuryRiskWhatIf>(getGetInjuryRiskWhatIfUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetInjuryRiskWhatIfQueryKey = () => {
+    return [
+    `/api/injury-risk/what-if`
+    ] as const;
+    }
+
+
+export const getGetInjuryRiskWhatIfQueryOptions = <TData = Awaited<ReturnType<typeof getInjuryRiskWhatIf>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInjuryRiskWhatIf>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetInjuryRiskWhatIfQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getInjuryRiskWhatIf>>> = ({ signal }) => getInjuryRiskWhatIf({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInjuryRiskWhatIf>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetInjuryRiskWhatIfQueryResult = NonNullable<Awaited<ReturnType<typeof getInjuryRiskWhatIf>>>
+export type GetInjuryRiskWhatIfQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary What-if risk simulator — projected score for hypothetical weekly-mileage deltas
+ */
+
+export function useGetInjuryRiskWhatIf<TData = Awaited<ReturnType<typeof getInjuryRiskWhatIf>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInjuryRiskWhatIf>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetInjuryRiskWhatIfQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useListAlertComments, useCreateAlertComment, getListAlertCommentsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { DEMO_ALERT_COMMENTS } from "@/lib/demoData";
+import { WhatIfRiskSlider, buildClientWhatIf, type WhatIfData } from "@/components/WhatIfRiskSlider";
 
 const RISK_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; icon: React.ElementType }> = {
   low: { label: "Low Risk", color: "text-emerald-600", bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: Shield },
@@ -211,6 +212,8 @@ export default function CoachAthleteInjuryRisk({ params }: { params: { userId: s
   const [athleteName, setAthleteName] = useState<string>("Athlete");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [whatIf, setWhatIf] = useState<WhatIfData | null>(null);
+  const [whatIfLoading, setWhatIfLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -220,6 +223,10 @@ export default function CoachAthleteInjuryRisk({ params }: { params: { userId: s
       .then(r => r.ok ? r.json() : Promise.reject(new Error("Couldn't load your team.")))
       .then((d: { team: { id: number } | null }) => {
         if (!d.team) throw new Error("You don't have a team yet.");
+        fetch(`/api/teams/${d.team.id}/members/${params.userId}/injury-risk/what-if`, { credentials: "include" })
+          .then(r => r.ok ? r.json() : null)
+          .then((wi) => { if (!cancelled) { setWhatIf(wi); setWhatIfLoading(false); } })
+          .catch(() => { if (!cancelled) setWhatIfLoading(false); });
         return Promise.all([
           fetch(`/api/teams/${d.team.id}/members/${params.userId}/injury-risk`, { credentials: "include" }),
           fetch(`/api/teams/${d.team.id}/members/${params.userId}/profile`, { credentials: "include" }),
@@ -246,6 +253,7 @@ export default function CoachAthleteInjuryRisk({ params }: { params: { userId: s
         if (cancelled) return;
         setError(err.message);
         setLoading(false);
+        setWhatIfLoading(false);
       });
     return () => { cancelled = true; };
   }, [params.userId]);
@@ -257,6 +265,8 @@ export default function CoachAthleteInjuryRisk({ params }: { params: { userId: s
       loading={loading}
       error={error}
       backHref={`/athletes/${params.userId}`}
+      whatIf={whatIf}
+      whatIfLoading={whatIfLoading}
     />
   );
 }
@@ -268,6 +278,8 @@ export function InjuryRiskView({
   error,
   backHref,
   demo = false,
+  whatIf,
+  whatIfLoading = false,
 }: {
   dashboard: InjuryRiskDashboard | null;
   athleteName: string;
@@ -275,6 +287,8 @@ export function InjuryRiskView({
   error: string | null;
   backHref: string;
   demo?: boolean;
+  whatIf?: WhatIfData | null;
+  whatIfLoading?: boolean;
 }) {
   const { toast } = useToast();
 
@@ -327,6 +341,15 @@ export function InjuryRiskView({
   const dailyLoads = dashboard?.workload.daily ?? [];
   const maxLoadVal = Math.max(1, ...dailyLoads.map((d) => d.load), ...dailyLoads.map((d) => d.baseline));
   const peakLoad = Math.max(0, ...dailyLoads.map((d) => d.load));
+
+  const demoWhatIf = demo && dashboard
+    ? buildClientWhatIf(
+        dashboard.riskScore,
+        dailyLoads.reduce((sum, d) => sum + d.load, 0),
+        (dailyLoads[0]?.baseline ?? 0) * 7,
+        dailyLoads.reduce((sum, d) => sum + d.load, 0) / 10,
+      )
+    : null;
 
   const trend = dashboard?.fitnessTrend?.series ?? [];
   const trendMax = Math.max(1, ...trend);
@@ -491,6 +514,11 @@ export function InjuryRiskView({
                 {dailyLoads.map((d) => <span key={d.date} className="flex-1 text-center">{d.day}</span>)}
               </div>
             </div>
+          </div>
+
+          {/* What-If Risk Simulator */}
+          <div className="mb-8">
+            <WhatIfRiskSlider data={demo ? demoWhatIf : whatIf} loading={demo ? false : whatIfLoading} athleteLabel={`${athleteName.split(" ")[0]}'s`} />
           </div>
 
           {/* Weekly Relative Effort + Activity Consistency + Training Insight */}

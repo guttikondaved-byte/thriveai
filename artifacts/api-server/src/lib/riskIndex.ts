@@ -13,6 +13,24 @@ const ALERT_SEVERITY_WEIGHT: Record<string, number> = {
   critical: 70,
 };
 
+/** The ACWR-driven slice of the risk score — pulled out so a hypothetical
+ * ("what if I ran X more/less this week") scenario can be scored with the
+ * exact same math as the real dashboard, instead of an approximation that
+ * could drift from it. */
+export function acwrComponentFor(acwr: number | null): number {
+  if (acwr === null) return 0;
+  if (acwr > 1.3) return Math.min(100, (acwr - 1.3) * 100);
+  if (acwr < 0.8) return Math.min(30, (0.8 - acwr) * 50);
+  return 0;
+}
+
+export function bandFor(score: number): { band: RiskBand; label: string } {
+  if (score >= 75) return { band: "critical", label: "Critical Risk" };
+  if (score >= 50) return { band: "high", label: "Elevated Risk" };
+  if (score >= 25) return { band: "moderate", label: "Caution Advised" };
+  return { band: "low", label: "Clear to Train" };
+}
+
 /**
  * Aggregates an athlete's current injury risk from several signals:
  * recent per-activity risk scores, acute:chronic workload ratio (ACWR),
@@ -31,14 +49,7 @@ export function computeRiskIndex(input: {
       ? recentActivityRiskScores.reduce((sum, s) => sum + s, 0) / recentActivityRiskScores.length
       : 0;
 
-  let acwrComponent = 0;
-  if (acwr !== null) {
-    if (acwr > 1.3) {
-      acwrComponent = Math.min(100, (acwr - 1.3) * 100);
-    } else if (acwr < 0.8) {
-      acwrComponent = Math.min(30, (0.8 - acwr) * 50);
-    }
-  }
+  const acwrComponent = acwrComponentFor(acwr);
 
   const alertsComponent = openAlertRiskLevels.reduce(
     (max, level) => Math.max(max, ALERT_SEVERITY_WEIGHT[level] ?? 0),
@@ -57,18 +68,6 @@ export function computeRiskIndex(input: {
     ),
   );
 
-  let band: RiskBand = "low";
-  let label = "Clear to Train";
-  if (score >= 75) {
-    band = "critical";
-    label = "Critical Risk";
-  } else if (score >= 50) {
-    band = "high";
-    label = "Elevated Risk";
-  } else if (score >= 25) {
-    band = "moderate";
-    label = "Caution Advised";
-  }
-
+  const { band, label } = bandFor(score);
   return { score, band, label };
 }
