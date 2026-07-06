@@ -1,6 +1,17 @@
 import { Router, type Request, type IRouter } from "express";
-import { eq, and, desc, gte } from "drizzle-orm";
-import { db, activitiesTable, athleteProfileTable, injuryAlertsTable, trainingPlansTable, planSessionsTable } from "@workspace/db";
+import { eq, and, desc, gte, inArray } from "drizzle-orm";
+import {
+  db,
+  activitiesTable,
+  athleteProfileTable,
+  injuryAlertsTable,
+  trainingPlansTable,
+  planSessionsTable,
+  usersTable,
+  teamMembershipsTable,
+  teamsTable,
+  teamCoachesTable,
+} from "@workspace/db";
 import {
   ListActivitiesResponse,
   CreateActivityBody,
@@ -10,6 +21,7 @@ import {
 } from "@workspace/api-zod";
 import { assessInjuryRisk } from "../lib/injuryRiskCalculator";
 import { findBestSessionMatch } from "../lib/trainingCompletion";
+import { sendInjuryAlertEmail } from "../lib/email";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -32,6 +44,91 @@ function serializeActivity(a: typeof activitiesTable.$inferSelect) {
     avgWatts: numOrNull(a.avgWatts),
     createdAt: a.createdAt.toISOString(),
   };
+}
+
+/**
+ * Emails a new injury alert to the athlete themselves and, if they're on a
+ * team, their coach(es) — primary coach plus any co-coaches. Best-effort:
+ * missing emails or no team are silently skipped, not treated as errors.
+ */
+async function emailInjuryAlertRecipients(
+  athleteUserId: string,
+  bodyPart: string,
+  riskLevel: string,
+  message: string,
+  recommendation: string,
+): Promise<void> {
+  const [athleteUser] = await db
+    .select({ email: usersTable.email, firstName: usersTable.firstName })
+    .from(usersTable)
+    .where(eq(usersTable.id, athleteUserId))
+    .limit(1);
+  const [athleteProfile] = await db
+    .select({ name: athleteProfileTable.name })
+    .from(athleteProfileTable)
+    .where(eq(athleteProfileTable.userId, athleteUserId))
+    .limit(1);
+
+  const athleteName =
+    athleteProfile?.name && athleteProfile.name.toLowerCase() !== "athlete"
+      ? athleteProfile.name
+      : athleteUser?.firstName || "Athlete";
+
+  const emailPromises: Promise<void>[] = [];
+
+  if (athleteUser?.email) {
+    emailPromises.push(
+      sendInjuryAlertEmail({
+        to: athleteUser.email,
+        recipientName: athleteUser.firstName || athleteName,
+        athleteName,
+        isAthlete: true,
+        bodyPart,
+        riskLevel,
+        message,
+        recommendation,
+      }),
+    );
+  }
+
+  const memberships = await db
+    .select({ teamId: teamMembershipsTable.teamId })
+    .from(teamMembershipsTable)
+    .where(eq(teamMembershipsTable.athleteUserId, athleteUserId));
+
+  if (memberships.length > 0) {
+    const teamIds = memberships.map((m) => m.teamId);
+    const [teams, coCoaches] = await Promise.all([
+      db.select({ coachUserId: teamsTable.coachUserId }).from(teamsTable).where(inArray(teamsTable.id, teamIds)),
+      db.select({ coachUserId: teamCoachesTable.coachUserId }).from(teamCoachesTable).where(inArray(teamCoachesTable.teamId, teamIds)),
+    ]);
+    const coachUserIds = Array.from(new Set([...teams.map((t) => t.coachUserId), ...coCoaches.map((c) => c.coachUserId)]));
+
+    if (coachUserIds.length > 0) {
+      const coachUsers = await db
+        .select({ email: usersTable.email, firstName: usersTable.firstName })
+        .from(usersTable)
+        .where(inArray(usersTable.id, coachUserIds));
+
+      for (const coach of coachUsers) {
+        if (!coach.email) continue;
+        emailPromises.push(
+          sendInjuryAlertEmail({
+            to: coach.email,
+            recipientName: coach.firstName || "Coach",
+            athleteName,
+            isAthlete: false,
+            bodyPart,
+            riskLevel,
+            message,
+            recommendation,
+          }),
+        );
+      }
+    }
+  }
+
+  await Promise.all(emailPromises);
 }
 
 router.get("/activities", async (req: Request, res): Promise<void> => {
@@ -161,6 +258,12 @@ router.post("/activities", async (req: Request, res): Promise<void> => {
           { userId, activityId: activity.id, riskLevel: assessment.riskLevel, bodyPart },
           "Injury alert created",
         );
+
+        // Email the athlete and their coach(es), if any. Best-effort — a
+        // flaky email provider should never break activity creation, so
+        // this isn't awaited into the outer try/catch's failure path.
+        emailInjuryAlertRecipients(userId, bodyPart, assessment.riskLevel, detailedMessage, assessment.recommendation)
+          .catch((err) => logger.error({ err, userId }, "Failed to email injury alert recipients"));
       }
     }
   } catch (err) {
