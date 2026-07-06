@@ -6,18 +6,35 @@ type Message = { role: "user" | "assistant"; text: string };
 
 const MAX_DEMO_MESSAGES = 4;
 
-const DEMO_REPLIES = [
-  "Look at pairing weekly mileage with HRV trends per athlete. A mileage jump alongside a dropping HRV is the clearest early warning sign of overreaching.",
-  "For a roster this size, a simple rule of thumb: no athlete should increase weekly volume more than 20% week over week, regardless of how good they're feeling.",
-  "Consistency of training days matters as much as total volume. Athletes who spread miles across more days per week tend to have lower injury rates than those who cram the same volume into fewer, harder days.",
-  "Once you sign up, AveraAI can generate a full training plan proposal for any athlete on your roster based on their actual data, not just general coaching guidance.",
-];
-
+// Index-aligned with SUGGESTIONS, so clicking a suggestion gets the reply that
+// actually answers it instead of whatever's next in an unrelated cycling order.
 const SUGGESTIONS = [
   "Who on my team is at injury risk this week?",
   "Summarize my team's training load",
   "How should I handle an athlete with dropping HRV?",
 ];
+
+const SUGGESTION_REPLIES = [
+  "Look at pairing weekly mileage with HRV trends per athlete. A mileage jump alongside a dropping HRV is the clearest early warning sign of overreaching.",
+  "For a roster this size, a simple rule of thumb: no athlete should increase weekly volume more than 20% week over week, regardless of how good they're feeling.",
+  "Consistency of training days matters as much as total volume. Athletes who spread miles across more days per week tend to have lower injury rates than those who cram the same volume into fewer, harder days.",
+];
+
+// Fallback for anything free-typed that isn't a greeting or an exact
+// suggestion match — once you sign up, AveraAI answers using your actual
+// roster data, not a canned script.
+const FALLBACK_REPLY =
+  "Once you sign up, AveraAI can generate a full training plan proposal for any athlete on your roster based on their actual data, not just general coaching guidance.";
+
+const GREETING_RE = /^(hi|hey|hello|hiya|howdy|yo|sup|good\s?(morning|afternoon|evening))\b/i;
+const GREETING_REPLY = "Hey! I'm AveraAI, your AI assistant for the whole roster. Ask me about any athlete's training load, injury risk, or recovery.";
+
+function demoReplyFor(text: string): string {
+  if (GREETING_RE.test(text)) return GREETING_REPLY;
+  const suggestionIndex = SUGGESTIONS.indexOf(text);
+  if (suggestionIndex !== -1) return SUGGESTION_REPLIES[suggestionIndex];
+  return FALLBACK_REPLY;
+}
 
 export default function DemoCoachChat() {
   const [, navigate] = useLocation();
@@ -39,8 +56,8 @@ export default function DemoCoachChat() {
     setMessages(prev => [...prev, { role: "user", text }]);
     setInput("");
     setSending(true);
+    const reply = demoReplyFor(text);
     setTimeout(() => {
-      const reply = DEMO_REPLIES[demoMessagesSent % DEMO_REPLIES.length];
       setMessages(prev => [...prev, { role: "assistant", text: reply }]);
       setSending(false);
       setDemoMessagesSent(n => n + 1);

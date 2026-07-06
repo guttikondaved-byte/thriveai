@@ -7,18 +7,35 @@ type Message = { role: "user" | "assistant"; text: string };
 
 const MAX_DEMO_MESSAGES = 4;
 
-const DEMO_REPLIES = [
-  "Great question. As a general rule, keep easy runs at a conversational pace, cap weekly mileage increases around 20%, and prioritize sleep and protein for recovery.",
-  "That depends on how your body is responding day to day. Soreness that eases within 24-48 hours is normal, but sharp or one-sided pain is a sign to back off and rest.",
-  "Strength work 2x a week (focused on hips, glutes, and core) is one of the best things a runner can do to reduce injury risk and improve running economy.",
-  "Pacing your long runs 60-90 seconds slower than race pace builds aerobic endurance without accumulating excess fatigue. Most runners go too fast on easy days.",
-];
-
+// Index-aligned with SUGGESTIONS, so clicking a suggestion gets the reply that
+// actually answers it instead of whatever's next in an unrelated cycling order.
 const SUGGESTIONS = [
   "How should I structure my runs this week?",
   "Am I at risk of overtraining?",
   "How do I improve my 5K time?",
 ];
+
+const SUGGESTION_REPLIES = [
+  "Keep easy runs at a conversational pace, cap weekly mileage increases around 20%, and prioritize sleep and protein for recovery.",
+  "That depends on how your body is responding day to day. Soreness that eases within 24-48 hours is normal, but sharp or one-sided pain is a sign to back off and rest.",
+  "Strength work 2x a week (focused on hips, glutes, and core) is one of the best things a runner can do to reduce injury risk and improve running economy.",
+];
+
+// Fallback for anything free-typed that isn't a greeting or an exact
+// suggestion match — a real reply grounded in your actual data, not a
+// canned script, is one of the first things you get once you sign up.
+const FALLBACK_REPLY =
+  "Pacing your long runs 60-90 seconds slower than race pace builds aerobic endurance without accumulating excess fatigue. Most runners go too fast on easy days. Once you sign up, AveraAI answers questions like this using your actual training data, not general advice.";
+
+const GREETING_RE = /^(hi|hey|hello|hiya|howdy|yo|sup|good\s?(morning|afternoon|evening))\b/i;
+const GREETING_REPLY = "Hey! I'm AveraAI, your AI running coach. Ask me about pacing, recovery, injury risk, or anything else about your training.";
+
+function demoReplyFor(text: string): string {
+  if (GREETING_RE.test(text)) return GREETING_REPLY;
+  const suggestionIndex = SUGGESTIONS.indexOf(text);
+  if (suggestionIndex !== -1) return SUGGESTION_REPLIES[suggestionIndex];
+  return FALLBACK_REPLY;
+}
 
 export default function DemoCoach() {
   const [, navigate] = useLocation();
@@ -40,8 +57,8 @@ export default function DemoCoach() {
     setMessages(prev => [...prev, { role: "user", text }]);
     setInput("");
     setSending(true);
+    const reply = demoReplyFor(text);
     setTimeout(() => {
-      const reply = DEMO_REPLIES[demoMessagesSent % DEMO_REPLIES.length];
       setMessages(prev => [...prev, { role: "assistant", text: reply }]);
       setSending(false);
       setDemoMessagesSent(n => n + 1);
