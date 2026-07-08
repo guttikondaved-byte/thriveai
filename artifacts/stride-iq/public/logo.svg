@@ -1,10 +1,3 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="100" height="100" rx="18" fill="#2A504C"/>
-  <!-- Three concentric arcs sharing the center (15,85): radii 68/57/46 (gap 11),
-       reaching close to the edges. translate(1 -1) nudges the bbox to box center. -->
-  <g transform="translate(50 50) scale(0.88) translate(-50 -50) translate(100 0) scale(-1 1) translate(1 -1)">
-    <path d="M15 17 A68 68 0 0 1 83 85" stroke="#F5F5F5" stroke-width="7" stroke-linecap="round" fill="none"/>
-    <path d="M15 28 A57 57 0 0 1 72 85" stroke="#A2AE98" stroke-width="6" stroke-linecap="round" fill="none"/>
-    <path d="M15 39 A46 46 0 0 1 61 85" stroke="#F2D2CF" stroke-width="5" stroke-linecap="round" fill="none"/>
-  </g>
+  <path d="M60 10 L34 52 L49 52 L42 90 L68 46 L53 46 Z" fill="#3B9AE1"/>
 </svg>
