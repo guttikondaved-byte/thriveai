@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import { db, athleteProfileTable, teamsTable, teamMembershipsTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 import { isActiveStatus, isAccessActive, isCoveredByTeam } from "../lib/access";
+import { getOrCreateProfile } from "./athlete";
 
 const router: IRouter = Router();
 
@@ -463,6 +464,42 @@ router.get("/stripe/subscription", async (req: Request, res): Promise<void> => {
     isActive,
     currentPeriodEnd: profile?.currentPeriodEnd ? profile.currentPeriodEnd.toISOString() : null,
   });
+});
+
+/**
+ * ── Dev access code ──
+ * Grants a permanent, non-Stripe "comp" subscription (used for internal
+ * testers/devs, not real customers) when the caller supplies the code set in
+ * DEV_ACCESS_CODE. No-ops as 404 if that env var isn't configured, so this
+ * silently doesn't exist in an environment where nobody set a code.
+ */
+router.post("/stripe/dev-access", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const devAccessCode = process.env.DEV_ACCESS_CODE;
+  if (!devAccessCode) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
+  if (!code || code !== devAccessCode) {
+    logger.warn({ userId: req.user.id }, "Dev access code redemption attempt failed");
+    res.status(403).json({ error: "Invalid code" });
+    return;
+  }
+
+  // The profile row is normally lazily created on first GET /athlete/profile
+  // — ensure it exists first, otherwise this update silently affects 0 rows.
+  await getOrCreateProfile(req.user.id);
+  await db
+    .update(athleteProfileTable)
+    .set({ subscriptionStatus: "comp", subscriptionCurrentPeriodEnd: null })
+    .where(eq(athleteProfileTable.userId, req.user.id));
+
+  logger.info({ userId: req.user.id }, "Dev access code redeemed");
+  res.json({ ok: true });
 });
 
 /**

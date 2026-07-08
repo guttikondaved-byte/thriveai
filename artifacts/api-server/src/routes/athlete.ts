@@ -5,7 +5,7 @@ import { GetAthleteProfileResponse, UpdateAthleteProfileBody, UpdateAthleteProfi
 
 const router: IRouter = Router();
 
-async function getOrCreateProfile(userId: string) {
+export async function getOrCreateProfile(userId: string) {
   let [profile] = await db
     .select()
     .from(athleteProfileTable)

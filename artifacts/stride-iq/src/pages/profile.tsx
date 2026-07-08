@@ -234,12 +234,39 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
 
 function BillingCard({ userRole }: { userRole: string | null | undefined }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showDevCode, setShowDevCode] = useState(false);
+  const [devCode, setDevCode] = useState("");
+  const [redeeming, setRedeeming] = useState(false);
   const { toast } = useToast();
   const planType = userRole === "coach" ? "coach" : "athlete";
   const title = planType === "coach" ? "Coach subscription" : "Athlete subscription";
   const description = planType === "coach"
     ? "Coach plan includes 25 athletes, then $4 per athlete after 25."
-    : "$7.99 per month for athlete access.";
+    : "$4.99 per month for athlete access.";
+
+  async function redeemDevCode() {
+    if (!devCode.trim() || redeeming) return;
+    setRedeeming(true);
+    try {
+      const res = await fetch("/api/stripe/dev-access", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: devCode.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast({ title: "Invalid code", description: data?.error ?? "Please check the code and try again.", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Access granted", description: "Reloading…" });
+      window.location.reload();
+    } catch {
+      toast({ title: "Something went wrong", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setRedeeming(false);
+    }
+  }
 
   async function handleCheckout() {
     if (isLoading) return;
@@ -293,6 +320,34 @@ function BillingCard({ userRole }: { userRole: string | null | undefined }) {
           {isLoading ? "Opening checkout…" : "Checkout with Stripe"}
         </button>
       </div>
+
+      {!showDevCode ? (
+        <button
+          type="button"
+          onClick={() => setShowDevCode(true)}
+          className="mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+        >
+          Have an access code?
+        </button>
+      ) : (
+        <div className="mt-3 flex gap-2">
+          <input
+            value={devCode}
+            onChange={(e) => setDevCode(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && redeemDevCode()}
+            placeholder="Enter code"
+            className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          <button
+            type="button"
+            onClick={redeemDevCode}
+            disabled={redeeming || !devCode.trim()}
+            className="px-3 py-1.5 rounded-lg bg-secondary text-xs font-semibold text-foreground hover:bg-secondary/80 disabled:opacity-50 transition-colors"
+          >
+            {redeeming ? "Checking…" : "Redeem"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
