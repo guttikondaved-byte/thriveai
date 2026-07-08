@@ -21,7 +21,8 @@ export type InjuryAlert = typeof injuryAlertsTable.$inferSelect;
 export const injuryAlertCommentsTable = pgTable("injury_alert_comments", {
   id: serial("id").primaryKey(),
   alertId: integer("alert_id").notNull().references(() => injuryAlertsTable.id),
-  coachUserId: text("coach_user_id").notNull().references(() => usersTable.id),
+  authorUserId: text("author_user_id").notNull().references(() => usersTable.id),
+  authorRole: text("author_role").notNull(), // "coach" | "athlete"
   content: text("content").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

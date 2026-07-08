@@ -110,12 +110,13 @@ function AlertComments({ alertId }: { alertId: number }) {
   return (
     <div className="mt-4 pt-4 border-t border-border">
       <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
-        <MessageSquare className="w-3.5 h-3.5" /> Coach Notes
+        <MessageSquare className="w-3.5 h-3.5" /> Conversation
       </p>
       {!isLoading && (comments?.length ?? 0) > 0 && (
         <div className="space-y-2 mb-3">
           {comments!.map((c) => (
-            <div key={c.id} className="bg-secondary/50 rounded-xl px-4 py-2.5">
+            <div key={c.id} className={`rounded-xl px-4 py-2.5 ${c.authorRole === "athlete" ? "bg-primary/10 border border-primary/20" : "bg-secondary/50"}`}>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{c.authorRole === "athlete" ? "Athlete" : "You"}</p>
               <p className="text-sm text-foreground">{c.content}</p>
               <p className="text-[10px] text-muted-foreground mt-1">{format(new Date(c.createdAt), "MMM d, HH:mm")}</p>
             </div>

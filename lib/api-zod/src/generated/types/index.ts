@@ -38,6 +38,7 @@ export * from './healthStatus';
 export * from './injury';
 export * from './injuryAlert';
 export * from './injuryAlertComment';
+export * from './injuryAlertCommentAuthorRole';
 export * from './injuryAlertRiskLevel';
 export * from './injuryInput';
 export * from './injuryInputStatus';

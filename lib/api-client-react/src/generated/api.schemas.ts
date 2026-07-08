@@ -412,10 +412,19 @@ export interface InjuryAlert {
   createdAt: string;
 }
 
+export type InjuryAlertCommentAuthorRole = typeof InjuryAlertCommentAuthorRole[keyof typeof InjuryAlertCommentAuthorRole];
+
+
+export const InjuryAlertCommentAuthorRole = {
+  coach: 'coach',
+  athlete: 'athlete',
+} as const;
+
 export interface InjuryAlertComment {
   id: number;
   alertId: number;
-  coachUserId: string;
+  authorUserId: string;
+  authorRole: InjuryAlertCommentAuthorRole;
   content: string;
   createdAt: string;
 }

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, unique } from "drizzle-orm/pg-core";
 import { usersTable } from "./auth";
 
 export const teamsTable = pgTable("teams", {
@@ -29,6 +29,18 @@ export const teamCoachesTable = pgTable("team_coaches", {
   joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// One row per team per week a digest email was sent. The unique constraint on
+// (teamId, weekOf) is what actually prevents duplicate sends — the sender
+// logic checks it before sending, but concurrent runs or retries could race,
+// so the constraint is the real guarantee, not just the check.
+export const weeklyDigestLogTable = pgTable("weekly_digest_log", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull().references(() => teamsTable.id, { onDelete: "cascade" }),
+  weekOf: text("week_of").notNull(), // ISO date (YYYY-MM-DD) of that week's Monday
+  sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [unique().on(t.teamId, t.weekOf)]);
+
 export type Team = typeof teamsTable.$inferSelect;
 export type TeamMembership = typeof teamMembershipsTable.$inferSelect;
 export type TeamCoach = typeof teamCoachesTable.$inferSelect;
+export type WeeklyDigestLog = typeof weeklyDigestLogTable.$inferSelect;

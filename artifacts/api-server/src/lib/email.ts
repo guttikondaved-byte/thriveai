@@ -68,3 +68,58 @@ export async function sendInjuryAlertEmail(input: InjuryAlertEmailInput): Promis
     );
   }
 }
+
+interface WeeklyDigestEmailInput {
+  to: string;
+  recipientName: string;
+  teamName: string;
+  weekOf: string; // ISO date of the Monday this digest covers
+  athleteCount: number;
+  totalKm: number;
+  /** e.g. "Marcus T. — Achilles (high risk)" */
+  newAlertSummaries: string[];
+}
+
+/**
+ * Weekly team-workload summary email, sent to a team's primary coach and any
+ * co-coaches. Same fire-and-forget, no-op-without-API-key conventions as
+ * sendInjuryAlertEmail.
+ */
+export async function sendWeeklyDigestEmail(input: WeeklyDigestEmailInput): Promise<void> {
+  if (!resendClient) return;
+
+  const subject = `${input.teamName}: weekly training summary`;
+
+  const alertsHtml = input.newAlertSummaries.length > 0
+    ? `
+      <p style="background: #fef3c7; border-radius: 8px; padding: 12px 16px; color: #78350f;">
+        <strong>${input.newAlertSummaries.length} new injury alert${input.newAlertSummaries.length === 1 ? "" : "s"} this week:</strong><br/>
+        ${input.newAlertSummaries.join("<br/>")}
+      </p>
+    `
+    : `<p style="background: #ecfdf5; border-radius: 8px; padding: 12px 16px; color: #065f46;">No new injury alerts this week.</p>`;
+
+  const html = `
+    <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto;">
+      <p>Hi ${input.recipientName},</p>
+      <p>Here's how <strong>${input.teamName}</strong> trained for the week of ${input.weekOf}:</p>
+      <p><strong>${input.athleteCount}</strong> athlete${input.athleteCount === 1 ? "" : "s"} logged <strong>${input.totalKm}km</strong> combined.</p>
+      ${alertsHtml}
+      <p style="color: #6b7280; font-size: 13px;">Sign in to ThriveAI to see the full team dashboard.</p>
+    </div>
+  `.trim();
+
+  try {
+    await resendClient.emails.send({
+      from: FROM_EMAIL,
+      to: input.to,
+      subject,
+      html,
+    });
+  } catch (err) {
+    logger.error(
+      { err: err instanceof Error ? err.message : String(err), to: input.to },
+      "Failed to send weekly digest email",
+    );
+  }
+}

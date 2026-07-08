@@ -340,7 +340,8 @@ export const ListAlertCommentsParams = zod.object({
 export const ListAlertCommentsResponseItem = zod.object({
   "id": zod.number(),
   "alertId": zod.number(),
-  "coachUserId": zod.string(),
+  "authorUserId": zod.string(),
+  "authorRole": zod.enum(['coach', 'athlete']),
   "content": zod.string(),
   "createdAt": zod.coerce.date()
 })

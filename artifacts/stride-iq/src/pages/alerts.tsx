@@ -8,6 +8,8 @@ import {
   useCreateSorenessEntry,
   getGetInjuryRiskDashboardQueryKey,
   useListAlertComments,
+  useCreateAlertComment,
+  getListAlertCommentsQueryKey,
   useGetInjuryRiskWhatIf,
 } from "@workspace/api-client-react";
 import type {
@@ -125,20 +127,54 @@ function InfoTip({ title, children }: { title: string; children: React.ReactNode
 }
 
 function AlertComments({ alertId }: { alertId: number }) {
-  const { data: comments } = useListAlertComments(alertId);
-  if (!comments || comments.length === 0) return null;
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [reply, setReply] = useState("");
+  const { data: comments, isLoading } = useListAlertComments(alertId);
+  const createComment = useCreateAlertComment({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListAlertCommentsQueryKey(alertId) });
+        setReply("");
+        toast({ title: "Reply sent to your coach" });
+      },
+      onError: () => toast({ title: "Couldn't send reply", variant: "destructive" }),
+    },
+  });
+
+  if (isLoading) return null;
+
   return (
     <div className="mt-4 pt-4 border-t border-border">
       <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1.5">
-        <MessageSquare className="w-3.5 h-3.5" /> Coach Notes
+        <MessageSquare className="w-3.5 h-3.5" /> Conversation with your coach
       </p>
-      <div className="space-y-2">
-        {comments.map((c) => (
-          <div key={c.id} className="bg-secondary/50 rounded-xl px-4 py-2.5">
-            <p className="text-sm text-foreground">{c.content}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">{format(new Date(c.createdAt), "MMM d, HH:mm")}</p>
-          </div>
-        ))}
+      {(comments?.length ?? 0) > 0 && (
+        <div className="space-y-2 mb-3">
+          {comments!.map((c) => (
+            <div key={c.id} className={`rounded-xl px-4 py-2.5 ${c.authorRole === "athlete" ? "bg-primary/10 border border-primary/20" : "bg-secondary/50"}`}>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{c.authorRole === "athlete" ? "You" : "Coach"}</p>
+              <p className="text-sm text-foreground">{c.content}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{format(new Date(c.createdAt), "MMM d, HH:mm")}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <input
+          value={reply}
+          onChange={(e) => setReply(e.target.value)}
+          placeholder="Reply to your coach…"
+          maxLength={1000}
+          className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+        <button
+          onClick={() => reply.trim() && createComment.mutate({ id: alertId, data: { content: reply.trim() } })}
+          disabled={createComment.isPending || !reply.trim()}
+          className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors disabled:opacity-50 shrink-0"
+        >
+          Send
+        </button>
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import {
   getWebhookCallbackUrl,
   backfillStravaDetails,
 } from "./lib/strava";
+import { sendWeeklyCoachDigests } from "./lib/weeklyDigest";
 
 const rawPort = process.env["PORT"];
 
@@ -75,6 +76,21 @@ app.listen(port, async (err) => {
   };
   setTimeout(runBackfill, 30_000); // first run shortly after boot
   setInterval(runBackfill, BACKFILL_INTERVAL_MS);
+
+  // Weekly coach digest: sendWeeklyCoachDigests() is idempotent per team/week
+  // (skips teams already sent this week), so checking every few hours costs
+  // nothing on the other 6 days and just means it fires within a few hours
+  // of Monday rather than needing a real cron trigger.
+  const DIGEST_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+  const runDigestCheck = async () => {
+    try {
+      await sendWeeklyCoachDigests();
+    } catch (e) {
+      logger.warn({ err: e }, "Weekly coach digest run failed");
+    }
+  };
+  setTimeout(runDigestCheck, 60_000); // first run shortly after boot
+  setInterval(runDigestCheck, DIGEST_CHECK_INTERVAL_MS);
 });
 
 /**

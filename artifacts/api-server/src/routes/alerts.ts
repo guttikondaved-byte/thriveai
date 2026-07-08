@@ -1,6 +1,6 @@
 import { Router, type Request, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
-import { db, injuryAlertsTable, injuryAlertCommentsTable, teamMembershipsTable, notificationsTable } from "@workspace/db";
+import { db, injuryAlertsTable, injuryAlertCommentsTable, teamMembershipsTable, teamsTable, teamCoachesTable, notificationsTable } from "@workspace/db";
 import {
   ListInjuryAlertsResponse,
   AcknowledgeAlertParams,
@@ -39,6 +39,24 @@ async function isCoachOfAthlete(coachUserId: string, athleteUserId: string): Pro
     if (await isTeamCoach(m.teamId, coachUserId)) return true;
   }
   return false;
+}
+
+// All coach user ids (primary + co-coaches) across every team `athleteUserId`
+// belongs to — used to notify the whole care team on an athlete's reply.
+async function coachUserIdsForAthlete(athleteUserId: string): Promise<string[]> {
+  const memberships = await db
+    .select({ teamId: teamMembershipsTable.teamId })
+    .from(teamMembershipsTable)
+    .where(eq(teamMembershipsTable.athleteUserId, athleteUserId));
+
+  const coachIds = new Set<string>();
+  for (const m of memberships) {
+    const [team] = await db.select({ coachUserId: teamsTable.coachUserId }).from(teamsTable).where(eq(teamsTable.id, m.teamId)).limit(1);
+    if (team) coachIds.add(team.coachUserId);
+    const coCoaches = await db.select({ coachUserId: teamCoachesTable.coachUserId }).from(teamCoachesTable).where(eq(teamCoachesTable.teamId, m.teamId));
+    for (const c of coCoaches) coachIds.add(c.coachUserId);
+  }
+  return Array.from(coachIds);
 }
 
 router.get("/alerts", async (req: Request, res): Promise<void> => {
@@ -98,8 +116,9 @@ router.get("/alerts/:id/comments", async (req: Request, res): Promise<void> => {
   res.json(ListAlertCommentsResponse.parse(comments.map(serializeComment)));
 });
 
-// POST /alerts/:id/comments — a coach of the athlete's team leaves a note on
-// one of their alerts. Read-only for the athlete (they see it, don't reply here).
+// POST /alerts/:id/comments — either a coach of the athlete's team, or the
+// athlete themselves, can post into the thread. Notifies whichever side
+// didn't write the message.
 router.post("/alerts/:id/comments", async (req: Request, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const params = CreateAlertCommentParams.safeParse({ id: parseInt(raw, 10) });
@@ -109,25 +128,45 @@ router.post("/alerts/:id/comments", async (req: Request, res): Promise<void> => 
     return;
   }
   const [alert] = await db.select().from(injuryAlertsTable).where(eq(injuryAlertsTable.id, params.data.id)).limit(1);
-  if (!alert) {
+  if (!alert || !alert.userId) {
     res.status(404).json({ error: "Alert not found" });
     return;
   }
-  const coachUserId = req.user!.id;
-  if (!alert.userId || !(await isCoachOfAthlete(coachUserId, alert.userId))) {
+  const authorUserId = req.user!.id;
+  const isAthlete = alert.userId === authorUserId;
+  const isCoach = !isAthlete && (await isCoachOfAthlete(authorUserId, alert.userId));
+  if (!isAthlete && !isCoach) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
+  const authorRole = isAthlete ? "athlete" : "coach";
+
   const [comment] = await db
     .insert(injuryAlertCommentsTable)
-    .values({ alertId: params.data.id, coachUserId, content: body.data.content })
+    .values({ alertId: params.data.id, authorUserId, authorRole, content: body.data.content })
     .returning();
-  await db.insert(notificationsTable).values({
-    userId: alert.userId,
-    type: "alert_comment",
-    title: "Your coach left a note",
-    message: `Your coach commented on your ${alert.bodyPart} alert: "${body.data.content}"`,
-  });
+
+  if (authorRole === "coach") {
+    await db.insert(notificationsTable).values({
+      userId: alert.userId,
+      type: "alert_comment",
+      title: "Your coach left a note",
+      message: `Your coach commented on your ${alert.bodyPart} alert: "${body.data.content}"`,
+    });
+  } else {
+    const coachIds = await coachUserIdsForAthlete(alert.userId);
+    if (coachIds.length > 0) {
+      await db.insert(notificationsTable).values(
+        coachIds.map((coachUserId) => ({
+          userId: coachUserId,
+          type: "alert_comment",
+          title: "New reply on an athlete's alert",
+          message: `Reply on their ${alert.bodyPart} alert: "${body.data.content}"`,
+        })),
+      );
+    }
+  }
+
   res.status(201).json(ListAlertCommentsResponseItem.parse(serializeComment(comment)));
 });
 

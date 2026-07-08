@@ -1350,8 +1350,11 @@ components:
           type: integer
         alertId:
           type: integer
-        coachUserId:
+        authorUserId:
           type: string
+        authorRole:
+          type: string
+          enum: [coach, athlete]
         content:
           type: string
         createdAt:
@@ -1360,7 +1363,8 @@ components:
       required:
         - id
         - alertId
-        - coachUserId
+        - authorUserId
+        - authorRole
         - content
         - createdAt
 

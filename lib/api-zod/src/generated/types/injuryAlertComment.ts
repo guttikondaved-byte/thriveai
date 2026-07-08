@@ -5,11 +5,13 @@
  * Thrive API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { InjuryAlertCommentAuthorRole } from './injuryAlertCommentAuthorRole';
 
 export interface InjuryAlertComment {
   id: number;
   alertId: number;
-  coachUserId: string;
+  authorUserId: string;
+  authorRole: InjuryAlertCommentAuthorRole;
   content: string;
   createdAt: Date;
 }
