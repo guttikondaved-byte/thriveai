@@ -1,13 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation } from "wouter";
-import { Send, Loader2, ArrowUp, Mic } from "lucide-react";
+import { Loader2, ArrowUp, Mic } from "lucide-react";
 import { DEMO_COACH_DATA } from "@/lib/demoData";
 import { useDemoVoiceInput } from "@/hooks/useDemoVoiceInput";
 import { useToast } from "@/hooks/use-toast";
 
 type Message = { role: "user" | "assistant"; text: string };
-
-const MAX_DEMO_MESSAGES = 4;
 
 // Index-aligned with SUGGESTIONS, so clicking a suggestion gets the reply that
 // actually answers it instead of whatever's next in an unrelated cycling order.
@@ -92,19 +89,15 @@ function demoReplyFor(text: string): string {
   if (suggestionIndex !== -1) return SUGGESTION_REPLIES[suggestionIndex];
   const matched = KEYWORD_REPLIES.find(({ re }) => re.test(text));
   if (matched) return matched.reply();
-  return `Once you sign up, AveraAI answers questions like this by actually looking at your roster's data — mileage, HRV, and injury risk per athlete — instead of general advice. Try asking who's at risk, about training load, recovery, or your roster summary to see what that looks like.`;
+  return `I can pull that from your roster data — mileage, HRV, and injury risk per athlete. Try asking who's at risk, about training load, recovery, or your roster summary and I'll go deeper on any of those.`;
 }
 
 export default function DemoCoachChat() {
-  const [, navigate] = useLocation();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const [demoMessagesSent, setDemoMessagesSent] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  const limitReached = demoMessagesSent >= MAX_DEMO_MESSAGES;
 
   const voice = useDemoVoiceInput((transcript) => {
     setInput(prev => (prev.trim() ? `${prev.trim()} ${transcript}` : transcript));
@@ -120,7 +113,7 @@ export default function DemoCoachChat() {
 
   function handleSend(override?: string) {
     const text = (override ?? input).trim();
-    if (!text || limitReached || sending) return;
+    if (!text || sending) return;
     setMessages(prev => [...prev, { role: "user", text }]);
     setInput("");
     setSending(true);
@@ -128,19 +121,10 @@ export default function DemoCoachChat() {
     setTimeout(() => {
       setMessages(prev => [...prev, { role: "assistant", text: reply }]);
       setSending(false);
-      setDemoMessagesSent(n => n + 1);
     }, 900);
   }
 
-  const composer = limitReached ? (
-    <button
-      onClick={() => navigate("/sign-up?role=coach")}
-      className="w-full flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 text-left text-sm text-muted-foreground hover:border-primary/40 transition-colors shadow-[0_8px_30px_-14px_rgba(0,0,0,0.25)]"
-    >
-      <span className="flex-1">Sign up to keep chatting with AveraAI…</span>
-      <Send className="w-4 h-4 text-primary shrink-0" />
-    </button>
-  ) : (
+  const composer = (
     <div className="flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 shadow-[0_8px_30px_-14px_rgba(0,0,0,0.25)] focus-within:border-primary/40 transition-colors">
       <input
         value={input}
@@ -228,16 +212,11 @@ export default function DemoCoachChat() {
             </div>
           </div>
 
-          <div className="px-4 pb-2 pt-2">
+          <div className="px-4 pb-4 pt-2">
             <div className="max-w-3xl mx-auto">
               {composer}
             </div>
           </div>
-          {!limitReached && (
-            <p className="text-xs text-muted-foreground pb-4 text-center">
-              {MAX_DEMO_MESSAGES - demoMessagesSent} message{MAX_DEMO_MESSAGES - demoMessagesSent === 1 ? "" : "s"} left in this demo. Sign up for the full conversation.
-            </p>
-          )}
         </>
       )}
     </div>
