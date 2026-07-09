@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Users, Copy, Check, Link as LinkIcon, UserPlus, ChevronRight, RefreshCw, Trash2, LogOut, AlertTriangle, MessageSquare } from "lucide-react";
 import { useGetAthleteProfile } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
+import { TEAMS_MY_QUERY_KEY } from "@/lib/queryKeys";
 import AthleteProfileModal from "../components/AthleteProfileModal";
 import { PageHeader, Eyebrow } from "@/components/coach/PageHeader";
 
@@ -32,6 +34,7 @@ export default function Team() {
   const { data: profile } = useGetAthleteProfile();
   const isCoach = profile?.userRole === "coach";
   const { toast } = useToast();
+  const qc = useQueryClient();
 
   const [team, setTeam] = useState<TeamInfo | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -102,6 +105,7 @@ export default function Team() {
         setCreating(false);
         fetchMembers(data.id);
         fetchStravaStatus(data.id);
+        qc.invalidateQueries({ queryKey: TEAMS_MY_QUERY_KEY });
         toast({ title: "Team created!", description: `Share the invite code to add athletes.` });
       })
       .catch(() => {
@@ -135,6 +139,7 @@ export default function Team() {
           fetchMembers(data.id);
           fetchStravaStatus(data.id);
         }
+        qc.invalidateQueries({ queryKey: TEAMS_MY_QUERY_KEY });
         toast({
           title: joinedAsCoCoach ? "Joined as co-coach!" : "Joined team!",
           description: joinedAsCoCoach ? `You now co-coach ${data.name}.` : `Welcome to ${data.name}.`,
@@ -218,6 +223,7 @@ export default function Team() {
         setStravaStatus(new Map());
         setConfirmDelete(false);
         setDeleting(false);
+        qc.invalidateQueries({ queryKey: TEAMS_MY_QUERY_KEY });
         toast({ title: "Team deleted", description: "All members have been removed." });
       })
       .catch(() => {
@@ -234,6 +240,7 @@ export default function Team() {
         setTeam(null);
         setConfirmLeave(false);
         setLeaving(false);
+        qc.invalidateQueries({ queryKey: TEAMS_MY_QUERY_KEY });
         toast({ title: "You've left the team" });
       })
       .catch(() => {

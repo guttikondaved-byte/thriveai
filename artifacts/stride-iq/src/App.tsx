@@ -52,6 +52,7 @@ import DemoCoachProfile from "@/pages/demo-coach/profile";
 import NotFound from "@/pages/not-found";
 import { useGetAthleteProfile, setAuthTokenGetter } from "@workspace/api-client-react";
 import { useSubscription, refreshSubscription, SUBSCRIPTION_QUERY_KEY } from "@/hooks/use-subscription";
+import { TEAMS_MY_QUERY_KEY } from "@/lib/queryKeys";
 
 const queryClient = new QueryClient();
 
@@ -449,7 +450,10 @@ function AppContent() {
       }
       sessionStorage.removeItem(PENDING_INVITE_KEY);
       if (cancelled) return;
-      await qc.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY }),
+        qc.invalidateQueries({ queryKey: TEAMS_MY_QUERY_KEY }),
+      ]);
       setJoiningTeam(false);
     })();
     return () => { cancelled = true; };

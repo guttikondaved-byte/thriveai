@@ -11,6 +11,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { TEAMS_MY_QUERY_KEY } from "@/lib/queryKeys";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "text-[#10b981] bg-[#10b981]/10 border border-[#10b981]/20",
@@ -27,7 +28,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 function useMyTeam() {
   return useQuery({
-    queryKey: ["teams-my"],
+    queryKey: TEAMS_MY_QUERY_KEY,
     queryFn: async () => {
       const r = await fetch("/api/teams/my", { credentials: "include" });
       return r.json() as Promise<{ team: { id: number; name: string } | null }>;
