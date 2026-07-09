@@ -7,11 +7,13 @@ import { useUpdateAthleteProfile, getGetAthleteProfileQueryKey } from "@workspac
 import { PaywallCard } from "@/components/PaywallCard";
 
 /**
- * Full-screen access gate shown when a user has finished onboarding but has no
- * active subscription. Always offers a way out (sign out) so nobody gets trapped.
+ * Full-screen access gate shown to a coach who's finished onboarding but has
+ * no active subscription — coaches are the only paid tier; athletes are free.
+ * Always offers a way out (sign out, or switch to the free athlete tier) so
+ * nobody gets trapped.
  */
 interface SubscribeProps {
-  planType: "athlete" | "coach";
+  planType: "coach";
   /**
    * Flips AppContent's forceOnboarding flag directly, in the same click
    * handler as the navigate() below — without this, the paywall gate would
@@ -22,23 +24,21 @@ interface SubscribeProps {
   onRedoSurvey?: () => void;
 }
 
-export default function Subscribe({ planType, onRedoSurvey }: SubscribeProps) {
+export default function Subscribe({ onRedoSurvey }: SubscribeProps) {
   const { signOut } = useClerk();
   const [, navigate] = useLocation();
   const qc = useQueryClient();
   const updateProfile = useUpdateAthleteProfile();
   const [switching, setSwitching] = useState(false);
 
-  const otherPlan = planType === "coach" ? "athlete" : "coach";
-
-  // Let the user switch which plan they're activating (e.g. they picked the
-  // wrong role in onboarding). Updates the saved role, then refetches the
-  // profile so this gate re-renders with the other plan.
-  async function changePlan() {
+  // Let a coach who meant to sign up as an athlete switch roles instead —
+  // athletes are free, so this is an instant escape from the paywall rather
+  // than a plan change.
+  async function switchToAthlete() {
     if (switching) return;
     setSwitching(true);
     try {
-      await updateProfile.mutateAsync({ data: { userRole: otherPlan } });
+      await updateProfile.mutateAsync({ data: { userRole: "athlete" } });
       await qc.refetchQueries({ queryKey: getGetAthleteProfileQueryKey() });
     } catch {
       setSwitching(false);
@@ -53,22 +53,22 @@ export default function Subscribe({ planType, onRedoSurvey }: SubscribeProps) {
             <Footprints className="w-7 h-7 text-primary" />
           </div>
           <img src="/logo.svg" alt="Thrive" className="h-7 w-auto mb-5" />
-          <h1 className="text-2xl font-bold text-foreground mb-2">Activate your account</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Activate your coach account</h1>
           <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-            Subscribe to unlock your {planType === "coach" ? "coach portal" : "training dashboard"}.
+            Subscribe to unlock your coach portal — team roster, AveraAI, and injury alerts for your athletes.
           </p>
         </div>
 
-        <PaywallCard planType={planType} fromOnboarding />
+        <PaywallCard planType="coach" fromOnboarding />
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
           <button
             type="button"
-            onClick={changePlan}
+            onClick={switchToAthlete}
             disabled={switching}
             className="hover:text-foreground disabled:opacity-50 transition-colors"
           >
-            {switching ? "Switching…" : `Switch to ${otherPlan === "coach" ? "Coach" : "Athlete"}`}
+            {switching ? "Switching…" : "Switch to Athlete (free)"}
           </button>
           <span className="text-foreground">•</span>
           <button

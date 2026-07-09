@@ -239,10 +239,10 @@ function BillingCard({ userRole }: { userRole: string | null | undefined }) {
   const [redeeming, setRedeeming] = useState(false);
   const { toast } = useToast();
   const planType = userRole === "coach" ? "coach" : "athlete";
-  const title = planType === "coach" ? "Coach subscription" : "Athlete subscription";
+  const title = planType === "coach" ? "Coach subscription" : "Athlete Pro";
   const description = planType === "coach"
     ? "Coach plan includes 25 athletes, then $4 per athlete after 25."
-    : "$4.99 per month for athlete access.";
+    : "$4.99/mo for unlimited AveraAI and automatic Strava sync — your free plan already includes the full dashboard.";
 
   async function redeemDevCode() {
     if (!devCode.trim() || redeeming) return;

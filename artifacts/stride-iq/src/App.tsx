@@ -370,7 +370,8 @@ function AppContent() {
 
   const role = profile?.userRole ?? null;
   // Only check subscription once the user has a role (finished onboarding).
-  const { data: subscription, isLoading: subLoading } = useSubscription(!!role);
+  // Only coaches need subscription status — athletes are on the free tier.
+  const { data: subscription, isLoading: subLoading } = useSubscription(role === "coach");
   // True while an already-onboarded user is redoing the survey (e.g. via
   // "Redo survey" on the paywall gate). Without this, a role-having user
   // navigating to /onboarding would just get bounced straight back by the
@@ -429,8 +430,7 @@ function AppContent() {
   }, [qc]);
 
   // Consume a stashed invite once the user has finished onboarding (has a role),
-  // joining them to their coach's team. Team athletes are covered by the coach's
-  // plan, so this also flips the subscription gate to "active".
+  // joining them to their coach's team.
   useEffect(() => {
     const code = sessionStorage.getItem(PENDING_INVITE_KEY);
     if (!code) return;
@@ -484,16 +484,19 @@ function AppContent() {
     return <Onboarding onDone={() => setForceOnboarding(false)} />;
   }
 
-  // ── Subscription gate ──
-  // The user has a role (finished onboarding); now require an active trial or
-  // subscription before granting access to the app. This is the payment step at
-  // the end of the signup flow. Fail open on a transient subscription-load error
-  // so a flaky check never locks out paying users.
-  if (reconcilingCheckout || subLoading || joiningTeam) return <Spinner />;
-  if (subscription && !subscription.isActive) {
+  // ── Subscription gate (coaches only) ──
+  // Athletes have a free tier — dashboard, activities, training plans,
+  // AveraAI (capped), injury-risk, and manual Strava sync all work with no
+  // subscription. Only a coach managing a team needs to pay, since that's
+  // the paid product here; this is that payment step at the end of a coach's
+  // signup flow. Fail open on a transient subscription-load error so a flaky
+  // check never locks out a paying coach.
+  if (reconcilingCheckout || joiningTeam) return <Spinner />;
+  if (role === "coach" && subLoading) return <Spinner />;
+  if (role === "coach" && subscription && !subscription.isActive) {
     return (
       <Subscribe
-        planType={role === "coach" ? "coach" : "athlete"}
+        planType="coach"
         onRedoSurvey={() => setForceOnboarding(true)}
       />
     );

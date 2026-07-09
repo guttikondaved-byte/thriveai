@@ -12,9 +12,9 @@ interface PaywallCardProps {
 
 const PLAN_COPY: Record<PaywallCardProps["planType"], { title: string; price: string; sub: string }> = {
   athlete: {
-    title: "Athlete",
+    title: "Athlete Pro",
     price: "$4.99/mo",
-    sub: "Full access to your dashboard, AI coach, injury alerts, and training plans.",
+    sub: "Unlimited AveraAI messages and automatic Strava sync — the free plan caps AveraAI at 20 messages/month and requires manual sync.",
   },
   coach: {
     title: "Coach",
@@ -24,7 +24,9 @@ const PLAN_COPY: Record<PaywallCardProps["planType"], { title: string; price: st
 };
 
 /**
- * Activation card: a paid Stripe subscription. No free trial — pay up front.
+ * Upgrade card: a paid Stripe subscription. For coaches this is required to
+ * manage a team; for athletes it's optional — the free tier already includes
+ * the full dashboard, just with AveraAI/Strava-sync caps this removes.
  */
 export function PaywallCard({ planType, fromOnboarding }: PaywallCardProps) {
   const [subLoading, setSubLoading] = useState(false);

@@ -1,5 +1,6 @@
 import { Router, type Request, type IRouter } from "express";
-import { eq, and, desc, inArray } from "drizzle-orm";
+import { eq, and, desc, inArray, gte, sql } from "drizzle-orm";
+import { hasActiveAccess } from "../lib/access";
 import {
   db,
   conversations,
@@ -30,6 +31,23 @@ import { logger } from "../lib/logger";
 import OpenAI, { toFile } from "openai";
 
 const router: IRouter = Router();
+
+// Free-tier cap: AveraAI messages per calendar month. Active-subscription (or
+// team-covered) accounts are unlimited — see the check in the send-message
+// route below.
+const FREE_MONTHLY_AI_MESSAGES = 20;
+
+async function countUserMessagesThisMonth(userId: string): Promise<number> {
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(messages)
+    .innerJoin(conversations, eq(messages.conversationId, conversations.id))
+    .where(and(eq(conversations.userId, userId), eq(messages.role, "user"), gte(messages.createdAt, startOfMonth)));
+  return row?.count ?? 0;
+}
 
 const apiKey = process.env.GLM_API_KEY;
 const openaiClient = apiKey
@@ -578,6 +596,26 @@ router.post("/openai/transcribe", async (req: Request, res): Promise<void> => {
   }
 });
 
+// ── Free-tier AveraAI usage ──────────────────────────────────────────────────
+// Lets the frontend show "X of 20 messages left this month" and warn before
+// the user actually hits the 402, rather than only reacting to a failed send.
+
+router.get("/openai/usage", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const userId = req.user.id;
+  const isActive = await hasActiveAccess(userId);
+  const used = isActive ? 0 : await countUserMessagesThisMonth(userId);
+  res.json({
+    isActive,
+    used,
+    limit: isActive ? null : FREE_MONTHLY_AI_MESSAGES,
+    remaining: isActive ? null : Math.max(0, FREE_MONTHLY_AI_MESSAGES - used),
+  });
+});
+
 // ── List conversations ──────────────────────────────────────────────────────
 
 router.get("/openai/conversations", async (req: Request, res): Promise<void> => {
@@ -845,6 +883,17 @@ router.post("/openai/conversations/:id/messages", async (req: Request, res): Pro
   if (!conv) {
     res.status(404).json({ error: "Conversation not found" });
     return;
+  }
+
+  if (!(await hasActiveAccess(userId))) {
+    const usedThisMonth = await countUserMessagesThisMonth(userId);
+    if (usedThisMonth >= FREE_MONTHLY_AI_MESSAGES) {
+      res.status(402).json({
+        error: `You've used all ${FREE_MONTHLY_AI_MESSAGES} free AveraAI messages this month. Upgrade for unlimited access.`,
+        code: "ai_message_limit_reached",
+      });
+      return;
+    }
   }
 
   await db.insert(messages).values({ conversationId: conv.id, role: "user", content: parsed.data.content });

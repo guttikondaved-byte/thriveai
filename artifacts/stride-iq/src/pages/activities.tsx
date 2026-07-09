@@ -276,8 +276,8 @@ export default function Activities() {
           <div className="flex items-center gap-3">
             <Activity size={18} className="text-[#FC4C02] shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-foreground">Connect Strava for automatic run syncing</p>
-              <p className="text-xs text-muted-foreground">Every run will appear in Thrive automatically. No imports needed.</p>
+              <p className="text-sm font-semibold text-foreground">Connect Strava to import your runs</p>
+              <p className="text-xs text-muted-foreground">Sync anytime with one tap — automatic background sync is a Pro perk.</p>
             </div>
           </div>
           <a

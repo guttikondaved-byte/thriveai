@@ -234,6 +234,16 @@ export default function CoachAI() {
   const [, navigate] = useLocation();
   const { data: profile } = useGetAthleteProfile();
   const [myTeam, setMyTeam] = useState<null | { id: number; name: string }>(null);
+  const [aiUsage, setAiUsage] = useState<{ isActive: boolean; used: number; limit: number | null; remaining: number | null } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/openai/usage", { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (!cancelled) setAiUsage(d); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [streamMessages.length]);
 
   const { data: conversations, isLoading: convsLoading } = useListOpenaiConversations();
   const createConv = useCreateOpenaiConversation();
@@ -379,6 +389,10 @@ export default function CoachAI() {
       });
 
       if (!response.ok) {
+        if (response.status === 402) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error ?? "You've reached your free AveraAI limit this month.");
+        }
         throw new Error("Failed to send message");
       }
 
@@ -445,9 +459,18 @@ export default function CoachAI() {
           ),
         });
       }
-    } catch {
-      toast({ title: "Error", description: "Failed to send message", variant: "destructive" });
-      setStreamMessages(prev => prev.slice(0, -1));
+    } catch (err) {
+      // Nothing was actually sent or stored server-side, so drop both the
+      // optimistic user bubble and the assistant placeholder, and restore
+      // the input so the user isn't left staring at a "sent" message with
+      // no reply (and can retry, e.g. after upgrading).
+      toast({
+        title: err instanceof Error && err.message.includes("free AveraAI") ? "Free limit reached" : "Error",
+        description: err instanceof Error ? err.message : "Failed to send message",
+        variant: "destructive",
+      });
+      setStreamMessages(prev => prev.slice(0, -2));
+      setInput(userContent);
     } finally {
       setIsStreaming(false);
     }
@@ -587,6 +610,17 @@ export default function CoachAI() {
   const greeting = greetingFor(new Date());
   const suggestions = isCoach ? COACH_SUGGESTIONS : ATHLETE_SUGGESTIONS;
 
+  const usageNotice = aiUsage && !aiUsage.isActive && aiUsage.limit != null ? (
+    <p className={`text-xs text-center mt-2 ${aiUsage.remaining === 0 ? "text-destructive" : "text-muted-foreground"}`}>
+      {aiUsage.remaining === 0
+        ? "You've used all your free AveraAI messages this month. "
+        : `${aiUsage.remaining} of ${aiUsage.limit} free AveraAI messages left this month. `}
+      <button type="button" onClick={() => navigate("/profile")} className="underline hover:text-foreground">
+        Upgrade for unlimited
+      </button>
+    </p>
+  ) : null;
+
   const composer = (
     <div className="flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 shadow-[0_8px_30px_-14px_rgba(0,0,0,0.25)] focus-within:border-primary/40 transition-colors">
       <textarea
@@ -722,6 +756,7 @@ export default function CoachAI() {
                 {isCoach ? "Your AI assistant for the whole roster." : "Your AI running coach."}
               </p>
               {composer}
+              {usageNotice}
               <div className="flex flex-wrap justify-center gap-2 mt-6">
                 {suggestions.map(s => (
                   <button
@@ -781,6 +816,7 @@ export default function CoachAI() {
             <div className="px-4 pb-5 pt-2">
               <div className="max-w-3xl mx-auto">
                 {composer}
+                {usageNotice}
               </div>
             </div>
           </>

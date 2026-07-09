@@ -9,6 +9,7 @@ import {
   getStravaWebhookSubscription,
   getWebhookCallbackUrl,
 } from "../lib/strava";
+import { hasActiveAccess } from "../lib/access";
 
 const STRAVA_OAUTH_URL = "https://www.strava.com/oauth/authorize";
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
@@ -202,6 +203,13 @@ router.post("/strava/webhook", async (req, res): Promise<void> => {
 
   if (!token) {
     req.log.warn({ owner_id: event.owner_id }, "No user found for Strava athlete");
+    return;
+  }
+
+  // Free tier: no automatic background sync — the athlete can still pull
+  // their latest activities manually any time via POST /strava/sync.
+  if (!(await hasActiveAccess(token.userId))) {
+    req.log.info({ userId: token.userId }, "Skipping auto-sync — free tier (manual sync only)");
     return;
   }
 
