@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
-import { useGetInjuryRiskIntensityMap, getGetInjuryRiskIntensityMapQueryKey } from "@workspace/api-client-react";
-import { Activity, ChevronLeft, ChevronRight, MousePointerClick } from "lucide-react";
+import { useGetInjuryRiskIntensityMap, getGetInjuryRiskIntensityMapQueryKey, ApiError } from "@workspace/api-client-react";
+import { Activity, ChevronLeft, ChevronRight, MousePointerClick, Lock } from "lucide-react";
 
 const INTENSITY_CLASSES = [
   "bg-secondary",
@@ -28,17 +28,48 @@ export default function Intensity() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   }, [monthOffset]);
 
-  const { data, isFetching } = useGetInjuryRiskIntensityMap(
+  const { data, isFetching, error } = useGetInjuryRiskIntensityMap(
     { month: selectedMonth },
-    { query: { queryKey: getGetInjuryRiskIntensityMapQueryKey({ month: selectedMonth }) } },
+    { query: { queryKey: getGetInjuryRiskIntensityMapQueryKey({ month: selectedMonth }), retry: false } },
   );
   const intensityMap = data?.days ?? [];
+  const needsUpgrade = error instanceof ApiError && error.status === 402;
 
   const [selYear, selMonth] = selectedMonth.split("-").map(Number);
   const monthLabel =
     data?.label ?? new Date(selYear, selMonth - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
   // Blank leading cells so the 1st of the month lands on its real weekday column.
   const leadingBlanks = new Date(selYear, selMonth - 1, 1).getDay();
+
+  if (needsUpgrade) {
+    return (
+      <div className="p-8">
+        <div className="mb-8">
+          <p className="font-display font-semibold text-[11px] uppercase tracking-[0.08em] text-primary">Training Load</p>
+          <h1 className="font-display font-extrabold text-3xl tracking-[-0.01em] text-foreground mt-1.5" data-testid="intensity-title">
+            Monthly Intensity Map
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Every training day scored 0–100 against the hardest day you&apos;ve ever logged.
+          </p>
+        </div>
+        <div className={`${CARD} py-16 px-8 text-center`}>
+          <Lock className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+          <p className="text-sm font-semibold text-foreground mb-1.5">The intensity map is a Pro feature</p>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6">
+            Upgrade for unlimited AveraAI, automatic Strava sync, and the training intensity calendar.
+          </p>
+          <button
+            type="button"
+            onClick={() => setLocation("/profile")}
+            className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 transition-colors"
+          >
+            Upgrade to Pro
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">

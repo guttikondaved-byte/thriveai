@@ -14,6 +14,7 @@ import { GetInjuryRiskDashboardResponse, GetInjuryRiskIntensityMapResponse, GetI
 import { assessInjuryRisk } from "../lib/injuryRiskCalculator";
 import { computeWorkloadRatio, buildMonthlyIntensityMap, maxDailyLoad } from "../lib/workloadRatio";
 import { computeRiskIndex, acwrComponentFor, bandFor, type RiskBand } from "../lib/riskIndex";
+import { hasActiveAccess } from "../lib/access";
 import {
   computeWeeklyRelativeEffort,
   computeActivityConsistency,
@@ -264,6 +265,15 @@ router.get("/injury-risk/intensity-map", async (req: Request, res): Promise<void
     return;
   }
   const userId = req.user.id;
+
+  // Pro feature — free tier doesn't get the training-intensity calendar.
+  if (!(await hasActiveAccess(userId))) {
+    res.status(402).json({
+      error: "The intensity map is a Pro feature. Upgrade for unlimited AveraAI, automatic Strava sync, and the training intensity calendar.",
+      code: "subscription_required",
+    });
+    return;
+  }
 
   const now = new Date();
   let year = now.getFullYear();
