@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useClerk } from "@clerk/react";
 import { useUpdateAthleteProfile, getGetAthleteProfileQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, ChevronLeft, Check, Upload, Users, User, LayoutDashboard, ShieldAlert, Bot, TrendingUp, Activity } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, Upload, Users, User, LayoutDashboard, ShieldAlert, Bot, TrendingUp, Activity, Sparkles } from "lucide-react";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -24,11 +24,13 @@ interface FormData {
   athleteCount: string;
   coachFocus: string;
   dataSource: "strava" | "gpx" | "manual" | null;
+  plan: "free" | "pro";
 }
 
 // Step indices for each role
-// 0 = Role, 1 = About You / Coach Profile, 2 = Connect / Get Started
-const ATHLETE_STEPS = ["Your Role", "About You", "Connect Data"];
+// Athlete: 0 = Role, 1 = About You, 2 = Connect Data, 3 = Choose Plan
+// Coach:   0 = Role, 1 = Your Profile, 2 = Get Started
+const ATHLETE_STEPS = ["Your Role", "About You", "Connect Data", "Choose Plan"];
 const COACH_STEPS   = ["Your Role", "Your Profile", "Get Started"];
 
 const FITNESS_LEVELS: { value: FitnessLevel; label: string; desc: string }[] = [
@@ -139,9 +141,11 @@ export default function Onboarding({ onDone }: { onDone?: () => void } = {}) {
       athleteCount: "",
       coachFocus: "",
       dataSource: null,
+      plan: "free",
     };
   });
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [startingCheckout, setStartingCheckout] = useState(false);
   const [, navigate] = useLocation();
   const { signOut } = useClerk();
   const qc = useQueryClient();
@@ -255,6 +259,29 @@ export default function Onboarding({ onDone }: { onDone?: () => void } = {}) {
     if (form.dataSource === "strava") {
       window.open("/api/strava/connect", "_blank", "noopener,noreferrer");
     }
+
+    // Athlete picked Pro: send them straight to Stripe Checkout instead of the
+    // dashboard. Free stays exactly as before — no payment step at all.
+    if (!isCoach && form.plan === "pro") {
+      setStartingCheckout(true);
+      try {
+        const res = await fetch("/api/stripe/checkout-session", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ planType: "athlete", fromOnboarding: true }),
+        });
+        const data = await res.json().catch(() => null);
+        if (res.ok && data?.url) {
+          window.location.href = data.url as string;
+          return;
+        }
+      } catch {
+        // Fall through to the free dashboard — they can upgrade from Profile any time.
+      }
+      setStartingCheckout(false);
+    }
+
     onDone?.();
     navigate("/");
   }
@@ -591,6 +618,74 @@ export default function Onboarding({ onDone }: { onDone?: () => void } = {}) {
           </div>
         )}
 
+        {/* ── Step 3 (Athlete): Choose Plan ── */}
+        {step === 3 && form.role === "athlete" && (
+          <div>
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-foreground mb-1">Choose your plan</h1>
+              <p className="text-muted-foreground">Free works forever — upgrade any time from your profile.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              {(
+                [
+                  {
+                    id: "free" as const,
+                    title: "Free",
+                    price: "$0",
+                    sub: "Forever",
+                    features: ["Full dashboard & training plans", "20 AveraAI messages / month", "Manual Strava sync"],
+                  },
+                  {
+                    id: "pro" as const,
+                    title: "Athlete Pro",
+                    price: "$4.99",
+                    sub: "per month",
+                    features: ["Unlimited AveraAI messages", "Automatic Strava sync", "Training intensity map"],
+                  },
+                ]
+              ).map(plan => {
+                const selected = form.plan === plan.id;
+                return (
+                  <button
+                    key={plan.id}
+                    onClick={() => set("plan", plan.id)}
+                    className={`relative text-left rounded-xl border p-6 transition-all duration-200
+                      ${selected
+                        ? "border-primary bg-primary/5 shadow-sm scale-[1.01]"
+                        : "border-border bg-card/50 hover:border-primary/40 hover:bg-card"}`}
+                  >
+                    {selected && (
+                      <div className="absolute top-4 right-4 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                        <Check size={12} className="text-[#F5F5F5]" />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 mb-1">
+                      {plan.id === "pro" && <Sparkles className="w-4 h-4 text-primary" />}
+                      <h2 className="text-lg font-medium text-foreground">{plan.title}</h2>
+                    </div>
+                    <p className="text-muted-foreground text-sm mb-4">
+                      <span className="text-2xl font-bold text-foreground">{plan.price}</span> {plan.sub}
+                    </p>
+                    <ul className="space-y-1.5">
+                      {plan.features.map(f => (
+                        <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <svg className="w-3.5 h-3.5 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              You can switch plans any time from your profile — nothing here is locked in.
+            </p>
+          </div>
+        )}
+
         {/* ── Step 2 (Coach): Get Started ── */}
         {step === 2 && form.role === "coach" && (
           <div>
@@ -630,19 +725,23 @@ export default function Onboarding({ onDone }: { onDone?: () => void } = {}) {
           {isLastStep ? (
             <button
               onClick={finish}
-              disabled={updateProfile.isPending}
+              disabled={updateProfile.isPending || startingCheckout}
               className={`flex items-center gap-2 px-8 py-3 font-bold rounded-xl transition-all disabled:opacity-60 ${
                 form.dataSource === "strava"
                   ? "bg-[#FC4C02] hover:bg-[#e34400] text-white"
                   : "bg-primary hover:bg-primary/80 text-[#F5F5F5]"
               }`}
             >
-              {updateProfile.isPending
+              {startingCheckout
+                ? "Redirecting to checkout…"
+                : updateProfile.isPending
                 ? "Saving…"
+                : form.role === "athlete" && form.plan === "pro"
+                ? "Continue to checkout"
                 : form.dataSource === "strava"
                 ? "Connect Strava & finish"
                 : "Let's go"}
-              {!updateProfile.isPending && <Check size={16} />}
+              {!updateProfile.isPending && !startingCheckout && <Check size={16} />}
             </button>
           ) : (
             <button
