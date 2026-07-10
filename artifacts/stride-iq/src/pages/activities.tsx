@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useSearch } from "wouter";
 import { useListActivities, useCreateActivity, getListActivitiesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, X, Upload, Activity, RefreshCw, Unlink, CheckCircle2 } from "lucide-react";
+import { Plus, X, Upload, Activity, RefreshCw, Unlink, CheckCircle2, Download } from "lucide-react";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -149,6 +149,36 @@ export default function Activities() {
     });
   }
 
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExportCsv() {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const res = await fetch("/api/activities/export", { credentials: "include" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast({
+          title: res.status === 402 ? "Athlete Pro perk" : "Export failed",
+          description: data.error ?? "Couldn't export your activities. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `thrive-activities-${format(new Date(), "yyyy-MM-dd")}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({ title: "Export failed", description: "Please check your connection and try again.", variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  }
+
   function handleGpxImport(gpx: GpxResult) {
     const type = ACTIVITY_TYPES.includes(gpx.suggestedType as typeof ACTIVITY_TYPES[number])
       ? (gpx.suggestedType as typeof ACTIVITY_TYPES[number])
@@ -188,6 +218,15 @@ export default function Activities() {
           <p className="text-sm text-muted-foreground mt-1">Your training log</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExportCsv}
+            disabled={exporting}
+            className="gap-2 border-border text-muted-foreground hover:text-foreground hover:border-primary"
+          >
+            <Download className="w-4 h-4" />
+            {exporting ? "Exporting…" : "Export CSV"}
+          </Button>
           <Button
             variant="outline"
             onClick={() => { setShowGpx(!showGpx); setShowForm(false); }}

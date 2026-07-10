@@ -7,7 +7,7 @@ import {
   getWebhookCallbackUrl,
   backfillStravaDetails,
 } from "./lib/strava";
-import { sendWeeklyCoachDigests } from "./lib/weeklyDigest";
+import { sendWeeklyCoachDigests, sendWeeklyAthleteDigests } from "./lib/weeklyDigest";
 
 const rawPort = process.env["PORT"];
 
@@ -87,6 +87,11 @@ app.listen(port, async (err) => {
       await sendWeeklyCoachDigests();
     } catch (e) {
       logger.warn({ err: e }, "Weekly coach digest run failed");
+    }
+    try {
+      await sendWeeklyAthleteDigests();
+    } catch (e) {
+      logger.warn({ err: e }, "Weekly athlete digest run failed");
     }
   };
   setTimeout(runDigestCheck, 60_000); // first run shortly after boot

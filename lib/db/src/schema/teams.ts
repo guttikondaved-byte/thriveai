@@ -40,7 +40,17 @@ export const weeklyDigestLogTable = pgTable("weekly_digest_log", {
   sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [unique().on(t.teamId, t.weekOf)]);
 
+// Same idempotency pattern as weeklyDigestLogTable, but for the Pro-only
+// personal athlete digest (one row per athlete per week) rather than a team.
+export const athleteDigestLogTable = pgTable("athlete_digest_log", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  weekOf: text("week_of").notNull(),
+  sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [unique().on(t.userId, t.weekOf)]);
+
 export type Team = typeof teamsTable.$inferSelect;
 export type TeamMembership = typeof teamMembershipsTable.$inferSelect;
 export type TeamCoach = typeof teamCoachesTable.$inferSelect;
 export type WeeklyDigestLog = typeof weeklyDigestLogTable.$inferSelect;
+export type AthleteDigestLog = typeof athleteDigestLogTable.$inferSelect;

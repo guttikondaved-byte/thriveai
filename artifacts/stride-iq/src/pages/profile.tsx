@@ -242,7 +242,7 @@ function BillingCard({ userRole }: { userRole: string | null | undefined }) {
   const title = planType === "coach" ? "Coach subscription" : "Athlete Pro";
   const description = planType === "coach"
     ? "Coach plan includes 25 athletes, then $4 per athlete after 25."
-    : "$4.99/mo for unlimited AveraAI and automatic Strava sync — your free plan already includes the full dashboard.";
+    : "$4.99/mo for unlimited AveraAI, auto Strava sync, unlimited AI plans, the intensity map, a weekly summary email, and CSV export.";
 
   async function redeemDevCode() {
     if (!devCode.trim() || redeeming) return;

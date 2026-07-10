@@ -8,8 +8,11 @@ import {
   activitiesTable,
   injuryAlertsTable,
   weeklyDigestLogTable,
+  athleteDigestLogTable,
 } from "@workspace/db";
-import { sendWeeklyDigestEmail } from "./email";
+import { sendWeeklyDigestEmail, sendAthleteWeeklyDigestEmail } from "./email";
+import { hasActiveAccess } from "./access";
+import { computeInjuryRiskDashboard } from "../routes/injuryRisk";
 import { logger } from "./logger";
 
 /** ISO date (YYYY-MM-DD) of the Monday on/before today. */
@@ -107,6 +110,68 @@ export async function sendWeeklyCoachDigests(): Promise<void> {
       await db.insert(weeklyDigestLogTable).values({ teamId: team.id, weekOf }).onConflictDoNothing();
     } catch (err) {
       logger.error({ err, teamId: team.id }, "Failed to send weekly digest for team");
+    }
+  }
+}
+
+/**
+ * Athlete Pro perk: a personal weekly training summary email. Only sent to
+ * accounts with active access (Athlete Pro, or covered by a paying coach's
+ * team — same policy as every other Pro-gated feature) — free accounts don't
+ * get this at all. Idempotent per athlete/week via athleteDigestLogTable,
+ * same pattern as the coach digest above.
+ */
+export async function sendWeeklyAthleteDigests(): Promise<void> {
+  const weekOf = currentWeekMondayISO();
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+  const sevenDaysAgoDate = sevenDaysAgo.toISOString().slice(0, 10);
+
+  const users = await db.select({ id: usersTable.id, email: usersTable.email, firstName: usersTable.firstName, lastName: usersTable.lastName }).from(usersTable);
+
+  for (const user of users) {
+    if (!user.email) continue;
+    try {
+      const [alreadySent] = await db
+        .select()
+        .from(athleteDigestLogTable)
+        .where(and(eq(athleteDigestLogTable.userId, user.id), eq(athleteDigestLogTable.weekOf, weekOf)))
+        .limit(1);
+      if (alreadySent) continue;
+
+      if (!(await hasActiveAccess(user.id))) continue;
+
+      const activities = await db
+        .select({ distanceKm: activitiesTable.distanceKm })
+        .from(activitiesTable)
+        .where(and(eq(activitiesTable.userId, user.id), gte(activitiesTable.activityDate, sevenDaysAgoDate)));
+      // Skip athletes who haven't trained this week — an empty digest isn't useful.
+      if (activities.length === 0) continue;
+      const totalKm = Math.round(activities.reduce((sum, a) => sum + (a.distanceKm ? Number(a.distanceKm) : 0), 0));
+
+      const newAlerts = await db
+        .select({ bodyPart: injuryAlertsTable.bodyPart, riskLevel: injuryAlertsTable.riskLevel })
+        .from(injuryAlertsTable)
+        .where(and(eq(injuryAlertsTable.userId, user.id), gte(injuryAlertsTable.createdAt, sevenDaysAgo)));
+      const newAlertSummaries = newAlerts.map((a) => `${a.bodyPart} — ${a.riskLevel} risk`);
+
+      const dashboard = await computeInjuryRiskDashboard(user.id);
+
+      await sendAthleteWeeklyDigestEmail({
+        to: user.email,
+        recipientName: fullName(user, "there"),
+        weekOf,
+        totalKm,
+        workoutCount: activities.length,
+        riskScore: dashboard.riskScore,
+        riskLabel: dashboard.riskLabel,
+        insight: dashboard.insight,
+        newAlertSummaries,
+      });
+
+      await db.insert(athleteDigestLogTable).values({ userId: user.id, weekOf }).onConflictDoNothing();
+    } catch (err) {
+      logger.error({ err, userId: user.id }, "Failed to send weekly digest for athlete");
     }
   }
 }

@@ -123,3 +123,64 @@ export async function sendWeeklyDigestEmail(input: WeeklyDigestEmailInput): Prom
     );
   }
 }
+
+interface AthleteWeeklyDigestEmailInput {
+  to: string;
+  recipientName: string;
+  weekOf: string; // ISO date of the Monday this digest covers
+  totalKm: number;
+  workoutCount: number;
+  riskScore: number;
+  riskLabel: string;
+  insight: string;
+  /** e.g. "Left knee — medium risk" */
+  newAlertSummaries: string[];
+}
+
+/**
+ * Personal weekly training summary — an Athlete Pro perk, not sent to free
+ * accounts. Same fire-and-forget, no-op-without-API-key conventions as the
+ * other digest/alert emails.
+ */
+export async function sendAthleteWeeklyDigestEmail(input: AthleteWeeklyDigestEmailInput): Promise<void> {
+  if (!resendClient) return;
+
+  const subject = `Your week in training: ${input.weekOf}`;
+
+  const alertsHtml = input.newAlertSummaries.length > 0
+    ? `
+      <p style="background: #fef3c7; border-radius: 8px; padding: 12px 16px; color: #78350f;">
+        <strong>${input.newAlertSummaries.length} new injury alert${input.newAlertSummaries.length === 1 ? "" : "s"} this week:</strong><br/>
+        ${input.newAlertSummaries.join("<br/>")}
+      </p>
+    `
+    : `<p style="background: #ecfdf5; border-radius: 8px; padding: 12px 16px; color: #065f46;">No new injury alerts this week.</p>`;
+
+  const html = `
+    <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto;">
+      <p>Hi ${input.recipientName},</p>
+      <p>Here's your training summary for the week of ${input.weekOf}:</p>
+      <p><strong>${input.totalKm}km</strong> across <strong>${input.workoutCount}</strong> workout${input.workoutCount === 1 ? "" : "s"}.</p>
+      <p style="background: #eff6ff; border-radius: 8px; padding: 12px 16px; color: #1e3a8a;">
+        <strong>Risk score: ${input.riskScore}/100 (${input.riskLabel})</strong><br/>
+        ${input.insight}
+      </p>
+      ${alertsHtml}
+      <p style="color: #6b7280; font-size: 13px;">Sign in to ThriveAI to see your full dashboard. This weekly summary is an Athlete Pro perk.</p>
+    </div>
+  `.trim();
+
+  try {
+    await resendClient.emails.send({
+      from: FROM_EMAIL,
+      to: input.to,
+      subject,
+      html,
+    });
+  } catch (err) {
+    logger.error(
+      { err: err instanceof Error ? err.message : String(err), to: input.to },
+      "Failed to send athlete weekly digest email",
+    );
+  }
+}

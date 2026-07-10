@@ -22,6 +22,7 @@ import {
 import { assessInjuryRisk } from "../lib/injuryRiskCalculator";
 import { findBestSessionMatch } from "../lib/trainingCompletion";
 import { sendInjuryAlertEmail } from "../lib/email";
+import { hasActiveAccess } from "../lib/access";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -150,6 +151,55 @@ router.get("/activities", async (req: Request, res): Promise<void> => {
     .orderBy(desc(activitiesTable.activityDate))
     .limit(limit);
   res.json(ListActivitiesResponse.parse(activities.map(serializeActivity)));
+});
+
+// Athlete Pro perk: full activity-history export as CSV. Registered before
+// GET /activities/:id so "export" is never swallowed as an :id param.
+router.get("/activities/export", async (req: Request, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const userId = req.user.id;
+  if (!(await hasActiveAccess(userId))) {
+    res.status(402).json({
+      error: "Exporting your activity history is an Athlete Pro perk. Upgrade to export a CSV of everything you've logged.",
+      code: "subscription_required",
+    });
+    return;
+  }
+
+  const activities = await db
+    .select()
+    .from(activitiesTable)
+    .where(eq(activitiesTable.userId, userId))
+    .orderBy(desc(activitiesTable.activityDate));
+
+  const columns = [
+    "date", "type", "distance_km", "duration_minutes", "avg_heart_rate", "max_heart_rate",
+    "avg_pace_min_per_km", "elevation_gain_m", "perceived_effort", "calories", "notes",
+  ];
+  const escapeCsv = (v: unknown): string => {
+    if (v === null || v === undefined) return "";
+    const s = String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const rows = activities.map((a) => {
+    const distanceKm = a.distanceKm ? Number(a.distanceKm) : null;
+    const paceMinPerKm = distanceKm && a.movingTimeSeconds
+      ? (a.movingTimeSeconds / 60 / distanceKm).toFixed(2)
+      : "";
+    return [
+      a.activityDate, a.type, distanceKm ?? "", a.durationMinutes ?? "",
+      a.avgHeartRate ?? "", a.maxHeartRate ?? "", paceMinPerKm,
+      a.elevationGainM ?? "", a.perceivedEffort ?? "", a.calories ?? "", a.notes ?? "",
+    ].map(escapeCsv).join(",");
+  });
+  const csv = [columns.join(","), ...rows].join("\n");
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", `attachment; filename="thrive-activities-${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.send(csv);
 });
 
 router.post("/activities", async (req: Request, res): Promise<void> => {
