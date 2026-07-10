@@ -633,7 +633,7 @@ export default function Onboarding({ onDone }: { onDone?: () => void } = {}) {
                     title: "Free",
                     price: "$0",
                     sub: "Forever",
-                    features: ["Full dashboard & training plans", "20 AveraAI messages / month", "5 AI-designed plans, manual Strava sync"],
+                    features: ["Dashboard + last 30 workouts", "20 AveraAI messages / month", "3 manual + 5 AI-designed plans"],
                   },
                   {
                     id: "pro" as const,

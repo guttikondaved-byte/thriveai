@@ -24,16 +24,24 @@ import { hasActiveAccess } from "../lib/access";
 
 const router: IRouter = Router();
 
-// Free-tier cap: lifetime count of AveraAI-designed plans. Manually-built
-// plans (the default "New Plan" form) are never capped. Active/comp/team-
-// covered accounts are unlimited.
+// Free-tier caps: lifetime count of plans, split by source. Active/comp/
+// team-covered accounts are unlimited on both.
 export const FREE_AI_PLAN_LIMIT = 5;
+export const FREE_MANUAL_PLAN_LIMIT = 3;
 
 export async function countAiPlans(userId: string): Promise<number> {
   const rows = await db
     .select({ id: trainingPlansTable.id })
     .from(trainingPlansTable)
     .where(and(eq(trainingPlansTable.userId, userId), eq(trainingPlansTable.source, "ai")));
+  return rows.length;
+}
+
+export async function countManualPlans(userId: string): Promise<number> {
+  const rows = await db
+    .select({ id: trainingPlansTable.id })
+    .from(trainingPlansTable)
+    .where(and(eq(trainingPlansTable.userId, userId), eq(trainingPlansTable.source, "manual")));
   return rows.length;
 }
 
@@ -248,14 +256,25 @@ router.post("/plans", async (req: Request, res): Promise<void> => {
   const userId = req.user!.id;
   const source = parsed.data.source === "ai" ? "ai" : "manual";
 
-  if (source === "ai" && !(await hasActiveAccess(userId))) {
-    const aiPlanCount = await countAiPlans(userId);
-    if (aiPlanCount >= FREE_AI_PLAN_LIMIT) {
-      res.status(402).json({
-        error: `You've used all ${FREE_AI_PLAN_LIMIT} free AveraAI-designed plans. Upgrade for unlimited, or build one manually instead.`,
-        code: "ai_plan_limit_reached",
-      });
-      return;
+  if (!(await hasActiveAccess(userId))) {
+    if (source === "ai") {
+      const aiPlanCount = await countAiPlans(userId);
+      if (aiPlanCount >= FREE_AI_PLAN_LIMIT) {
+        res.status(402).json({
+          error: `You've used all ${FREE_AI_PLAN_LIMIT} free AveraAI-designed plans. Upgrade for unlimited, or build one manually instead.`,
+          code: "ai_plan_limit_reached",
+        });
+        return;
+      }
+    } else {
+      const manualPlanCount = await countManualPlans(userId);
+      if (manualPlanCount >= FREE_MANUAL_PLAN_LIMIT) {
+        res.status(402).json({
+          error: `You've used all ${FREE_MANUAL_PLAN_LIMIT} free training plans. Upgrade for unlimited plans.`,
+          code: "manual_plan_limit_reached",
+        });
+        return;
+      }
     }
   }
 

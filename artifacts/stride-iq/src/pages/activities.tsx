@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useSearch } from "wouter";
+import { Link, useSearch, useLocation } from "wouter";
 import { useListActivities, useCreateActivity, getListActivitiesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, X, Upload, Activity, RefreshCw, Unlink, CheckCircle2, Download } from "lucide-react";
@@ -43,6 +43,18 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+
+function useSubscriptionStatus() {
+  return useQuery({
+    queryKey: ["subscription-status"],
+    queryFn: async () => {
+      const r = await fetch("/api/stripe/subscription", { credentials: "include" });
+      if (!r.ok) throw new Error("failed");
+      return r.json() as Promise<{ isActive: boolean }>;
+    },
+    staleTime: 60_000,
+  });
+}
 
 function useStravaStatus() {
   return useQuery({
@@ -97,12 +109,14 @@ export default function Activities() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const search = useSearch();
+  const [, navigate] = useLocation();
   const dateFilter = new URLSearchParams(search).get("date") ?? undefined;
   const { data: activities, isLoading } = useListActivities({
     limit: 50,
     ...(dateFilter ? { date: dateFilter } : {}),
   });
   const createActivity = useCreateActivity();
+  const subscriptionStatus = useSubscriptionStatus();
   const stravaStatus = useStravaStatus();
   const stravaSync = useStravaSync();
   const stravaFullSync = useStravaFullSync();
@@ -463,6 +477,11 @@ export default function Activities() {
             </Link>
           ))}
         </div>
+      )}
+      {subscriptionStatus.data && !subscriptionStatus.data.isActive && (activities?.length ?? 0) >= 30 && (
+        <p className="text-xs text-muted-foreground text-center mt-4">
+          Showing your most recent 30 workouts. <button type="button" onClick={() => navigate("/profile")} className="underline hover:text-foreground">Upgrade</button> for your full history.
+        </p>
       )}
     </div>
   );

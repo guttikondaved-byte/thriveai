@@ -132,15 +132,23 @@ async function emailInjuryAlertRecipients(
   await Promise.all(emailPromises);
 }
 
+// Free tier only sees its most recent activities in the history list — the
+// underlying rows are never deleted or hidden from risk scoring (that still
+// reads full history via its own queries), just the browsable list here.
+const FREE_ACTIVITY_HISTORY_LIMIT = 30;
+
 router.get("/activities", async (req: Request, res): Promise<void> => {
   if (!req.isAuthenticated()) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
   const query = ListActivitiesQueryParams.safeParse(req.query);
-  const limit = query.success ? (query.data.limit ?? 20) : 20;
+  let limit = query.success ? (query.data.limit ?? 20) : 20;
   const date = query.success ? query.data.date : undefined;
   const userId = req.user.id;
+  if (!(await hasActiveAccess(userId))) {
+    limit = Math.min(limit, FREE_ACTIVITY_HISTORY_LIMIT);
+  }
   const where = date
     ? and(eq(activitiesTable.userId, userId), eq(activitiesTable.activityDate, date))
     : eq(activitiesTable.userId, userId);
