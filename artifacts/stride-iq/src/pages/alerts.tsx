@@ -11,6 +11,7 @@ import {
   useCreateAlertComment,
   getListAlertCommentsQueryKey,
   useGetInjuryRiskWhatIf,
+  getGetInjuryRiskWhatIfQueryKey,
 } from "@workspace/api-client-react";
 import type {
   SorenessEntry,
@@ -301,7 +302,7 @@ export default function Alerts() {
   const acknowledge = useAcknowledgeAlert();
 
   const { data: dashboard, isLoading: dashboardLoading } = useGetInjuryRiskDashboard();
-  const { data: whatIf, isLoading: whatIfLoading } = useGetInjuryRiskWhatIf();
+  const { data: whatIf, isLoading: whatIfLoading, error: whatIfError } = useGetInjuryRiskWhatIf({ query: { queryKey: getGetInjuryRiskWhatIfQueryKey(), retry: false } });
   const createSoreness = useCreateSorenessEntry({
     mutation: {
       onSuccess: () => {
@@ -544,7 +545,7 @@ export default function Alerts() {
 
           {/* What-If Risk Simulator */}
           <div className="mb-8">
-            <WhatIfRiskSlider data={whatIf} loading={whatIfLoading} athleteLabel="your" />
+            <WhatIfRiskSlider data={whatIf} loading={whatIfLoading} error={whatIfError} athleteLabel="your" />
           </div>
 
           {/* Weekly Relative Effort + Activity Consistency + Training Insight */}

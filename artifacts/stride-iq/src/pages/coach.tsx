@@ -569,6 +569,10 @@ export default function CoachAI() {
           headers: { "Content-Type": blob.type || "audio/webm" },
           body: blob,
         });
+        if (res.status === 402) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error ?? "Voice input is an Athlete Pro perk.");
+        }
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error ?? "Couldn't transcribe that. Please try again.");
         const text = (data.text ?? "").trim();
@@ -578,7 +582,7 @@ export default function CoachAI() {
         }
       } catch (err) {
         toast({
-          title: "Voice input failed",
+          title: err instanceof Error && err.message.includes("Pro perk") ? "Athlete Pro perk" : "Voice input failed",
           description: err instanceof Error ? err.message : "Please try again or type your message.",
           variant: "destructive",
         });

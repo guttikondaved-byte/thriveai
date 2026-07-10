@@ -640,7 +640,7 @@ export default function Onboarding({ onDone }: { onDone?: () => void } = {}) {
                     title: "Athlete Pro",
                     price: "$4.99",
                     sub: "per month",
-                    features: ["Unlimited AveraAI & AI-designed plans", "Automatic Strava sync + intensity map", "Weekly summary email + CSV export"],
+                    features: ["Unlimited AveraAI, voice input & AI plans", "Auto Strava sync, intensity map & simulator", "Weekly summary email + CSV export"],
                   },
                 ]
               ).map(plan => {

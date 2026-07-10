@@ -566,6 +566,15 @@ router.post("/openai/transcribe", async (req: Request, res): Promise<void> => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+  // Real per-use cost (a paid transcription API call), so this is an Athlete
+  // Pro perk rather than something free accounts get unlimited use of.
+  if (!(await hasActiveAccess(req.user.id))) {
+    res.status(402).json({
+      error: "Voice input is an Athlete Pro perk. Upgrade to talk to AveraAI instead of typing.",
+      code: "subscription_required",
+    });
+    return;
+  }
   if (!transcriptionClient) {
     res.status(503).json({
       error: "Voice input is not available. Please contact support.",

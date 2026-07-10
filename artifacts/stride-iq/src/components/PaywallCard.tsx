@@ -14,7 +14,7 @@ const PLAN_COPY: Record<PaywallCardProps["planType"], { title: string; price: st
   athlete: {
     title: "Athlete Pro",
     price: "$4.99/mo",
-    sub: "Unlimited AveraAI, automatic Strava sync, unlimited AI-designed plans, the training intensity map, a weekly training summary email, and CSV export of your activity history.",
+    sub: "Unlimited AveraAI + voice input, automatic Strava sync, unlimited AI-designed plans, the intensity map and what-if risk simulator, a weekly summary email, and CSV export.",
   },
   coach: {
     title: "Coach",

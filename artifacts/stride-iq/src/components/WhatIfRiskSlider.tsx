@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Sliders } from "lucide-react";
+import { Sliders, Lock } from "lucide-react";
+import { ApiError } from "@workspace/api-client-react";
 
 interface WhatIfScenario {
   deltaKm: number;
@@ -77,7 +78,7 @@ export function buildClientWhatIf(currentScore: number, acuteLoad: number, chron
  * not a client-side approximation), so athletes and coaches can see how
  * sensitive this week's risk score is to a mileage change before making one.
  */
-export function WhatIfRiskSlider({ data, loading, athleteLabel = "your" }: { data: WhatIfData | null | undefined; loading: boolean; athleteLabel?: string }) {
+export function WhatIfRiskSlider({ data, loading, error, athleteLabel = "your" }: { data: WhatIfData | null | undefined; loading: boolean; error?: unknown; athleteLabel?: string }) {
   const scenarios = data?.scenarios ?? [];
   const zeroIndex = scenarios.findIndex((s) => s.deltaKm === 0);
   const [index, setIndex] = useState(zeroIndex >= 0 ? zeroIndex : 0);
@@ -88,6 +89,15 @@ export function WhatIfRiskSlider({ data, loading, athleteLabel = "your" }: { dat
 
   if (loading) {
     return <div className="h-40 bg-card border border-border rounded-3xl animate-pulse" />;
+  }
+  if (error instanceof ApiError && error.status === 402) {
+    return (
+      <div className="premium-card rounded-3xl p-8 text-center">
+        <Lock className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
+        <p className="text-sm font-semibold text-foreground mb-1">The what-if simulator is an Athlete Pro perk</p>
+        <p className="text-sm text-muted-foreground">Upgrade to see how mileage changes affect {athleteLabel} risk score.</p>
+      </div>
+    );
   }
   if (!data || scenarios.length === 0) {
     return null;

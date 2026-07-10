@@ -248,6 +248,13 @@ router.get("/injury-risk/what-if", async (req: Request, res): Promise<void> => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+  if (!(await hasActiveAccess(req.user.id))) {
+    res.status(402).json({
+      error: "The what-if risk simulator is an Athlete Pro perk. Upgrade to see how mileage changes affect your risk score.",
+      code: "subscription_required",
+    });
+    return;
+  }
   res.json(GetInjuryRiskWhatIfResponse.parse(await computeWhatIfScenarios(req.user.id)));
 });
 
