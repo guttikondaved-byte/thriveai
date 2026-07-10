@@ -20,8 +20,22 @@ import {
 } from "@workspace/api-zod";
 import OpenAI from "openai";
 import { logger } from "../lib/logger";
+import { hasActiveAccess } from "../lib/access";
 
 const router: IRouter = Router();
+
+// Free-tier cap: lifetime count of AveraAI-designed plans. Manually-built
+// plans (the default "New Plan" form) are never capped. Active/comp/team-
+// covered accounts are unlimited.
+export const FREE_AI_PLAN_LIMIT = 5;
+
+export async function countAiPlans(userId: string): Promise<number> {
+  const rows = await db
+    .select({ id: trainingPlansTable.id })
+    .from(trainingPlansTable)
+    .where(and(eq(trainingPlansTable.userId, userId), eq(trainingPlansTable.source, "ai")));
+  return rows.length;
+}
 
 const glmClient = process.env.GLM_API_KEY
   ? new OpenAI({
@@ -232,6 +246,18 @@ router.post("/plans", async (req: Request, res): Promise<void> => {
   }
 
   const userId = req.user!.id;
+  const source = parsed.data.source === "ai" ? "ai" : "manual";
+
+  if (source === "ai" && !(await hasActiveAccess(userId))) {
+    const aiPlanCount = await countAiPlans(userId);
+    if (aiPlanCount >= FREE_AI_PLAN_LIMIT) {
+      res.status(402).json({
+        error: `You've used all ${FREE_AI_PLAN_LIMIT} free AveraAI-designed plans. Upgrade for unlimited, or build one manually instead.`,
+        code: "ai_plan_limit_reached",
+      });
+      return;
+    }
+  }
 
   // If this athlete is on a team, they can't add a plan directly — it goes to
   // their coach as a suggestion instead, and only becomes active on approval.
@@ -257,6 +283,7 @@ router.post("/plans", async (req: Request, res): Promise<void> => {
     startDate: toDateStr(parsed.data.startDate),
     endDate: toDateStr(parsed.data.endDate),
     status: coachUserId ? "pending" : "active",
+    source,
   };
   if (parsed.data.weeklyMileage !== undefined) {
     insertValues.weeklyMileage = String(parsed.data.weeklyMileage);

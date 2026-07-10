@@ -254,7 +254,8 @@ export const CreateTrainingPlanBody = zod.object({
   "goal": zod.string(),
   "startDate": zod.coerce.date(),
   "endDate": zod.coerce.date(),
-  "weeklyMileage": zod.number().optional()
+  "weeklyMileage": zod.number().optional(),
+  "source": zod.enum(['manual', 'ai']).optional().describe('Defaults to \"manual\" if omitted. Set to \"ai\" only when this plan was designed by AveraAI — subject to the free-tier AI-plan cap.')
 })
 
 

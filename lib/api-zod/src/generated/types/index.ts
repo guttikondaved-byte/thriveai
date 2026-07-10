@@ -80,5 +80,6 @@ export * from './trainingPlan';
 export * from './trainingPlanDetail';
 export * from './trainingPlanDetailStatus';
 export * from './trainingPlanInput';
+export * from './trainingPlanInputSource';
 export * from './trainingPlanStatus';
 export * from './workloadDailyLoad';

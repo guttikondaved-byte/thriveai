@@ -16,6 +16,10 @@ export const trainingPlansTable = pgTable("training_plans", {
   endDate: date("end_date", { mode: "string" }).notNull(),
   weeklyMileage: numeric("weekly_mileage", { precision: 6, scale: 2 }),
   status: text("status").notNull().default("active"),
+  // "manual" (built with the form) or "ai" (designed/proposed by AveraAI —
+  // via chat, apply-plan, or suggest-to-coach). Free-tier accounts are capped
+  // at a lifetime total of AI-designed plans; manual plans are unlimited.
+  source: text("source").notNull().default("manual"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

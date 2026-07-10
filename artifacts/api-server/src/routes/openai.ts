@@ -1,6 +1,7 @@
 import { Router, type Request, type IRouter } from "express";
 import { eq, and, desc, inArray, gte, sql } from "drizzle-orm";
 import { hasActiveAccess } from "../lib/access";
+import { countAiPlans, FREE_AI_PLAN_LIMIT } from "./plans";
 import {
   db,
   conversations,
@@ -1318,11 +1319,25 @@ router.post("/openai/apply-plan", async (req: Request, res): Promise<void> => {
       return;
     }
 
+    // Capped on the athlete's own free/Pro status, since the plan belongs to
+    // (and counts against) their account — not the coach's.
+    if (!(await hasActiveAccess(athleteUserId))) {
+      const aiPlanCount = await countAiPlans(athleteUserId);
+      if (aiPlanCount >= FREE_AI_PLAN_LIMIT) {
+        res.status(402).json({
+          error: `This athlete has used all ${FREE_AI_PLAN_LIMIT} free AveraAI-designed plans. They'd need to upgrade for unlimited.`,
+          code: "ai_plan_limit_reached",
+        });
+        return;
+      }
+    }
+
     const [plan] = await db.insert(trainingPlansTable).values({
       userId: athleteUserId,
       // The coach authored this plan's content — the athlete can only
       // suggest changes to it, not edit it directly.
       createdBy: userId,
+      source: "ai",
       name,
       goal,
       startDate,
@@ -1403,9 +1418,21 @@ router.post("/openai/suggest-to-coach", async (req: Request, res): Promise<void>
       return;
     }
 
+    if (!(await hasActiveAccess(userId))) {
+      const aiPlanCount = await countAiPlans(userId);
+      if (aiPlanCount >= FREE_AI_PLAN_LIMIT) {
+        res.status(402).json({
+          error: `You've used all ${FREE_AI_PLAN_LIMIT} free AveraAI-designed plans. Upgrade for unlimited.`,
+          code: "ai_plan_limit_reached",
+        });
+        return;
+      }
+    }
+
     const [plan] = await db.insert(trainingPlansTable).values({
       userId,
       createdBy: userId,
+      source: "ai",
       name,
       goal,
       startDate,

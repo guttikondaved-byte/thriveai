@@ -384,12 +384,25 @@ export interface TrainingPlanDetail {
   sessions: PlanSession[];
 }
 
+/**
+ * Defaults to "manual" if omitted. Set to "ai" only when this plan was designed by AveraAI — subject to the free-tier AI-plan cap.
+ */
+export type TrainingPlanInputSource = typeof TrainingPlanInputSource[keyof typeof TrainingPlanInputSource];
+
+
+export const TrainingPlanInputSource = {
+  manual: 'manual',
+  ai: 'ai',
+} as const;
+
 export interface TrainingPlanInput {
   name: string;
   goal: string;
   startDate: string;
   endDate: string;
   weeklyMileage?: number;
+  /** Defaults to "manual" if omitted. Set to "ai" only when this plan was designed by AveraAI — subject to the free-tier AI-plan cap. */
+  source?: TrainingPlanInputSource;
 }
 
 export type InjuryAlertRiskLevel = typeof InjuryAlertRiskLevel[keyof typeof InjuryAlertRiskLevel];

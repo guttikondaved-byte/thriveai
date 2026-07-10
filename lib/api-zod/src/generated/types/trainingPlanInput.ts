@@ -5,6 +5,7 @@
  * Thrive API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { TrainingPlanInputSource } from './trainingPlanInputSource';
 
 export interface TrainingPlanInput {
   name: string;
@@ -12,4 +13,6 @@ export interface TrainingPlanInput {
   startDate: Date;
   endDate: Date;
   weeklyMileage?: number;
+  /** Defaults to "manual" if omitted. Set to "ai" only when this plan was designed by AveraAI — subject to the free-tier AI-plan cap. */
+  source?: TrainingPlanInputSource;
 }

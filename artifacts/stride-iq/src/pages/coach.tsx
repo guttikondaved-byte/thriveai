@@ -541,6 +541,7 @@ export default function CoachAI() {
               startDate: proposal.startDate,
               endDate: proposal.endDate,
               weeklyMileage: proposal.weeklyMileage,
+              source: "ai",
             }),
           });
           const createData = await createRes.json().catch(() => ({}));
