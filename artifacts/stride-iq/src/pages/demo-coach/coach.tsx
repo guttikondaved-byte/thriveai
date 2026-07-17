@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { Loader2, ArrowUp, Mic } from "lucide-react";
-import { DEMO_COACH_DATA } from "@/lib/demoData";
+import { Loader2, ArrowUp, Mic, Bot, Search } from "lucide-react";
+import { DEMO_COACH_DATA, getDemoAthleteDetail } from "@/lib/demoData";
 import { useDemoVoiceInput } from "@/hooks/useDemoVoiceInput";
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
 
-type Message = { role: "user" | "assistant"; text: string };
+type Message = { role: "user" | "assistant"; text: string; actionChip?: string };
 
 // Index-aligned with SUGGESTIONS, so clicking a suggestion gets the reply that
 // actually answers it instead of whatever's next in an unrelated cycling order.
@@ -92,11 +93,96 @@ function demoReplyFor(text: string): string {
   return `I can pull that from your roster data — mileage, HRV, and injury risk per athlete. Try asking who's at risk, about training load, recovery, or your roster summary and I'll go deeper on any of those.`;
 }
 
+// ── Agent mode: simulated tool calls + real (demo-scoped) write actions ──────
+// Mirrors the real coach agent's shape (list/lookup tools, plus broadcast and
+// alert-comment actions) against the static demo fixture, so the demo shows
+// what agent mode actually does rather than just claiming it. Nothing here
+// touches a server — the "actions" are local-only and reset on refresh.
+
+const BROADCAST_RE = /\b(message|tell|notify|announce|broadcast)\b[\s\S]*\b(team|everyone|athletes|roster|squad)\b|\bbroadcast\b/i;
+const NOTE_VERB_RE = /\b(leave (a |him |her |them )?note|comment on|reach out to|check in with)\b/i;
+
+function findMentionedAthlete(text: string) {
+  const lower = text.toLowerCase();
+  return DEMO_COACH_DATA.roster.find(m => lower.includes(m.name.split(" ")[0].toLowerCase()));
+}
+
+type AgentPlan = { trace: string[]; reply: string; actionChip?: string; toast?: { title: string; description: string } };
+
+function planAgentResponse(text: string): AgentPlan {
+  if (GREETING_RE.test(text)) return { trace: [], reply: GREETING_REPLY };
+
+  const suggestionIndex = SUGGESTIONS.indexOf(text);
+  if (suggestionIndex !== -1) {
+    const traceByIndex = [
+      ["Checking injury alerts across your roster…"],
+      ["Aggregating this week's training load…"],
+      ["Scanning HRV trends for your roster…"],
+    ];
+    return { trace: traceByIndex[suggestionIndex], reply: SUGGESTION_REPLIES[suggestionIndex] };
+  }
+
+  // Write action: leave a note on an athlete's alert.
+  if (NOTE_VERB_RE.test(text)) {
+    const athlete = findMentionedAthlete(text);
+    if (!athlete) {
+      return { trace: ["Checking your roster…"], reply: "Who should I leave that note for? Name the athlete and I'll pull up their alerts." };
+    }
+    const detail = getDemoAthleteDetail(athlete.userId);
+    const alert = detail?.alerts[0];
+    if (!alert) {
+      return {
+        trace: [`Checking ${athlete.name}'s active alerts…`],
+        reply: `${athlete.name} doesn't have any active alerts right now, so there's nothing to leave a note on.`,
+      };
+    }
+    const quoted = text.match(/["“]([^"”]+)["”]/)?.[1];
+    const content = quoted ?? alert.recommendation;
+    return {
+      trace: [`Checking ${athlete.name}'s active alerts…`, `Drafting a note on their ${alert.bodyPart} alert…`, "Sending note…"],
+      reply: `Done — I left a note on ${athlete.name}'s ${alert.bodyPart} alert: "${content}" They'll see it on their alert and get notified.`,
+      actionChip: `✅ Note sent to ${athlete.name}`,
+      toast: { title: "Note added", description: `Left on ${athlete.name}'s ${alert.bodyPart} alert.` },
+    };
+  }
+
+  // Write action: broadcast to the whole team.
+  if (BROADCAST_RE.test(text)) {
+    const quoted = text.match(/["“]([^"”]+)["”]/)?.[1];
+    const stripped = text.replace(/^(please\s+)?(message|tell|notify|announce|broadcast)\b(\s+the)?(\s+team|\s+everyone|\s+athletes|\s+roster|\s+squad)?[:,]?\s*/i, "").trim();
+    const message = quoted ?? (stripped || text);
+    const count = DEMO_COACH_DATA.roster.length;
+    return {
+      trace: ["Loading your roster…", `Sending to ${count} athletes…`],
+      reply: `Sent to all ${count} athletes on ${DEMO_COACH_DATA.team.name}: "${message}"`,
+      actionChip: `✅ Broadcast sent to ${count} athletes`,
+      toast: { title: "Broadcast sent", description: `Delivered to ${count} athletes.` },
+    };
+  }
+
+  // Read-only: same grounded answers as plain mode, with a trace shown first
+  // so it's visible that agent mode actually looked something up.
+  const readTraces: Array<{ re: RegExp; trace: string[] }> = [
+    { re: /\b(injur|risk|hurt|pain|overtrain\w*)\b/i, trace: ["Checking injury alerts across your roster…"] },
+    { re: /\b(mileage|volume|load|distance|training load)\b/i, trace: ["Aggregating this week's training load…"] },
+    { re: /\b(hrv|recover\w*|resting heart rate)\b/i, trace: ["Scanning HRV trends for your roster…"] },
+    { re: /\b(plan|schedule|program|assign)\b/i, trace: ["Reviewing recent load for a plan proposal…"] },
+    { re: /\b(roster|team|summar|overview)\b/i, trace: ["Loading your team roster…"] },
+  ];
+  const matchedTrace = readTraces.find(({ re }) => re.test(text));
+  return { trace: matchedTrace?.trace ?? [], reply: demoReplyFor(text) };
+}
+
+const AGENT_OFF_ACTION_REPLY =
+  "Agent mode is off, so I can only talk right now — I can't send messages or leave notes for you. Flip on Agent Mode above the chat to let me take actions.";
+
 export default function DemoCoachChat() {
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [agentMode, setAgentMode] = useState(true);
+  const [traceStep, setTraceStep] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const voice = useDemoVoiceInput((transcript) => {
@@ -117,11 +203,42 @@ export default function DemoCoachChat() {
     setMessages(prev => [...prev, { role: "user", text }]);
     setInput("");
     setSending(true);
-    const reply = demoReplyFor(text);
-    setTimeout(() => {
-      setMessages(prev => [...prev, { role: "assistant", text: reply }]);
-      setSending(false);
-    }, 900);
+
+    if (!agentMode) {
+      // Plain-chat mode: no tool trace, and write-intent requests are declined
+      // rather than silently acted on — mirrors the real backend gate.
+      const isWriteIntent = NOTE_VERB_RE.test(text) || BROADCAST_RE.test(text);
+      const reply = isWriteIntent ? AGENT_OFF_ACTION_REPLY : demoReplyFor(text);
+      setTimeout(() => {
+        setMessages(prev => [...prev, { role: "assistant", text: reply }]);
+        setSending(false);
+      }, 900);
+      return;
+    }
+
+    const plan = planAgentResponse(text);
+    if (plan.trace.length === 0) {
+      setTimeout(() => finishAgentTurn(plan), 900);
+      return;
+    }
+    let step = 0;
+    setTraceStep(plan.trace[0]);
+    const interval = setInterval(() => {
+      step++;
+      if (step < plan.trace.length) {
+        setTraceStep(plan.trace[step]);
+      } else {
+        clearInterval(interval);
+        setTraceStep(null);
+        finishAgentTurn(plan);
+      }
+    }, 550);
+  }
+
+  function finishAgentTurn(plan: AgentPlan) {
+    setMessages(prev => [...prev, { role: "assistant", text: plan.reply, actionChip: plan.actionChip }]);
+    setSending(false);
+    if (plan.toast) toast(plan.toast);
   }
 
   const composer = (
@@ -162,8 +279,13 @@ export default function DemoCoachChat() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-52px)]">
-      <div className="flex items-center px-4 py-3">
+      <div className="flex items-center justify-between px-4 py-3">
         <span className="font-display font-semibold text-[11px] uppercase tracking-[0.08em] text-muted-foreground">AveraAI</span>
+        <div className="flex items-center gap-2">
+          <Bot className={`w-3.5 h-3.5 ${agentMode ? "text-primary" : "text-muted-foreground"}`} />
+          <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">Agent Mode</span>
+          <Switch checked={agentMode} onCheckedChange={setAgentMode} aria-label="Toggle agent mode" disabled={sending} />
+        </div>
       </div>
 
       {messages.length === 0 && !sending ? (
@@ -203,10 +325,21 @@ export default function DemoCoachChat() {
                 ) : (
                   <div key={i} className="text-[15px] leading-relaxed text-foreground">
                     {msg.text}
+                    {msg.actionChip && (
+                      <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/5 px-3 py-1 text-[12px] font-medium text-primary">
+                        {msg.actionChip}
+                      </div>
+                    )}
                   </div>
                 )
               ))}
-              {sending && (
+              {sending && traceStep && (
+                <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+                  <Search className="w-3.5 h-3.5 animate-pulse shrink-0" />
+                  <span>{traceStep}</span>
+                </div>
+              )}
+              {sending && !traceStep && (
                 <span className="inline-block w-2 h-4 bg-primary opacity-70 animate-pulse rounded-sm" />
               )}
             </div>
