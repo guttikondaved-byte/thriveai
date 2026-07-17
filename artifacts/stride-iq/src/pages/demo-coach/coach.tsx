@@ -4,7 +4,7 @@ import { DEMO_COACH_DATA, getDemoAthleteDetail } from "@/lib/demoData";
 import { useDemoVoiceInput } from "@/hooks/useDemoVoiceInput";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
-import { useDemoState, appendCoachChat, addDirectMessage, addExtraPlan, type DemoChatMessage } from "@/lib/demoStore";
+import { useDemoState, appendCoachChat, addDirectMessage, addExtraPlan, setPlanOverride, type DemoChatMessage } from "@/lib/demoStore";
 
 type Message = DemoChatMessage;
 
@@ -136,6 +136,25 @@ function planAgentResponse(text: string, pendingPlan: boolean): AgentPlan {
   // after the coach confirms a plan proposed in text.
   if (pendingPlan && PLAN_CONFIRM_RE.test(text)) {
     const p = DEMO_COACH_DATA.averaPlanProposal;
+    // Mirrors the real agent preferring update_team_plan over create_team_plan
+    // when the athlete already has an active plan — Marcus does ("Marathon
+    // Peak Phase"), so this adjusts it in place instead of stacking a second,
+    // overlapping plan.
+    const existingPlan = DEMO_COACH_DATA.plans.find(existing => existing.athleteName === p.athleteName);
+
+    if (existingPlan) {
+      return {
+        trace: [`Checking ${p.athleteName}'s existing plan…`, `Updating "${existingPlan.name}"…`],
+        reply: `Done — updated ${p.athleteName}'s existing plan "${existingPlan.name}": mileage cut from ${existingPlan.weeklyMileage} to ${p.weeklyMileage} mi/week. They've been notified.`,
+        actionChip: `✅ Plan updated for ${p.athleteName}`,
+        toast: { title: "Plan updated", description: `"${existingPlan.name}" is now ${p.weeklyMileage} mi/week.` },
+        effect: () => {
+          setPlanOverride(existingPlan.id, { weeklyMileage: p.weeklyMileage, status: "active" });
+          addDirectMessage(p.athleteUserId, "coach", `Updated your plan "${existingPlan.name}" — now ${p.weeklyMileage} mi/week (was ${existingPlan.weeklyMileage}).`);
+        },
+      };
+    }
+
     return {
       trace: [`Creating "${p.name}" for ${p.athleteName}…`, `Adding ${p.sessions.length} sessions…`],
       reply: `Done — assigned "${p.name}" to ${p.athleteName}: ${p.weeklyMileage} mi/week from ${p.startDate} to ${p.endDate}. They've been notified.`,

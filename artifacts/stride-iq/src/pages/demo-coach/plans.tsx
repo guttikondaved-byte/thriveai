@@ -19,10 +19,11 @@ type Plan = (typeof DEMO_COACH_DATA)["plans"][number];
 
 export default function DemoCoachPlans() {
   const [manualPlans, setManualPlans] = useState(DEMO_COACH_DATA.plans);
+  const demoState = useDemoState();
   // Plans AveraAI actually assigned via chat (see demo-coach/coach.tsx's
   // create_team_plan-equivalent flow) — merged in here so a chat action
   // really does show up on the Plans page, not just as a chat bubble.
-  const chatPlans: Plan[] = useDemoState().extraPlans.map(p => ({
+  const chatPlans: Plan[] = demoState.extraPlans.map(p => ({
     id: p.id,
     athleteName: p.athleteName,
     name: p.name,
@@ -30,7 +31,12 @@ export default function DemoCoachPlans() {
     status: p.status,
     weeklyMileage: p.weeklyMileage,
   }));
-  const plans = [...manualPlans, ...chatPlans];
+  // Edits AveraAI made to an EXISTING plan (update_team_plan-equivalent),
+  // applied on top of the base fixture rather than appended as a new row.
+  const overriddenManualPlans = manualPlans.map(p =>
+    demoState.planOverrides[p.id] ? { ...p, ...demoState.planOverrides[p.id] } : p
+  );
+  const plans = [...overriddenManualPlans, ...chatPlans];
   const setPlans = setManualPlans;
   const [averaFlow, setAveraFlow] = useState<AveraFlow>("idle");
   const [editingId, setEditingId] = useState<number | null>(null);

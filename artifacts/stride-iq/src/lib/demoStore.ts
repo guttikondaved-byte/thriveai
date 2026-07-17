@@ -34,11 +34,22 @@ export interface DemoExtraPlan {
   endDate: string;
 }
 
+export interface PlanOverride {
+  name?: string;
+  goal?: string;
+  status?: "active" | "paused";
+  weeklyMileage?: number;
+}
+
 interface DemoState {
   coachChat: DemoChatMessage[];
   athleteChat: DemoChatMessage[];
   directMessages: Record<string, DemoDirectMessage[]>;
   extraPlans: DemoExtraPlan[];
+  // Edits applied to one of the fixture's existing plans (DEMO_COACH_DATA.plans),
+  // keyed by that plan's id — this is what update_team_plan simulates, as
+  // opposed to extraPlans which simulates create_team_plan.
+  planOverrides: Record<number, PlanOverride>;
   suroEnabled: boolean;
   suroLastRunAt: string | null;
 }
@@ -48,6 +59,7 @@ const EMPTY_STATE: DemoState = {
   athleteChat: [],
   directMessages: {},
   extraPlans: [],
+  planOverrides: {},
   suroEnabled: false,
   suroLastRunAt: null,
 };
@@ -126,6 +138,13 @@ export function addDirectMessage(
 
 export function addExtraPlan(plan: Omit<DemoExtraPlan, "id">) {
   updateDemoState((prev) => ({ ...prev, extraPlans: [...prev.extraPlans, { ...plan, id: Date.now() }] }));
+}
+
+export function setPlanOverride(planId: number, patch: PlanOverride) {
+  updateDemoState((prev) => ({
+    ...prev,
+    planOverrides: { ...prev.planOverrides, [planId]: { ...prev.planOverrides[planId], ...patch } },
+  }));
 }
 
 export function setSuroEnabled(enabled: boolean) {
