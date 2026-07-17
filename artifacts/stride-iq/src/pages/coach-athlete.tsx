@@ -8,6 +8,7 @@ import { IntensityGrid, type IntensityDay } from "@/components/coach/IntensityGr
 import { useListDirectMessages, useCreateDirectMessage, getListDirectMessagesQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useDemoState, addDirectMessage } from "@/lib/demoStore";
 
 type RiskLevel = "high" | "medium" | "low";
 
@@ -144,15 +145,15 @@ function DirectMessages({ teamId, athleteUserId }: { teamId: number; athleteUser
   );
 }
 
-function DemoDirectMessages() {
+function DemoDirectMessages({ athleteUserId }: { athleteUserId: string }) {
   const { toast } = useToast();
   const [draft, setDraft] = useState("");
-  const [thread, setThread] = useState<Array<{ id: number; authorRole: "coach" | "athlete"; content: string; createdAt: string }>>([]);
+  const thread = useDemoState().directMessages[athleteUserId] ?? [];
 
   function send() {
     const content = draft.trim();
     if (!content) return;
-    setThread(prev => [...prev, { id: Date.now(), authorRole: "coach", content, createdAt: new Date().toISOString() }]);
+    addDirectMessage(athleteUserId, "coach", content);
     setDraft("");
     toast({ title: "Message sent" });
   }
@@ -165,8 +166,8 @@ function DemoDirectMessages() {
       {thread.length > 0 ? (
         <div className="space-y-2 mb-3 max-h-72 overflow-y-auto">
           {thread.map(m => (
-            <div key={m.id} className="rounded-xl px-4 py-2.5 bg-secondary/50">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">You</p>
+            <div key={m.id} className={`rounded-xl px-4 py-2.5 ${m.authorRole === "athlete" ? "bg-primary/10 border border-primary/20" : "bg-secondary/50"}`}>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{m.authorRole === "athlete" ? "Athlete" : "You"}</p>
               <p className="text-sm text-foreground">{m.content}</p>
               <p className="text-[10px] text-muted-foreground mt-1">{format(new Date(m.createdAt), "MMM d, HH:mm")}</p>
             </div>
@@ -412,7 +413,7 @@ export function AthleteDetailView({ data, onBack, injuryRiskHref, teamId, demo }
       )}
 
       {/* Direct messages */}
-      {demo ? <DemoDirectMessages /> : teamId != null ? <DirectMessages teamId={teamId} athleteUserId={data.userId} /> : null}
+      {demo ? <DemoDirectMessages athleteUserId={data.userId} /> : teamId != null ? <DirectMessages teamId={teamId} athleteUserId={data.userId} /> : null}
 
       {/* Activity history */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">

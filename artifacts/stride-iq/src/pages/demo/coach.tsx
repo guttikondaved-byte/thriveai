@@ -3,8 +3,7 @@ import { Loader2, ArrowUp, Mic } from "lucide-react";
 import { DEMO_DATA } from "@/lib/demoData";
 import { useDemoVoiceInput } from "@/hooks/useDemoVoiceInput";
 import { useToast } from "@/hooks/use-toast";
-
-type Message = { role: "user" | "assistant"; text: string };
+import { useDemoState, appendAthleteChat } from "@/lib/demoStore";
 
 // Index-aligned with SUGGESTIONS, so clicking a suggestion gets the reply that
 // actually answers it instead of whatever's next in an unrelated cycling order.
@@ -70,7 +69,7 @@ function demoReplyFor(text: string): string {
 
 export default function DemoCoach() {
   const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const messages = useDemoState().athleteChat;
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -90,12 +89,12 @@ export default function DemoCoach() {
   function handleSend(override?: string) {
     const text = (override ?? input).trim();
     if (!text || sending) return;
-    setMessages(prev => [...prev, { role: "user", text }]);
+    appendAthleteChat({ role: "user", text });
     setInput("");
     setSending(true);
     const reply = demoReplyFor(text);
     setTimeout(() => {
-      setMessages(prev => [...prev, { role: "assistant", text: reply }]);
+      appendAthleteChat({ role: "assistant", text: reply });
       setSending(false);
     }, 900);
   }

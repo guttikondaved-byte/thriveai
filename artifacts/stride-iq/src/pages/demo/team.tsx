@@ -3,23 +3,29 @@ import { Users, MessageSquare } from "lucide-react";
 import { DEMO_DATA } from "@/lib/demoData";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useDemoState, addDirectMessage } from "@/lib/demoStore";
+
+// Matches DEMO_COACH_DATA.roster[0] (Jordan P.) — the coach and athlete demos
+// share the same underlying persona, so a message sent to Jordan from the
+// coach's demo shows up here too, and vice versa.
+const DEMO_ATHLETE_USER_ID = "1";
+
+const SEED_MESSAGE = {
+  id: -1,
+  authorRole: "coach" as const,
+  content: "Nice work on this week's long run — keep the next couple of sessions easy before we build back up.",
+  createdAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
+};
 
 function DemoCoachMessages() {
   const { toast } = useToast();
   const [draft, setDraft] = useState("");
-  const [thread, setThread] = useState<Array<{ id: number; authorRole: "coach" | "athlete"; content: string; createdAt: string }>>([
-    {
-      id: 1,
-      authorRole: "coach",
-      content: "Nice work on this week's long run — keep the next couple of sessions easy before we build back up.",
-      createdAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
-    },
-  ]);
+  const thread = [SEED_MESSAGE, ...(useDemoState().directMessages[DEMO_ATHLETE_USER_ID] ?? [])];
 
   function send() {
     const content = draft.trim();
     if (!content) return;
-    setThread(prev => [...prev, { id: Date.now(), authorRole: "athlete", content, createdAt: new Date().toISOString() }]);
+    addDirectMessage(DEMO_ATHLETE_USER_ID, "athlete", content);
     setDraft("");
     toast({ title: "Message sent" });
   }

@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Loader2, ArrowUp, Mic, Bot, Search } from "lucide-react";
 import { DEMO_COACH_DATA, getDemoAthleteDetail } from "@/lib/demoData";
 import { useDemoVoiceInput } from "@/hooks/useDemoVoiceInput";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
+import { useDemoState, appendCoachChat, addDirectMessage, addExtraPlan, type DemoChatMessage } from "@/lib/demoStore";
 
-type Message = { role: "user" | "assistant"; text: string; actionChip?: string };
+type Message = DemoChatMessage;
 
 // Index-aligned with SUGGESTIONS, so clicking a suggestion gets the reply that
 // actually answers it instead of whatever's next in an unrelated cycling order.
@@ -112,7 +113,18 @@ function findMentionedAthlete(text: string) {
   return DEMO_COACH_DATA.roster.find(m => lower.includes(m.name.split(" ")[0].toLowerCase()));
 }
 
-type AgentPlan = { trace: string[]; reply: string; actionChip?: string; toast?: { title: string; description: string }; proposesPlan?: boolean };
+type AgentPlan = {
+  trace: string[];
+  reply: string;
+  actionChip?: string;
+  toast?: { title: string; description: string };
+  proposesPlan?: boolean;
+  // Runs once, right when the action resolves — this is what makes the
+  // action actually happen elsewhere in the demo (a message that shows up
+  // in the athlete's thread, a plan that shows up on the Plans page) instead
+  // of the chat just claiming it did something.
+  effect?: () => void;
+};
 
 const PLAN_CONFIRM_RE = /^(go ahead|do it|apply( it)?|assign( it| that)?|yes\b|confirm|sounds good|make it so)\b/i;
 
@@ -129,6 +141,19 @@ function planAgentResponse(text: string, pendingPlan: boolean): AgentPlan {
       reply: `Done — assigned "${p.name}" to ${p.athleteName}: ${p.weeklyMileage} mi/week from ${p.startDate} to ${p.endDate}. They've been notified.`,
       actionChip: `✅ Plan assigned to ${p.athleteName}`,
       toast: { title: "Plan assigned", description: `"${p.name}" is now active for ${p.athleteName}.` },
+      effect: () => {
+        addExtraPlan({
+          athleteUserId: p.athleteUserId,
+          athleteName: p.athleteName,
+          name: p.name,
+          goal: p.goal,
+          status: "active",
+          weeklyMileage: p.weeklyMileage,
+          startDate: p.startDate,
+          endDate: p.endDate,
+        });
+        addDirectMessage(p.athleteUserId, "coach", `Assigned you a new plan: "${p.name}" — ${p.weeklyMileage} mi/week, ${p.startDate} to ${p.endDate}.`);
+      },
     };
   }
 
@@ -170,6 +195,7 @@ function planAgentResponse(text: string, pendingPlan: boolean): AgentPlan {
         reply: `Done — I left a note on ${athlete.name}'s ${alert.bodyPart} alert: "${content}" They'll see it on their alert and get notified.`,
         actionChip: `✅ Note sent to ${athlete.name}`,
         toast: { title: "Note added", description: `Left on ${athlete.name}'s ${alert.bodyPart} alert.` },
+        effect: () => addDirectMessage(athlete.userId, "coach", `Note on your ${alert.bodyPart} alert: "${content}"`),
       };
     }
 
@@ -179,6 +205,7 @@ function planAgentResponse(text: string, pendingPlan: boolean): AgentPlan {
       reply: `Done — I sent ${athlete.name} a message: "${content}" They'll see it and get notified.`,
       actionChip: `✅ Message sent to ${athlete.name}`,
       toast: { title: "Message sent", description: `Sent to ${athlete.name}.` },
+      effect: () => addDirectMessage(athlete.userId, "coach", content),
     };
   }
 
@@ -193,6 +220,9 @@ function planAgentResponse(text: string, pendingPlan: boolean): AgentPlan {
       reply: `Sent to all ${count} athletes on ${DEMO_COACH_DATA.team.name}: "${message}"`,
       actionChip: `✅ Broadcast sent to ${count} athletes`,
       toast: { title: "Broadcast sent", description: `Delivered to ${count} athletes.` },
+      effect: () => {
+        for (const m of DEMO_COACH_DATA.roster) addDirectMessage(m.userId, "coach", `[Team broadcast] ${message}`);
+      },
     };
   }
 
@@ -215,7 +245,7 @@ const AGENT_OFF_ACTION_REPLY =
 
 export default function DemoCoachChat() {
   const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const messages = useDemoState().coachChat;
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [agentMode, setAgentMode] = useState(true);
@@ -238,7 +268,7 @@ export default function DemoCoachChat() {
   function handleSend(override?: string) {
     const text = (override ?? input).trim();
     if (!text || sending) return;
-    setMessages(prev => [...prev, { role: "user", text }]);
+    appendCoachChat({ role: "user", text });
     setInput("");
     setSending(true);
 
@@ -252,7 +282,7 @@ export default function DemoCoachChat() {
         /\bbroadcast\b/i.test(text);
       const reply = isWriteIntent ? AGENT_OFF_ACTION_REPLY : demoReplyFor(text);
       setTimeout(() => {
-        setMessages(prev => [...prev, { role: "assistant", text: reply }]);
+        appendCoachChat({ role: "assistant", text: reply });
         setSending(false);
       }, 900);
       return;
@@ -278,9 +308,10 @@ export default function DemoCoachChat() {
   }
 
   function finishAgentTurn(plan: AgentPlan) {
-    setMessages(prev => [...prev, { role: "assistant", text: plan.reply, actionChip: plan.actionChip }]);
+    appendCoachChat({ role: "assistant", text: plan.reply, actionChip: plan.actionChip });
     setSending(false);
     setPendingPlan(!!plan.proposesPlan);
+    plan.effect?.();
     if (plan.toast) toast(plan.toast);
   }
 

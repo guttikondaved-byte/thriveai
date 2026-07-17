@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Calendar, Bot, Loader2, X, Check, Pencil } from "lucide-react";
 import { DEMO_COACH_DATA } from "@/lib/demoData";
 import { PageHeader } from "@/components/coach/PageHeader";
+import { useDemoState } from "@/lib/demoStore";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "text-[#10b981] bg-[#10b981]/10 border-[#10b981]/20",
@@ -17,7 +18,20 @@ type AveraFlow = "idle" | "loading" | "proposal" | "applying" | "done";
 type Plan = (typeof DEMO_COACH_DATA)["plans"][number];
 
 export default function DemoCoachPlans() {
-  const [plans, setPlans] = useState(DEMO_COACH_DATA.plans);
+  const [manualPlans, setManualPlans] = useState(DEMO_COACH_DATA.plans);
+  // Plans AveraAI actually assigned via chat (see demo-coach/coach.tsx's
+  // create_team_plan-equivalent flow) — merged in here so a chat action
+  // really does show up on the Plans page, not just as a chat bubble.
+  const chatPlans: Plan[] = useDemoState().extraPlans.map(p => ({
+    id: p.id,
+    athleteName: p.athleteName,
+    name: p.name,
+    goal: p.goal,
+    status: p.status,
+    weeklyMileage: p.weeklyMileage,
+  }));
+  const plans = [...manualPlans, ...chatPlans];
+  const setPlans = setManualPlans;
   const [averaFlow, setAveraFlow] = useState<AveraFlow>("idle");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [draft, setDraft] = useState<Plan | null>(null);
