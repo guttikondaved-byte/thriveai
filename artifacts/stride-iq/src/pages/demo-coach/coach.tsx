@@ -127,9 +127,13 @@ type AgentPlan = {
 };
 
 const PLAN_CONFIRM_RE = /^(go ahead|do it|apply( it)?|assign( it| that)?|yes\b|confirm|sounds good|make it so)\b/i;
+const AGENT_MODE_QUESTION_RE = /\b(agent(ic)? mode|are you (an )?agent\w*)\b/i;
 
 function planAgentResponse(text: string, pendingPlan: boolean): AgentPlan {
   if (GREETING_RE.test(text)) return { trace: [], reply: GREETING_REPLY };
+  if (AGENT_MODE_QUESTION_RE.test(text)) {
+    return { trace: [], reply: "Yes — Agent Mode is on. I can look up any athlete, run the injury what-if simulator, message someone, leave a note on an alert, or assign/adjust a plan, all without you leaving the chat. Flip the toggle above off if you'd rather I just talk." };
+  }
 
   // Confirming a plan proposed in the previous turn is a real (simulated)
   // action — mirrors the real agent's create_team_plan tool, only called
@@ -299,7 +303,9 @@ export default function DemoCoachChat() {
         (mentionsAthlete && ATHLETE_ACTION_VERB_RE.test(text)) ||
         (BROADCAST_VERB_RE.test(text) && TEAM_TARGET_RE.test(text)) ||
         /\bbroadcast\b/i.test(text);
-      const reply = isWriteIntent ? AGENT_OFF_ACTION_REPLY : demoReplyFor(text);
+      const reply = AGENT_MODE_QUESTION_RE.test(text)
+        ? "No — Agent Mode is off right now, so I can only talk. Flip the toggle above the chat on if you want me to look things up or take action."
+        : isWriteIntent ? AGENT_OFF_ACTION_REPLY : demoReplyFor(text);
       setTimeout(() => {
         appendCoachChat({ role: "assistant", text: reply });
         setSending(false);
