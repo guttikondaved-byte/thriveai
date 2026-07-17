@@ -34,6 +34,7 @@ export * from './dashboardSummary';
 export * from './dashboardSummaryTrainingLoad';
 export * from './directMessage';
 export * from './directMessageAuthorRole';
+export * from './directMessageSource';
 export * from './errorEnvelope';
 export * from './getInjuryRiskIntensityMapParams';
 export * from './handleBrowserLoginCallbackParams';

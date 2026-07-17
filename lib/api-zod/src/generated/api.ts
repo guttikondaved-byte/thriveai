@@ -381,6 +381,7 @@ export const ListDirectMessagesResponseItem = zod.object({
   "athleteUserId": zod.string(),
   "authorUserId": zod.string(),
   "authorRole": zod.enum(['coach', 'athlete']),
+  "source": zod.enum(['coach', 'suro', 'athlete']).describe('Distinguishes a human coach\'s message from one sent autonomously by Suro.'),
   "content": zod.string(),
   "createdAt": zod.coerce.date()
 })

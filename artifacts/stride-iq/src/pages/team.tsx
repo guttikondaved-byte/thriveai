@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Users, Copy, Check, Link as LinkIcon, UserPlus, ChevronRight, RefreshCw, Trash2, LogOut, AlertTriangle, MessageSquare } from "lucide-react";
+import { Users, Copy, Check, Link as LinkIcon, UserPlus, ChevronRight, RefreshCw, Trash2, LogOut, AlertTriangle, MessageSquare, Bot, Loader2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useGetAthleteProfile, useGetCurrentAuthUser, useListDirectMessages, useCreateDirectMessage, getListDirectMessagesQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { TEAMS_MY_QUERY_KEY } from "@/lib/queryKeys";
@@ -15,6 +16,8 @@ interface TeamInfo {
   memberCount: number;
   createdAt: string;
   isPrimaryCoach?: boolean;
+  suroEnabled?: boolean;
+  suroLastRunAt?: string | null;
 }
 
 interface TeamMember {
@@ -61,7 +64,7 @@ function CoachMessages({ teamId, myUserId }: { teamId: number; myUserId: string 
         <div className="space-y-2 max-h-72 overflow-y-auto">
           {thread!.map(m => (
             <div key={m.id} className={`rounded-xl px-4 py-2.5 ${m.authorRole === "athlete" ? "bg-primary/10 border border-primary/20" : "bg-secondary/50"}`}>
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{m.authorRole === "athlete" ? "You" : "Coach"}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{m.authorRole === "athlete" ? "You" : m.source === "suro" ? "Suro" : "Coach"}</p>
               <p className="text-sm text-foreground">{m.content}</p>
               <p className="text-[10px] text-muted-foreground mt-1">{format(new Date(m.createdAt), "MMM d, HH:mm")}</p>
             </div>
@@ -123,6 +126,9 @@ export default function Team() {
   const [showBroadcastForm, setShowBroadcastForm] = useState(false);
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [broadcasting, setBroadcasting] = useState(false);
+
+  const [suroToggling, setSuroToggling] = useState(false);
+  const [suroRunning, setSuroRunning] = useState(false);
 
   useEffect(() => {
     fetch("/api/teams/my", { credentials: "include" })
@@ -274,6 +280,53 @@ export default function Team() {
       .catch((err: Error) => {
         setBroadcasting(false);
         toast({ title: "Couldn't send message", description: err.message, variant: "destructive" });
+      });
+  }
+
+  function toggleSuro(enabled: boolean) {
+    if (!team || suroToggling) return;
+    setSuroToggling(true);
+    fetch(`/api/teams/${team.id}/suro`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled }),
+    })
+      .then(async r => {
+        if (!r.ok) throw new Error();
+        return r.json() as Promise<{ suroEnabled: boolean; suroLastRunAt: string | null }>;
+      })
+      .then(data => {
+        setTeam(prev => prev ? { ...prev, suroEnabled: data.suroEnabled, suroLastRunAt: data.suroLastRunAt } : prev);
+        setSuroToggling(false);
+        toast({ title: enabled ? "Suro turned on" : "Suro turned off" });
+      })
+      .catch(() => {
+        setSuroToggling(false);
+        toast({ title: "Couldn't update Suro", variant: "destructive" });
+      });
+  }
+
+  function runSuroNow() {
+    if (!team || suroRunning) return;
+    setSuroRunning(true);
+    fetch(`/api/teams/${team.id}/suro/run`, { method: "POST", credentials: "include" })
+      .then(async r => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data.error ?? "Suro run failed");
+        return data as { ranAt: string; summary: string; actions: Array<{ tool: string }> };
+      })
+      .then(data => {
+        setTeam(prev => prev ? { ...prev, suroLastRunAt: data.ranAt } : prev);
+        setSuroRunning(false);
+        toast({
+          title: data.actions.length > 0 ? `Suro took ${data.actions.length} action${data.actions.length === 1 ? "" : "s"}` : "Suro found nothing to act on",
+          description: data.summary || undefined,
+        });
+      })
+      .catch((err: Error) => {
+        setSuroRunning(false);
+        toast({ title: "Suro run failed", description: err.message, variant: "destructive" });
       });
   }
 
@@ -544,6 +597,41 @@ export default function Team() {
             </button>
             <span className="text-border">·</span>
             <p className="text-xs text-muted-foreground">Old code will stop working immediately.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Suro: autonomous agent */}
+      <div className="bg-card border border-border rounded-xl p-6 shadow-sm space-y-3">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <Bot className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Suro</p>
+              <p className="text-xs text-muted-foreground mt-0.5 max-w-sm">
+                An autonomous agent that reviews your roster on its own schedule and can message an athlete, leave an alert note, or assign a plan without you asking — no approval step, so only turn this on if you're comfortable with that.
+              </p>
+              {team.suroEnabled && (
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  {team.suroLastRunAt ? `Last ran ${new Date(team.suroLastRunAt).toLocaleString()}` : "Hasn't run yet — runs roughly once a day."}
+                </p>
+              )}
+            </div>
+          </div>
+          <Switch checked={!!team.suroEnabled} onCheckedChange={toggleSuro} disabled={suroToggling} aria-label="Toggle Suro" />
+        </div>
+        {team.suroEnabled && (
+          <div className="pt-1">
+            <button
+              onClick={runSuroNow}
+              disabled={suroRunning}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
+            >
+              {suroRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Bot className="w-3.5 h-3.5" />}
+              {suroRunning ? "Running…" : "Run Suro now"}
+            </button>
           </div>
         )}
       </div>

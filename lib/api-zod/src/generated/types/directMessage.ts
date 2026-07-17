@@ -6,12 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { DirectMessageAuthorRole } from './directMessageAuthorRole';
+import type { DirectMessageSource } from './directMessageSource';
 
 export interface DirectMessage {
   id: number;
   athleteUserId: string;
   authorUserId: string;
   authorRole: DirectMessageAuthorRole;
+  /** Distinguishes a human coach's message from one sent autonomously by Suro. */
+  source: DirectMessageSource;
   content: string;
   createdAt: Date;
 }

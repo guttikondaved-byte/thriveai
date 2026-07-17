@@ -13,6 +13,7 @@ const DEMO_ATHLETE_USER_ID = "1";
 const SEED_MESSAGE = {
   id: -1,
   authorRole: "coach" as const,
+  source: "coach" as const,
   content: "Nice work on this week's long run — keep the next couple of sessions easy before we build back up.",
   createdAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
 };
@@ -39,7 +40,7 @@ function DemoCoachMessages() {
       <div className="space-y-2 max-h-72 overflow-y-auto">
         {thread.map(m => (
           <div key={m.id} className={`rounded-xl px-4 py-2.5 ${m.authorRole === "athlete" ? "bg-primary/10 border border-primary/20" : "bg-secondary/50"}`}>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{m.authorRole === "athlete" ? "You" : "Coach"}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{m.authorRole === "athlete" ? "You" : m.source === "suro" ? "Suro" : "Coach"}</p>
             <p className="text-sm text-foreground">{m.content}</p>
             <p className="text-[10px] text-muted-foreground mt-1">{format(new Date(m.createdAt), "MMM d, HH:mm")}</p>
           </div>

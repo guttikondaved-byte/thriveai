@@ -1462,6 +1462,10 @@ components:
         authorRole:
           type: string
           enum: [coach, athlete]
+        source:
+          type: string
+          enum: [coach, suro, athlete]
+          description: Distinguishes a human coach's message from one sent autonomously by Suro.
         content:
           type: string
         createdAt:
@@ -1472,6 +1476,7 @@ components:
         - athleteUserId
         - authorUserId
         - authorRole
+        - source
         - content
         - createdAt
 

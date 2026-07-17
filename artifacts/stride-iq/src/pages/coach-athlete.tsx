@@ -114,7 +114,7 @@ function DirectMessages({ teamId, athleteUserId }: { teamId: number; athleteUser
         <div className="space-y-2 mb-3 max-h-72 overflow-y-auto">
           {thread!.map(m => (
             <div key={m.id} className={`rounded-xl px-4 py-2.5 ${m.authorRole === "athlete" ? "bg-primary/10 border border-primary/20" : "bg-secondary/50"}`}>
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{m.authorRole === "athlete" ? "Athlete" : "You"}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{m.authorRole === "athlete" ? "Athlete" : m.source === "suro" ? "Suro" : "You"}</p>
               <p className="text-sm text-foreground">{m.content}</p>
               <p className="text-[10px] text-muted-foreground mt-1">{format(new Date(m.createdAt), "MMM d, HH:mm")}</p>
             </div>
@@ -167,7 +167,7 @@ function DemoDirectMessages({ athleteUserId }: { athleteUserId: string }) {
         <div className="space-y-2 mb-3 max-h-72 overflow-y-auto">
           {thread.map(m => (
             <div key={m.id} className={`rounded-xl px-4 py-2.5 ${m.authorRole === "athlete" ? "bg-primary/10 border border-primary/20" : "bg-secondary/50"}`}>
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{m.authorRole === "athlete" ? "Athlete" : "You"}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{m.authorRole === "athlete" ? "Athlete" : m.source === "suro" ? "Suro" : "You"}</p>
               <p className="text-sm text-foreground">{m.content}</p>
               <p className="text-[10px] text-muted-foreground mt-1">{format(new Date(m.createdAt), "MMM d, HH:mm")}</p>
             </div>

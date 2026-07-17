@@ -17,6 +17,7 @@ export interface DemoChatMessage {
 export interface DemoDirectMessage {
   id: number;
   authorRole: "coach" | "athlete";
+  source?: "coach" | "suro" | "athlete";
   content: string;
   createdAt: string;
 }
@@ -38,9 +39,18 @@ interface DemoState {
   athleteChat: DemoChatMessage[];
   directMessages: Record<string, DemoDirectMessage[]>;
   extraPlans: DemoExtraPlan[];
+  suroEnabled: boolean;
+  suroLastRunAt: string | null;
 }
 
-const EMPTY_STATE: DemoState = { coachChat: [], athleteChat: [], directMessages: {}, extraPlans: [] };
+const EMPTY_STATE: DemoState = {
+  coachChat: [],
+  athleteChat: [],
+  directMessages: {},
+  extraPlans: [],
+  suroEnabled: false,
+  suroLastRunAt: null,
+};
 
 function load(): DemoState {
   if (typeof window === "undefined") return EMPTY_STATE;
@@ -96,14 +106,19 @@ export function appendAthleteChat(message: DemoChatMessage) {
   updateDemoState((prev) => ({ ...prev, athleteChat: [...prev.athleteChat, message] }));
 }
 
-export function addDirectMessage(athleteUserId: string, authorRole: "coach" | "athlete", content: string) {
+export function addDirectMessage(
+  athleteUserId: string,
+  authorRole: "coach" | "athlete",
+  content: string,
+  source: "coach" | "suro" | "athlete" = authorRole,
+) {
   updateDemoState((prev) => ({
     ...prev,
     directMessages: {
       ...prev.directMessages,
       [athleteUserId]: [
         ...(prev.directMessages[athleteUserId] ?? []),
-        { id: Date.now() + Math.random(), authorRole, content, createdAt: new Date().toISOString() },
+        { id: Date.now() + Math.random(), authorRole, source, content, createdAt: new Date().toISOString() },
       ],
     },
   }));
@@ -111,6 +126,14 @@ export function addDirectMessage(athleteUserId: string, authorRole: "coach" | "a
 
 export function addExtraPlan(plan: Omit<DemoExtraPlan, "id">) {
   updateDemoState((prev) => ({ ...prev, extraPlans: [...prev.extraPlans, { ...plan, id: Date.now() }] }));
+}
+
+export function setSuroEnabled(enabled: boolean) {
+  updateDemoState((prev) => ({ ...prev, suroEnabled: enabled }));
+}
+
+export function setSuroLastRunAt(iso: string) {
+  updateDemoState((prev) => ({ ...prev, suroLastRunAt: iso }));
 }
 
 export function resetDemoState() {

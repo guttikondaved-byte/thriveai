@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, unique, boolean } from "drizzle-orm/pg-core";
 import { usersTable } from "./auth";
 
 export const teamsTable = pgTable("teams", {
@@ -7,6 +7,13 @@ export const teamsTable = pgTable("teams", {
   coachUserId: text("coach_user_id").notNull().references(() => usersTable.id),
   inviteCode: text("invite_code").notNull().unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  // Suro: an autonomous agent that reviews the roster on its own schedule and
+  // takes action (messages an athlete, leaves an alert note, assigns a plan)
+  // without a coach prompting it through AveraAI first. Opt-in and off by
+  // default — see lib/suroAgent.ts for what it actually does and index.ts for
+  // the interval that runs it.
+  suroEnabled: boolean("suro_enabled").notNull().default(false),
+  suroLastRunAt: timestamp("suro_last_run_at", { withTimezone: true }),
 });
 
 export const teamMembershipsTable = pgTable("team_memberships", {

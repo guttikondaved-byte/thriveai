@@ -11,6 +11,10 @@ export const directMessagesTable = pgTable("direct_messages", {
   athleteUserId: text("athlete_user_id").notNull().references(() => usersTable.id),
   authorUserId: text("author_user_id").notNull().references(() => usersTable.id),
   authorRole: text("author_role").notNull(), // 'coach' | 'athlete'
+  // Who/what actually authored it, distinct from authorRole: 'coach' (the
+  // human coach typed it), 'suro' (the autonomous agent sent it), or
+  // 'athlete' (mirrors authorRole for athlete-authored messages).
+  source: text("source").notNull().default("coach"),
   content: text("content").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

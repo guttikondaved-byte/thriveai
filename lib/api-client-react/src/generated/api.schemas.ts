@@ -461,11 +461,25 @@ export const DirectMessageAuthorRole = {
   athlete: 'athlete',
 } as const;
 
+/**
+ * Distinguishes a human coach's message from one sent autonomously by Suro.
+ */
+export type DirectMessageSource = typeof DirectMessageSource[keyof typeof DirectMessageSource];
+
+
+export const DirectMessageSource = {
+  coach: 'coach',
+  suro: 'suro',
+  athlete: 'athlete',
+} as const;
+
 export interface DirectMessage {
   id: number;
   athleteUserId: string;
   authorUserId: string;
   authorRole: DirectMessageAuthorRole;
+  /** Distinguishes a human coach's message from one sent autonomously by Suro. */
+  source: DirectMessageSource;
   content: string;
   createdAt: string;
 }

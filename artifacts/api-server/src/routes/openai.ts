@@ -54,7 +54,7 @@ async function countUserMessagesThisMonth(userId: string): Promise<number> {
 }
 
 const apiKey = process.env.GLM_API_KEY;
-const openaiClient = apiKey
+export const openaiClient = apiKey
   ? new OpenAI({ apiKey, baseURL: "https://open.bigmodel.cn/api/paas/v4/" })
   : null;
 
@@ -78,11 +78,11 @@ function audioExtensionFor(contentType: string): string {
 // default stays on glm-4-flash, the model already proven to work on this account.
 // (glm-4.6 is only served on some GLM plans; opt in via env once you've confirmed
 // your key has access.) Titles always use the cheap/fast model.
-const COACH_MODEL = process.env.GLM_COACH_MODEL ?? "glm-4-flash";
+export const COACH_MODEL = process.env.GLM_COACH_MODEL ?? "glm-4-flash";
 const TITLE_MODEL = process.env.GLM_TITLE_MODEL ?? "glm-4-flash";
 // Slightly warm so coaching reads human, not templated — but low enough to keep
 // the numbers/advice grounded in the data we feed it.
-const COACH_TEMPERATURE = 0.6;
+export const COACH_TEMPERATURE = 0.6;
 
 // ── Training metrics ─────────────────────────────────────────────────────────
 // Turns raw activities into the numbers a coach actually reasons about, so the
@@ -379,7 +379,7 @@ async function getTeamForCoach(userId: string) {
   return team;
 }
 
-async function buildCoachContext(userId: string): Promise<string> {
+export async function buildCoachContext(userId: string): Promise<string> {
   const team = await getTeamForCoach(userId);
   if (!team) return "=== COACHING CONTEXT ===\nYou have no team yet.\n========================\n";
 
@@ -570,7 +570,7 @@ async function buildUserContext(userId: string, userRole?: string | null): Promi
 
 import type { ChatCompletionMessageParam, ChatCompletionTool } from "openai/resources/chat/completions";
 
-const COACH_AGENT_TOOLS: ChatCompletionTool[] = [
+export const COACH_AGENT_TOOLS: ChatCompletionTool[] = [
   {
     type: "function",
     function: {
@@ -697,7 +697,7 @@ const COACH_AGENT_TOOLS: ChatCompletionTool[] = [
 
 // Resolve the coach's team + roster once, with a name→userId lookup that
 // tolerates partial/case-insensitive matches from the model.
-async function loadCoachRoster(coachUserId: string) {
+export async function loadCoachRoster(coachUserId: string) {
   const team = await getTeamForCoach(coachUserId);
   if (!team) return null;
   const memberships = await db
@@ -740,16 +740,17 @@ async function athleteMetricsSummary(userId: string) {
   return computeTrainingMetrics(activities as ActivityRow[]);
 }
 
-type CoachToolResult = { ok: boolean; action?: string; [k: string]: unknown };
+export type CoachToolResult = { ok: boolean; action?: string; [k: string]: unknown };
 
 // Executes one tool call. Every path is scoped to `roster` (the coach's own
 // team), so the model can't reach outside it even if it invents a name/ID.
-async function executeCoachTool(
+export async function executeCoachTool(
   coachUserId: string,
   team: typeof teamsTable.$inferSelect,
   roster: { userId: string; name: string }[],
   name: string,
   args: Record<string, unknown>,
+  actor: "coach" | "suro" = "coach",
 ): Promise<CoachToolResult> {
   switch (name) {
     case "list_team_athletes": {
@@ -812,7 +813,7 @@ async function executeCoachTool(
         roster.map((r) => ({
           userId: r.userId,
           type: "team_broadcast",
-          title: `Message from ${team.name}`,
+          title: actor === "suro" ? `Message from Suro (${team.name})` : `Message from ${team.name}`,
           message,
         })),
       );
@@ -829,15 +830,18 @@ async function executeCoachTool(
       if (!roster.some((r) => r.userId === alert.userId)) {
         return { ok: false, error: "That alert doesn't belong to an athlete on your team." };
       }
+      // injury_alert_comments has no source column — tag Suro's authorship in
+      // the content itself rather than adding a migration for it.
+      const commentContent = actor === "suro" ? `[Suro] ${content}` : content;
       const [comment] = await db
         .insert(injuryAlertCommentsTable)
-        .values({ alertId, authorUserId: coachUserId, authorRole: "coach", content })
+        .values({ alertId, authorUserId: coachUserId, authorRole: "coach", content: commentContent })
         .returning();
       await db.insert(notificationsTable).values({
         userId: alert.userId,
         type: "alert_comment",
-        title: "Your coach left a note",
-        message: `Your coach commented on your ${alert.bodyPart} alert: "${content}"`,
+        title: actor === "suro" ? "Suro left a note" : "Your coach left a note",
+        message: `${actor === "suro" ? "Suro" : "Your coach"} commented on your ${alert.bodyPart} alert: "${content}"`,
       });
       return { ok: true, action: "alert_comment", commentId: comment.id, bodyPart: alert.bodyPart };
     }
@@ -849,12 +853,12 @@ async function executeCoachTool(
       if (content.length > 1000) return { ok: false, error: "Message must be 1000 characters or fewer." };
       const [message] = await db
         .insert(directMessagesTable)
-        .values({ athleteUserId: athlete.userId, authorUserId: coachUserId, authorRole: "coach", content })
+        .values({ athleteUserId: athlete.userId, authorUserId: coachUserId, authorRole: "coach", source: actor, content })
         .returning();
       await db.insert(notificationsTable).values({
         userId: athlete.userId,
         type: "direct_message",
-        title: `Message from ${team.name}`,
+        title: actor === "suro" ? "New message (from Suro)" : `Message from ${team.name}`,
         message: content,
       });
       return { ok: true, action: "direct_message", messageId: message.id, athleteName: athlete.name };
@@ -879,6 +883,7 @@ async function executeCoachTool(
         startDate,
         endDate,
         status: "active",
+        source: actor === "suro" ? "suro" : "ai",
       };
       if (typeof args.weeklyMileage === "number") insert.weeklyMileage = String(args.weeklyMileage);
 
@@ -920,7 +925,7 @@ async function executeCoachTool(
         userId: athlete.userId,
         type: "training_plan",
         title: "New training plan",
-        message: `Your coach assigned you a new plan: "${planName}".`,
+        message: `${actor === "suro" ? "Suro" : "Your coach"} assigned you a new plan: "${planName}".`,
       });
 
       return { ok: true, action: "create_plan", planId: plan.id, athleteName: athlete.name, planName, sessionCount: sessions.length };

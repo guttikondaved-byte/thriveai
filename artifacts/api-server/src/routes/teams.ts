@@ -5,6 +5,7 @@ import crypto from "crypto";
 import { syncCoachTeamSubscriptionQuantity } from "./stripe";
 import { maxDailyLoad, buildMonthlyIntensityMap } from "../lib/workloadRatio";
 import { computeInjuryRiskDashboard, computeWhatIfScenarios } from "./injuryRisk";
+import { runSuroForTeam } from "../lib/suroAgent";
 
 const router: IRouter = Router();
 
@@ -95,7 +96,7 @@ router.get("/teams/my", async (req, res): Promise<void> => {
   if (coachTeam.length > 0) {
     const t = coachTeam[0];
     const members = await db.select().from(teamMembershipsTable).where(eq(teamMembershipsTable.teamId, t.id));
-    res.json({ team: { id: t.id, name: t.name, inviteCode: t.inviteCode, memberCount: members.length, createdAt: t.createdAt.toISOString(), isPrimaryCoach: true } });
+    res.json({ team: { id: t.id, name: t.name, inviteCode: t.inviteCode, memberCount: members.length, createdAt: t.createdAt.toISOString(), isPrimaryCoach: true, suroEnabled: t.suroEnabled, suroLastRunAt: t.suroLastRunAt?.toISOString() ?? null } });
     return;
   }
 
@@ -107,7 +108,7 @@ router.get("/teams/my", async (req, res): Promise<void> => {
     const [t] = await db.select().from(teamsTable).where(eq(teamsTable.id, coCoachOf[0].teamId));
     if (t) {
       const members = await db.select().from(teamMembershipsTable).where(eq(teamMembershipsTable.teamId, t.id));
-      res.json({ team: { id: t.id, name: t.name, inviteCode: t.inviteCode, memberCount: members.length, createdAt: t.createdAt.toISOString(), isPrimaryCoach: false } });
+      res.json({ team: { id: t.id, name: t.name, inviteCode: t.inviteCode, memberCount: members.length, createdAt: t.createdAt.toISOString(), isPrimaryCoach: false, suroEnabled: t.suroEnabled, suroLastRunAt: t.suroLastRunAt?.toISOString() ?? null } });
       return;
     }
   }
@@ -437,7 +438,7 @@ router.post("/teams/:teamId/members/:userId/messages", async (req, res): Promise
 
   const [message] = await db
     .insert(directMessagesTable)
-    .values({ athleteUserId, authorUserId, authorRole, content })
+    .values({ athleteUserId, authorUserId, authorRole, source: authorRole, content })
     .returning();
 
   if (authorRole === "coach") {
@@ -462,6 +463,64 @@ router.post("/teams/:teamId/members/:userId/messages", async (req, res): Promise
   }
 
   res.status(201).json(serializeDirectMessage(message));
+});
+
+// PATCH /teams/:teamId/suro — coach opts their team in/out of Suro, the
+// autonomous agent that reviews the roster and acts on its own (see
+// lib/suroAgent.ts). Off by default; this is the only approval a coach gives
+// — once on, Suro acts without asking per-action.
+router.patch("/teams/:teamId/suro", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const teamId = Number(req.params.teamId);
+  if (isNaN(teamId)) {
+    res.status(400).json({ error: "Invalid team id" });
+    return;
+  }
+  if (typeof req.body?.enabled !== "boolean") {
+    res.status(400).json({ error: "enabled must be a boolean" });
+    return;
+  }
+  const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId)).limit(1);
+  if (!team || !(await isTeamCoach(teamId, req.user.id))) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+  const [updated] = await db
+    .update(teamsTable)
+    .set({ suroEnabled: req.body.enabled })
+    .where(eq(teamsTable.id, teamId))
+    .returning();
+  res.json({ suroEnabled: updated.suroEnabled, suroLastRunAt: updated.suroLastRunAt?.toISOString() ?? null });
+});
+
+// POST /teams/:teamId/suro/run — coach manually triggers an immediate Suro
+// pass (in addition to its own schedule) so they can see what it does
+// without waiting for the next automatic run.
+router.post("/teams/:teamId/suro/run", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const teamId = Number(req.params.teamId);
+  if (isNaN(teamId)) {
+    res.status(400).json({ error: "Invalid team id" });
+    return;
+  }
+  const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId)).limit(1);
+  if (!team || !(await isTeamCoach(teamId, req.user.id))) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+  try {
+    const result = await runSuroForTeam(team);
+    res.json(result);
+  } catch (err) {
+    req.log?.error({ err, teamId }, "Manual Suro run failed");
+    res.status(500).json({ error: "Suro run failed" });
+  }
 });
 
 // GET /teams/:teamId/strava-status — coach sees which athletes have Strava connected

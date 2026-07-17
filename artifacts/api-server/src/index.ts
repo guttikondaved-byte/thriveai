@@ -8,6 +8,7 @@ import {
   backfillStravaDetails,
 } from "./lib/strava";
 import { sendWeeklyCoachDigests, sendWeeklyAthleteDigests } from "./lib/weeklyDigest";
+import { runSuroForEnabledTeams } from "./lib/suroAgent";
 
 const rawPort = process.env["PORT"];
 
@@ -96,6 +97,21 @@ app.listen(port, async (err) => {
   };
   setTimeout(runDigestCheck, 60_000); // first run shortly after boot
   setInterval(runDigestCheck, DIGEST_CHECK_INTERVAL_MS);
+
+  // Suro: checks every couple hours for opted-in teams whose last autonomous
+  // run is stale (runSuroForEnabledTeams enforces the actual ~daily cadence
+  // per team internally), same "cheap to check often" pattern as the digest
+  // above rather than needing a real cron trigger.
+  const SURO_CHECK_INTERVAL_MS = 2 * 60 * 60 * 1000;
+  const runSuroCheck = async () => {
+    try {
+      await runSuroForEnabledTeams();
+    } catch (e) {
+      logger.warn({ err: e }, "Suro scheduled check failed");
+    }
+  };
+  setTimeout(runSuroCheck, 90_000); // first run shortly after boot
+  setInterval(runSuroCheck, SURO_CHECK_INTERVAL_MS);
 });
 
 /**
