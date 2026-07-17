@@ -564,7 +564,7 @@ async function buildUserContext(userId: string, userRole?: string | null): Promi
 // the prompt and only being able to talk, the model can call tools to look up a
 // specific athlete on demand, run the what-if injury simulator, and take real
 // actions on the coach's behalf (message the team, message one athlete, leave
-// a note on an alert).
+// a note on an alert, assign a training plan).
 // All tools are scoped to the coach's own team — a tool can never touch an
 // athlete the coach doesn't coach.
 
@@ -638,6 +638,42 @@ const COACH_AGENT_TOOLS: ChatCompletionTool[] = [
           content: { type: "string", description: "The note to leave for the athlete." },
         },
         required: ["alertId", "content"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_team_plan",
+      description:
+        "Create and immediately assign a training plan to ONE named athlete on the coach's team. This is a REAL action — it creates a live plan the athlete sees right away, same as building one on the Plans page. Only call this after the coach has explicitly confirmed a proposed plan (e.g. 'go ahead', 'apply it', 'assign that') — never on the first mention of a plan, since you should propose it in your text reply first and let the coach confirm.",
+      parameters: {
+        type: "object",
+        properties: {
+          athleteName: { type: "string", description: "The athlete's name, as shown in list_team_athletes." },
+          name: { type: "string", description: "Short plan name, e.g. 'Marathon Recovery & Rebuild'." },
+          goal: { type: "string", description: "The plan's goal." },
+          startDate: { type: "string", description: "Start date, YYYY-MM-DD." },
+          endDate: { type: "string", description: "End date, YYYY-MM-DD." },
+          weeklyMileage: { type: "number", description: "Target weekly mileage." },
+          sessions: {
+            type: "array",
+            description: "The plan's sessions. If you already described specific sessions in the conversation, use those; otherwise a reasonable weekly structure is generated for you if omitted.",
+            items: {
+              type: "object",
+              properties: {
+                weekNumber: { type: "number", description: "1-indexed week within the plan." },
+                dayOfWeek: { type: "number", description: "1 (Monday) through 7 (Sunday)." },
+                sessionType: { type: "string", description: "e.g. easy_run, tempo_run, long_run, interval, rest, cross_training." },
+                description: { type: "string" },
+                distanceMiles: { type: "number" },
+                durationMinutes: { type: "number" },
+              },
+              required: ["weekNumber", "dayOfWeek", "sessionType", "description"],
+            },
+          },
+        },
+        required: ["athleteName", "name", "goal", "startDate", "endDate"],
       },
     },
   },
@@ -823,6 +859,72 @@ async function executeCoachTool(
       });
       return { ok: true, action: "direct_message", messageId: message.id, athleteName: athlete.name };
     }
+    case "create_team_plan": {
+      const athlete = resolveAthlete(roster, String(args.athleteName ?? ""));
+      if (!athlete) return { ok: false, error: `No athlete named "${args.athleteName}" on your team.` };
+      const planName = String(args.name ?? "").trim();
+      const goal = String(args.goal ?? "").trim();
+      const startDate = String(args.startDate ?? "");
+      const endDate = String(args.endDate ?? "");
+      if (!planName || !goal) return { ok: false, error: "Plan name and goal are required." };
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+        return { ok: false, error: "startDate and endDate must be YYYY-MM-DD." };
+      }
+
+      const insert: typeof trainingPlansTable.$inferInsert = {
+        userId: athlete.userId,
+        createdBy: coachUserId,
+        name: planName,
+        goal,
+        startDate,
+        endDate,
+        status: "active",
+      };
+      if (typeof args.weeklyMileage === "number") insert.weeklyMileage = String(args.weeklyMileage);
+
+      const [plan] = await db.insert(trainingPlansTable).values(insert).returning();
+
+      const rawSessions = Array.isArray(args.sessions) ? (args.sessions as Record<string, unknown>[]) : [];
+      let sessions: (typeof planSessionsTable.$inferInsert)[];
+      if (rawSessions.length > 0) {
+        sessions = rawSessions
+          .filter((s) => Number.isFinite(Number(s.weekNumber)) && Number.isFinite(Number(s.dayOfWeek)) && typeof s.sessionType === "string" && typeof s.description === "string")
+          .map((s) => ({
+            planId: plan.id,
+            weekNumber: Number(s.weekNumber),
+            dayOfWeek: Number(s.dayOfWeek),
+            sessionType: String(s.sessionType),
+            description: String(s.description),
+            distanceKm: typeof s.distanceMiles === "number" ? String(Math.round(s.distanceMiles * 1.60934 * 100) / 100) : undefined,
+            durationMinutes: typeof s.durationMinutes === "number" ? s.durationMinutes : undefined,
+          }));
+      } else {
+        // No explicit sessions from the model — generate a reasonable default
+        // weekly structure, same template used by the manual Plans page.
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const weeks = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (7 * 24 * 3600 * 1000)));
+        const templates = [
+          { dayOfWeek: 1, sessionType: "easy_run", description: "Easy recovery run", distanceKm: "5.00" },
+          { dayOfWeek: 3, sessionType: "tempo_run", description: "Tempo run at comfortably hard pace", distanceKm: "8.00" },
+          { dayOfWeek: 6, sessionType: "long_run", description: "Long slow distance run", distanceKm: "14.00" },
+        ];
+        sessions = [];
+        for (let w = 1; w <= Math.min(weeks, 12); w++) {
+          for (const t of templates) sessions.push({ planId: plan.id, weekNumber: w, ...t });
+        }
+      }
+      if (sessions.length > 0) await db.insert(planSessionsTable).values(sessions);
+
+      await db.insert(notificationsTable).values({
+        userId: athlete.userId,
+        type: "training_plan",
+        title: "New training plan",
+        message: `Your coach assigned you a new plan: "${planName}".`,
+      });
+
+      return { ok: true, action: "create_plan", planId: plan.id, athleteName: athlete.name, planName, sessionCount: sessions.length };
+    }
     default:
       return { ok: false, error: `Unknown tool: ${name}` };
   }
@@ -833,7 +935,8 @@ const COACH_AGENT_PROMPT = `${COACH_ADVISOR_PROMPT}
 TOOLS & ACTIONS
 - You have tools to look up athletes on demand and to take real actions. Prefer calling a tool over guessing.
 - Use list_team_athletes for an overview, get_athlete_detail for one athlete's specifics (and to get alert IDs), and run_injury_what_if to reason about load changes.
-- send_team_broadcast, comment_on_alert, and message_athlete take REAL actions visible to real athletes. Only call them when the coach clearly asked you to. Use message_athlete for something directed at ONE named athlete outside the context of a specific alert; use comment_on_alert when it's about a specific alert; use send_team_broadcast only for the whole team. After taking an action, tell the coach plainly what you did.
+- send_team_broadcast, comment_on_alert, message_athlete, and create_team_plan take REAL actions visible to real athletes. Only call them when the coach clearly asked you to. Use message_athlete for something directed at ONE named athlete outside the context of a specific alert; use comment_on_alert when it's about a specific alert; use send_team_broadcast only for the whole team. After taking an action, tell the coach plainly what you did.
+- For training plans: propose the plan in your text reply first (name, goal, dates, weekly mileage, rationale) and wait for the coach to confirm ("go ahead", "apply it", "assign that") before calling create_team_plan. Never call it on the first mention of a plan.
 - When you don't need to act — the coach just wants analysis or advice — answer directly without calling write tools.`;
 
 const COACH_AGENT_MAX_STEPS = 6;

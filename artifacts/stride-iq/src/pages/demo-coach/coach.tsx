@@ -112,10 +112,25 @@ function findMentionedAthlete(text: string) {
   return DEMO_COACH_DATA.roster.find(m => lower.includes(m.name.split(" ")[0].toLowerCase()));
 }
 
-type AgentPlan = { trace: string[]; reply: string; actionChip?: string; toast?: { title: string; description: string } };
+type AgentPlan = { trace: string[]; reply: string; actionChip?: string; toast?: { title: string; description: string }; proposesPlan?: boolean };
 
-function planAgentResponse(text: string): AgentPlan {
+const PLAN_CONFIRM_RE = /^(go ahead|do it|apply( it)?|assign( it| that)?|yes\b|confirm|sounds good|make it so)\b/i;
+
+function planAgentResponse(text: string, pendingPlan: boolean): AgentPlan {
   if (GREETING_RE.test(text)) return { trace: [], reply: GREETING_REPLY };
+
+  // Confirming a plan proposed in the previous turn is a real (simulated)
+  // action — mirrors the real agent's create_team_plan tool, only called
+  // after the coach confirms a plan proposed in text.
+  if (pendingPlan && PLAN_CONFIRM_RE.test(text)) {
+    const p = DEMO_COACH_DATA.averaPlanProposal;
+    return {
+      trace: [`Creating "${p.name}" for ${p.athleteName}…`, `Adding ${p.sessions.length} sessions…`],
+      reply: `Done — assigned "${p.name}" to ${p.athleteName}: ${p.weeklyMileage} mi/week from ${p.startDate} to ${p.endDate}. They've been notified.`,
+      actionChip: `✅ Plan assigned to ${p.athleteName}`,
+      toast: { title: "Plan assigned", description: `"${p.name}" is now active for ${p.athleteName}.` },
+    };
+  }
 
   const suggestionIndex = SUGGESTIONS.indexOf(text);
   if (suggestionIndex !== -1) {
@@ -183,15 +198,16 @@ function planAgentResponse(text: string): AgentPlan {
 
   // Read-only: same grounded answers as plain mode, with a trace shown first
   // so it's visible that agent mode actually looked something up.
+  const planRe = /\b(plans?|planning|schedule|program|assign\w*)\b/i;
   const readTraces: Array<{ re: RegExp; trace: string[] }> = [
     { re: /\b(injur|risk|hurt|pain|overtrain\w*)\b/i, trace: ["Checking injury alerts across your roster…"] },
     { re: /\b(mileage|volume|load|distance|training load)\b/i, trace: ["Aggregating this week's training load…"] },
     { re: /\b(hrv|recover\w*|resting heart rate)\b/i, trace: ["Scanning HRV trends for your roster…"] },
-    { re: /\b(plans?|planning|schedule|program|assign\w*)\b/i, trace: ["Reviewing recent load for a plan proposal…"] },
+    { re: planRe, trace: ["Reviewing recent load for a plan proposal…"] },
     { re: /\b(roster|team|summar|overview)\b/i, trace: ["Loading your team roster…"] },
   ];
   const matchedTrace = readTraces.find(({ re }) => re.test(text));
-  return { trace: matchedTrace?.trace ?? [], reply: demoReplyFor(text) };
+  return { trace: matchedTrace?.trace ?? [], reply: demoReplyFor(text), proposesPlan: planRe.test(text) };
 }
 
 const AGENT_OFF_ACTION_REPLY =
@@ -204,6 +220,7 @@ export default function DemoCoachChat() {
   const [sending, setSending] = useState(false);
   const [agentMode, setAgentMode] = useState(true);
   const [traceStep, setTraceStep] = useState<string | null>(null);
+  const [pendingPlan, setPendingPlan] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const voice = useDemoVoiceInput((transcript) => {
@@ -241,7 +258,7 @@ export default function DemoCoachChat() {
       return;
     }
 
-    const plan = planAgentResponse(text);
+    const plan = planAgentResponse(text, pendingPlan);
     if (plan.trace.length === 0) {
       setTimeout(() => finishAgentTurn(plan), 900);
       return;
@@ -263,6 +280,7 @@ export default function DemoCoachChat() {
   function finishAgentTurn(plan: AgentPlan) {
     setMessages(prev => [...prev, { role: "assistant", text: plan.reply, actionChip: plan.actionChip }]);
     setSending(false);
+    setPendingPlan(!!plan.proposesPlan);
     if (plan.toast) toast(plan.toast);
   }
 
