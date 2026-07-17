@@ -11,12 +11,14 @@ import {
   trainingPlansTable,
   planSessionsTable,
   injuryAlertsTable,
+  injuryAlertCommentsTable,
   notificationsTable,
   teamsTable,
   teamMembershipsTable,
   teamCoachesTable,
   usersTable,
 } from "@workspace/db";
+import { computeWhatIfScenarios } from "./injuryRisk";
 import {
   CreateOpenaiConversationBody,
   GetOpenaiConversationParams,
@@ -556,6 +558,313 @@ async function buildUserContext(userId: string, userRole?: string | null): Promi
   return buildAthleteContext(userId);
 }
 
+// ── Coach agent: tool-calling loop ───────────────────────────────────────────
+// Coaches get an *agentic* AveraAI: instead of stuffing the whole roster into
+// the prompt and only being able to talk, the model can call tools to look up a
+// specific athlete on demand, run the what-if injury simulator, and take real
+// actions on the coach's behalf (message the team, leave a note on an alert).
+// All tools are scoped to the coach's own team — a tool can never touch an
+// athlete the coach doesn't coach.
+
+import type { ChatCompletionMessageParam, ChatCompletionTool } from "openai/resources/chat/completions";
+
+const COACH_AGENT_TOOLS: ChatCompletionTool[] = [
+  {
+    type: "function",
+    function: {
+      name: "list_team_athletes",
+      description:
+        "List every athlete on the coach's team with their computed training metrics (weekly miles, ACWR, flags) and active injury-alert count. Call this first when you need an overview or need to find who to act on.",
+      parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_athlete_detail",
+      description:
+        "Get a detailed breakdown for one athlete: full training metrics, recent runs, active injury alerts (with their alert IDs and body parts, needed for comment_on_alert), and training plans. Use when the coach asks about a specific athlete or you need alert IDs.",
+      parameters: {
+        type: "object",
+        properties: {
+          athleteName: { type: "string", description: "The athlete's name, as shown in list_team_athletes." },
+        },
+        required: ["athleteName"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "run_injury_what_if",
+      description:
+        "Run the injury-risk what-if simulator for one athlete — models how their injury risk changes if they run more/less this week or take rest days. Use when reasoning about load changes before advising the coach.",
+      parameters: {
+        type: "object",
+        properties: {
+          athleteName: { type: "string", description: "The athlete's name." },
+        },
+        required: ["athleteName"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_team_broadcast",
+      description:
+        "Send a message to EVERY athlete on the team as an in-app notification. This is a real action visible to real athletes — only use it when the coach clearly asked to message the team. State what you sent afterward.",
+      parameters: {
+        type: "object",
+        properties: {
+          message: { type: "string", description: "The message body (max 1000 chars)." },
+        },
+        required: ["message"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "comment_on_alert",
+      description:
+        "Leave a coaching note on a specific athlete's injury alert. The athlete is notified. Get the alertId from get_athlete_detail first. Only use when the coach asked to leave a note or reach out about an alert.",
+      parameters: {
+        type: "object",
+        properties: {
+          alertId: { type: "number", description: "The injury alert's ID, from get_athlete_detail." },
+          content: { type: "string", description: "The note to leave for the athlete." },
+        },
+        required: ["alertId", "content"],
+      },
+    },
+  },
+];
+
+// Resolve the coach's team + roster once, with a name→userId lookup that
+// tolerates partial/case-insensitive matches from the model.
+async function loadCoachRoster(coachUserId: string) {
+  const team = await getTeamForCoach(coachUserId);
+  if (!team) return null;
+  const memberships = await db
+    .select({ athleteUserId: teamMembershipsTable.athleteUserId })
+    .from(teamMembershipsTable)
+    .where(eq(teamMembershipsTable.teamId, team.id));
+  const memberIds = memberships.map((m) => m.athleteUserId);
+  if (memberIds.length === 0) return { team, roster: [] as { userId: string; name: string }[] };
+  const [profiles, users] = await Promise.all([
+    db.select().from(athleteProfileTable).where(inArray(athleteProfileTable.userId, memberIds)),
+    db.select().from(usersTable).where(inArray(usersTable.id, memberIds)),
+  ]);
+  const profileByUser = new Map(profiles.map((p) => [p.userId, p]));
+  const userByUser = new Map(users.map((u) => [u.id, u]));
+  const roster = memberIds.map((id) => {
+    const p = profileByUser.get(id);
+    const u = userByUser.get(id);
+    const name = (p?.name ?? `${u?.firstName ?? ""} ${u?.lastName ?? ""}`.trim()) || "Athlete";
+    return { userId: id, name };
+  });
+  return { team, roster };
+}
+
+function resolveAthlete(roster: { userId: string; name: string }[], athleteName: string): { userId: string; name: string } | null {
+  const q = athleteName.trim().toLowerCase();
+  return (
+    roster.find((r) => r.name.toLowerCase() === q) ??
+    roster.find((r) => r.name.toLowerCase().includes(q) || q.includes(r.name.toLowerCase())) ??
+    null
+  );
+}
+
+async function athleteMetricsSummary(userId: string) {
+  const activities = await db
+    .select()
+    .from(activitiesTable)
+    .where(eq(activitiesTable.userId, userId))
+    .orderBy(desc(activitiesTable.activityDate))
+    .limit(40);
+  return computeTrainingMetrics(activities as ActivityRow[]);
+}
+
+type CoachToolResult = { ok: boolean; action?: string; [k: string]: unknown };
+
+// Executes one tool call. Every path is scoped to `roster` (the coach's own
+// team), so the model can't reach outside it even if it invents a name/ID.
+async function executeCoachTool(
+  coachUserId: string,
+  team: typeof teamsTable.$inferSelect,
+  roster: { userId: string; name: string }[],
+  name: string,
+  args: Record<string, unknown>,
+): Promise<CoachToolResult> {
+  switch (name) {
+    case "list_team_athletes": {
+      const athletes = await Promise.all(
+        roster.map(async ({ userId, name: athName }) => {
+          const [met, alerts] = await Promise.all([
+            athleteMetricsSummary(userId),
+            db
+              .select({ id: injuryAlertsTable.id })
+              .from(injuryAlertsTable)
+              .where(and(eq(injuryAlertsTable.userId, userId), eq(injuryAlertsTable.acknowledged, false))),
+          ]);
+          return {
+            name: athName,
+            weeklyMiles: met.hasData ? met.weeklyMiles[met.weeklyMiles.length - 1] : 0,
+            acwr: met.acwr,
+            flags: met.flags,
+            activeAlerts: alerts.length,
+          };
+        }),
+      );
+      return { ok: true, team: team.name, athletes };
+    }
+    case "get_athlete_detail": {
+      const athlete = resolveAthlete(roster, String(args.athleteName ?? ""));
+      if (!athlete) return { ok: false, error: `No athlete named "${args.athleteName}" on your team.` };
+      const [met, alerts, plans] = await Promise.all([
+        athleteMetricsSummary(athlete.userId),
+        db
+          .select()
+          .from(injuryAlertsTable)
+          .where(and(eq(injuryAlertsTable.userId, athlete.userId), eq(injuryAlertsTable.acknowledged, false)))
+          .orderBy(desc(injuryAlertsTable.createdAt)),
+        db
+          .select()
+          .from(trainingPlansTable)
+          .where(eq(trainingPlansTable.userId, athlete.userId))
+          .orderBy(desc(trainingPlansTable.createdAt)),
+      ]);
+      return {
+        ok: true,
+        name: athlete.name,
+        metrics: formatMetricsBlock(met),
+        alerts: alerts.map((a) => ({ id: a.id, bodyPart: a.bodyPart, riskLevel: a.riskLevel, message: a.message })),
+        plans: plans.map((p) => ({ name: p.name, goal: p.goal, status: p.status, startDate: p.startDate, endDate: p.endDate })),
+      };
+    }
+    case "run_injury_what_if": {
+      const athlete = resolveAthlete(roster, String(args.athleteName ?? ""));
+      if (!athlete) return { ok: false, error: `No athlete named "${args.athleteName}" on your team.` };
+      const scenarios = await computeWhatIfScenarios(athlete.userId);
+      return { ok: true, name: athlete.name, scenarios };
+    }
+    case "send_team_broadcast": {
+      const message = String(args.message ?? "").trim();
+      if (!message) return { ok: false, error: "Message is empty." };
+      if (message.length > 1000) return { ok: false, error: "Message must be 1000 characters or fewer." };
+      if (roster.length === 0) return { ok: false, error: "Your team has no athletes to message yet." };
+      await db.insert(notificationsTable).values(
+        roster.map((r) => ({
+          userId: r.userId,
+          type: "team_broadcast",
+          title: `Message from ${team.name}`,
+          message,
+        })),
+      );
+      return { ok: true, action: "broadcast", recipientCount: roster.length, message };
+    }
+    case "comment_on_alert": {
+      const alertId = Number(args.alertId);
+      const content = String(args.content ?? "").trim();
+      if (!Number.isInteger(alertId)) return { ok: false, error: "alertId must be a number." };
+      if (!content) return { ok: false, error: "Comment content is empty." };
+      const [alert] = await db.select().from(injuryAlertsTable).where(eq(injuryAlertsTable.id, alertId)).limit(1);
+      if (!alert || !alert.userId) return { ok: false, error: "Alert not found." };
+      // Authorization: the alert must belong to an athlete on THIS coach's team.
+      if (!roster.some((r) => r.userId === alert.userId)) {
+        return { ok: false, error: "That alert doesn't belong to an athlete on your team." };
+      }
+      const [comment] = await db
+        .insert(injuryAlertCommentsTable)
+        .values({ alertId, authorUserId: coachUserId, authorRole: "coach", content })
+        .returning();
+      await db.insert(notificationsTable).values({
+        userId: alert.userId,
+        type: "alert_comment",
+        title: "Your coach left a note",
+        message: `Your coach commented on your ${alert.bodyPart} alert: "${content}"`,
+      });
+      return { ok: true, action: "alert_comment", commentId: comment.id, bodyPart: alert.bodyPart };
+    }
+    default:
+      return { ok: false, error: `Unknown tool: ${name}` };
+  }
+}
+
+const COACH_AGENT_PROMPT = `${COACH_ADVISOR_PROMPT}
+
+TOOLS & ACTIONS
+- You have tools to look up athletes on demand and to take real actions. Prefer calling a tool over guessing.
+- Use list_team_athletes for an overview, get_athlete_detail for one athlete's specifics (and to get alert IDs), and run_injury_what_if to reason about load changes.
+- send_team_broadcast and comment_on_alert take REAL actions visible to real athletes. Only call them when the coach clearly asked you to. After taking an action, tell the coach plainly what you did.
+- When you don't need to act — the coach just wants analysis or advice — answer directly without calling write tools.`;
+
+const COACH_AGENT_MAX_STEPS = 6;
+
+// Runs the coach agent loop. Returns the final assistant text plus any real
+// actions taken, so the route can report them in the SSE done event.
+async function runCoachAgent(
+  client: OpenAI,
+  coachUserId: string,
+  chatMessages: { role: "user" | "assistant"; content: string }[],
+): Promise<{ text: string; actions: string[] }> {
+  const loaded = await loadCoachRoster(coachUserId);
+  const messagesForModel: ChatCompletionMessageParam[] = [
+    { role: "system", content: `${RESPONSE_STRATEGY}\n\n${COACH_AGENT_PROMPT}` },
+    ...chatMessages,
+  ];
+  const actions: string[] = [];
+
+  for (let step = 0; step < COACH_AGENT_MAX_STEPS; step++) {
+    const completion = await client.chat.completions.create({
+      model: COACH_MODEL,
+      temperature: COACH_TEMPERATURE,
+      max_tokens: 2048,
+      messages: messagesForModel,
+      tools: COACH_AGENT_TOOLS,
+    });
+    const choice = completion.choices[0]?.message;
+    if (!choice) break;
+    const toolCalls = choice.tool_calls ?? [];
+    if (toolCalls.length === 0) {
+      return { text: choice.content ?? "", actions };
+    }
+    // Append the assistant's tool-call turn, then each tool result.
+    messagesForModel.push({ role: "assistant", content: choice.content ?? "", tool_calls: toolCalls });
+    for (const call of toolCalls) {
+      if (call.type !== "function") continue;
+      let parsedArgs: Record<string, unknown> = {};
+      try {
+        parsedArgs = call.function.arguments ? JSON.parse(call.function.arguments) : {};
+      } catch {
+        parsedArgs = {};
+      }
+      let result: CoachToolResult;
+      if (!loaded) {
+        result = { ok: false, error: "You don't have a team yet, so there are no athletes to act on." };
+      } else {
+        try {
+          result = await executeCoachTool(coachUserId, loaded.team, loaded.roster, call.function.name, parsedArgs);
+        } catch (err) {
+          logger.error({ err, tool: call.function.name }, "coach agent tool failed");
+          result = { ok: false, error: "That action failed unexpectedly." };
+        }
+      }
+      if (result.ok && result.action) actions.push(result.action);
+      messagesForModel.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
+    }
+  }
+  // Ran out of steps — ask the model for a final answer with no more tools.
+  const finalCompletion = await client.chat.completions.create({
+    model: COACH_MODEL,
+    temperature: COACH_TEMPERATURE,
+    max_tokens: 2048,
+    messages: messagesForModel,
+  });
+  return { text: finalCompletion.choices[0]?.message?.content ?? "", actions };
+}
+
 // ── Voice input ──────────────────────────────────────────────────────────────
 // Transcribes a recorded voice message into text for the AveraAI composer.
 // Expects the raw audio bytes as the request body (see app.ts for the
@@ -1006,7 +1315,26 @@ router.post("/openai/conversations/:id/messages", async (req: Request, res): Pro
     }
   }
 
-  if (!planCreatedId) {
+  // Coaches get the agentic path: a tool-calling loop that can look up athletes
+  // and take real actions. It runs non-streaming (tool calls interleave with
+  // model turns), then we emit the final answer as a single SSE chunk so the
+  // existing client — which just accumulates `content` events — needs no change.
+  let coachAgentHandled = false;
+  const agentActions: string[] = [];
+  if (profile?.userRole === "coach") {
+    coachAgentHandled = true;
+    try {
+      const { text, actions } = await runCoachAgent(client, userId, chatMessages);
+      fullResponse = text || "I wasn't able to put together a response — try rephrasing?";
+      agentActions.push(...actions);
+    } catch (err) {
+      logger.error({ err, userId }, "coach agent failed; falling back to plain reply");
+      fullResponse = "Sorry, I hit an error working through that. Please try again.";
+    }
+    res.write(`data: ${JSON.stringify({ content: fullResponse })}\n\n`);
+  }
+
+  if (!planCreatedId && !coachAgentHandled) {
     try {
       const finalMessages = [{ role: "system" as const, content: systemPrompt }, ...chatMessages];
       // Full prompt sent to the model, verbatim — for debugging/observability.
@@ -1046,6 +1374,7 @@ router.post("/openai/conversations/:id/messages", async (req: Request, res): Pro
   await titlePromise;
   const doneEvent: Record<string, unknown> = { done: true };
   if (generatedTitle) doneEvent.title = generatedTitle;
+  if (agentActions.length > 0) doneEvent.actionsTaken = agentActions;
   if (planCreatedId) {
     doneEvent.planCreated = true;
     doneEvent.planId = planCreatedId;
