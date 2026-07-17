@@ -517,3 +517,57 @@ export function getDemoInjuryRiskDashboard(userId: string) {
     soreness,
   };
 }
+
+// ── System prompts for the demo's real-LLM chat ─────────────────────────────
+// The demo has no backend/DB, so instead of the server building context from
+// real rows (like buildCoachContext in the api-server), these build the same
+// kind of context client-side from the static fixture and send it as the
+// system prompt to POST /api/demo/chat — that endpoint just relays it to the
+// real model, so the demo answers with genuine understanding instead of a
+// keyword match, without needing a login or real team/athlete data.
+
+export function buildDemoCoachSystemPrompt(): string {
+  const { team, roster, plans } = DEMO_COACH_DATA;
+  const lines: string[] = [
+    "You are AveraAI, an AI assistant for a running coach, answering inside a no-login product demo. Be specific and grounded in the roster data below — never invent athletes, numbers, or plans that aren't listed. Keep replies concise (2-4 sentences unless asked for detail).",
+    "",
+    `Team: "${team.name}" — ${roster.length} athletes.`,
+    "",
+    "Roster:",
+  ];
+  for (const m of roster) {
+    const detail = getDemoAthleteDetail(m.userId);
+    const alertStr = detail?.alerts.length
+      ? detail.alerts.map(a => `${a.riskLevel} risk ${a.bodyPart} (${a.recommendation})`).join("; ")
+      : "no active alerts";
+    lines.push(
+      `- ${m.name} | ${m.fitnessLevel} | goal: ${m.primaryGoal} | ${m.weeklyDistanceKm}km/${m.weeklyWorkouts} sessions this week | HRV ${m.hrv}ms, resting HR ${m.restingHeartRate}bpm | risk: ${m.riskLevel} | alerts: ${alertStr}`,
+    );
+  }
+  lines.push("", "Active plans:");
+  for (const p of plans) {
+    lines.push(`- ${p.athleteName}: "${p.name}" (${p.goal}), ${p.weeklyMileage}mi/wk, status: ${p.status}`);
+  }
+  lines.push(
+    "",
+    "This is a read-only conversation — do not claim to have sent a message, left a note, or changed a plan; those actions are handled separately in this demo, not by you answering here.",
+  );
+  return lines.join("\n");
+}
+
+export function buildDemoAthleteSystemPrompt(): string {
+  const d = DEMO_DATA;
+  const alert = d.activeAlerts[0];
+  return [
+    `You are AveraAI, ${d.name}'s AI running coach, answering inside a no-login product demo. Be specific and grounded in the data below — never invent numbers, alerts, or plans that aren't listed. Keep replies concise (2-4 sentences unless asked for detail).`,
+    "",
+    `Athlete: ${d.name} | ${d.fitnessLevel} | goal: ${d.primaryGoal}`,
+    `This week: ${d.weeklyDistanceKm}km across ${d.weeklyRuns} runs, goal ${d.weeklyMileageGoal}km. Workload ratio: ${d.riskDashboard.workload.ratio}.`,
+    `HRV: ${d.hrv}ms | resting HR: ${d.restingHeartRate}bpm`,
+    `PRs: 5K ${d.pr5k}, 10K ${d.pr10k}, half ${d.prHalf}`,
+    `Current plan: ${d.currentPlanName}`,
+    alert ? `Active alert: ${alert.bodyPart}, ${alert.riskLevel} risk — ${alert.message} ${alert.recommendation}` : "No active alerts.",
+    "",
+    "This is a read-only conversation — do not claim to have changed a plan or taken any action; that isn't something you do in this demo.",
+  ].join("\n");
+}

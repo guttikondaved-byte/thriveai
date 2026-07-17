@@ -15,6 +15,12 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+// Render sits in front of this app as a reverse proxy — without this,
+// req.ip returns Render's proxy address for every request instead of the
+// real client IP, which would break the demo chat's per-IP rate limit by
+// bucketing every visitor together.
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,

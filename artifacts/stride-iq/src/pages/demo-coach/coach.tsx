@@ -1,10 +1,11 @@
 import { useRef, useState, useEffect } from "react";
 import { Loader2, ArrowUp, Mic, Bot, Search } from "lucide-react";
-import { DEMO_COACH_DATA, getDemoAthleteDetail } from "@/lib/demoData";
+import { DEMO_COACH_DATA, getDemoAthleteDetail, buildDemoCoachSystemPrompt } from "@/lib/demoData";
 import { useDemoVoiceInput } from "@/hooks/useDemoVoiceInput";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
-import { useDemoState, appendCoachChat, addDirectMessage, addExtraPlan, setPlanOverride, type DemoChatMessage } from "@/lib/demoStore";
+import { useDemoState, getDemoState, appendCoachChat, addDirectMessage, addExtraPlan, setPlanOverride, type DemoChatMessage } from "@/lib/demoStore";
+import { fetchDemoChatReply } from "@/lib/demoLLM";
 
 type Message = DemoChatMessage;
 
@@ -94,6 +95,12 @@ function demoReplyFor(text: string): string {
   return `I don't understand that one — I can pull mileage, HRV, and injury risk per athlete from your roster data. Try asking who's at risk, about training load, recovery, or your roster summary and I'll go deeper on any of those.`;
 }
 
+// True if demoReplyFor has a deterministic, on-topic answer for this text —
+// used to decide whether to skip the real-model call and answer instantly.
+function hasKnownTopic(text: string): boolean {
+  return GREETING_RE.test(text) || SUGGESTIONS.includes(text) || KEYWORD_REPLIES.some(({ re }) => re.test(text));
+}
+
 // ── Agent mode: simulated tool calls + real (demo-scoped) write actions ──────
 // Mirrors the real coach agent's shape (list/lookup tools, plus broadcast and
 // alert-comment actions) against the static demo fixture, so the demo shows
@@ -124,6 +131,10 @@ type AgentPlan = {
   // in the athlete's thread, a plan that shows up on the Plans page) instead
   // of the chat just claiming it did something.
   effect?: () => void;
+  // Set instead of a static `reply` when nothing deterministic matched —
+  // asks the real model instead of falling back to a canned line. Resolves
+  // to null on failure, in which case the caller uses `reply` as a fallback.
+  resolveReply?: () => Promise<string | null>;
 };
 
 const PLAN_CONFIRM_RE = /^(go ahead|do it|apply( it)?|assign( it| that)?|yes\b|confirm|sounds good|make it so)\b/i;
@@ -260,7 +271,17 @@ function planAgentResponse(text: string, pendingPlan: boolean): AgentPlan {
     { re: /\b(roster|team|summar|overview)\b/i, trace: ["Loading your team roster…"] },
   ];
   const matchedTrace = readTraces.find(({ re }) => re.test(text));
-  return { trace: matchedTrace?.trace ?? [], reply: demoReplyFor(text), proposesPlan: planRe.test(text) };
+  if (matchedTrace) {
+    return { trace: matchedTrace.trace, reply: demoReplyFor(text), proposesPlan: planRe.test(text) };
+  }
+
+  // Nothing deterministic matched — ask the real model instead of a canned
+  // "I don't understand" line, so free-form questions get real understanding.
+  return {
+    trace: ["Thinking…"],
+    reply: demoReplyFor(text),
+    resolveReply: () => fetchDemoChatReply(buildDemoCoachSystemPrompt(), getDemoState().coachChat),
+  };
 }
 
 const AGENT_OFF_ACTION_REPLY =
@@ -297,19 +318,32 @@ export default function DemoCoachChat() {
 
     if (!agentMode) {
       // Plain-chat mode: no tool trace, and write-intent requests are declined
-      // rather than silently acted on — mirrors the real backend gate.
+      // rather than silently acted on — mirrors the real backend gate. Known
+      // topics still answer instantly; anything else asks the real model
+      // (still read-only, no actions) instead of a canned fallback.
       const mentionsAthlete = !!findMentionedAthlete(text);
       const isWriteIntent =
         (mentionsAthlete && ATHLETE_ACTION_VERB_RE.test(text)) ||
         (BROADCAST_VERB_RE.test(text) && TEAM_TARGET_RE.test(text)) ||
         /\bbroadcast\b/i.test(text);
-      const reply = AGENT_MODE_QUESTION_RE.test(text)
-        ? "No — Agent Mode is off right now, so I can only talk. Flip the toggle above the chat on if you want me to look things up or take action."
-        : isWriteIntent ? AGENT_OFF_ACTION_REPLY : demoReplyFor(text);
-      setTimeout(() => {
-        appendCoachChat({ role: "assistant", text: reply });
+
+      if (AGENT_MODE_QUESTION_RE.test(text) || isWriteIntent || hasKnownTopic(text)) {
+        const reply = AGENT_MODE_QUESTION_RE.test(text)
+          ? "No — Agent Mode is off right now, so I can only talk. Flip the toggle above the chat on if you want me to look things up or take action."
+          : isWriteIntent ? AGENT_OFF_ACTION_REPLY : demoReplyFor(text);
+        setTimeout(() => {
+          appendCoachChat({ role: "assistant", text: reply });
+          setSending(false);
+        }, 900);
+        return;
+      }
+
+      setTraceStep("Thinking…");
+      fetchDemoChatReply(buildDemoCoachSystemPrompt(), getDemoState().coachChat).then((reply) => {
+        setTraceStep(null);
+        appendCoachChat({ role: "assistant", text: reply ?? demoReplyFor(text) });
         setSending(false);
-      }, 900);
+      });
       return;
     }
 
@@ -326,14 +360,17 @@ export default function DemoCoachChat() {
         setTraceStep(plan.trace[step]);
       } else {
         clearInterval(interval);
-        setTraceStep(null);
         finishAgentTurn(plan);
       }
     }, 550);
   }
 
-  function finishAgentTurn(plan: AgentPlan) {
-    appendCoachChat({ role: "assistant", text: plan.reply, actionChip: plan.actionChip });
+  async function finishAgentTurn(plan: AgentPlan) {
+    // Keep the last trace step ("Thinking…") visible through the actual
+    // network wait instead of clearing it beforehand.
+    const text = plan.resolveReply ? (await plan.resolveReply()) ?? plan.reply : plan.reply;
+    setTraceStep(null);
+    appendCoachChat({ role: "assistant", text, actionChip: plan.actionChip });
     setSending(false);
     setPendingPlan(!!plan.proposesPlan);
     plan.effect?.();

@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { Loader2, ArrowUp, Mic } from "lucide-react";
-import { DEMO_DATA } from "@/lib/demoData";
+import { DEMO_DATA, buildDemoAthleteSystemPrompt } from "@/lib/demoData";
 import { useDemoVoiceInput } from "@/hooks/useDemoVoiceInput";
 import { useToast } from "@/hooks/use-toast";
-import { useDemoState, appendAthleteChat } from "@/lib/demoStore";
+import { useDemoState, getDemoState, appendAthleteChat } from "@/lib/demoStore";
+import { fetchDemoChatReply } from "@/lib/demoLLM";
 
 // Index-aligned with SUGGESTIONS, so clicking a suggestion gets the reply that
 // actually answers it instead of whatever's next in an unrelated cycling order.
@@ -67,6 +68,12 @@ function demoReplyFor(text: string): string {
   return `I don't understand that one — but for reference, your risk score is ${DEMO_DATA.riskDashboard.riskScore}/100 (${DEMO_DATA.riskDashboard.riskLabel.toLowerCase()}) right now, based on your recent mileage, HRV, and open alerts. Ask me about your injury risk, mileage, recovery, or race times and I can go deeper on any of those.`;
 }
 
+// True if demoReplyFor has a deterministic, on-topic answer for this text —
+// used to decide whether to skip the real-model call and answer instantly.
+function hasKnownTopic(text: string): boolean {
+  return GREETING_RE.test(text) || SUGGESTIONS.includes(text) || KEYWORD_REPLIES.some(({ re }) => re.test(text));
+}
+
 export default function DemoCoach() {
   const { toast } = useToast();
   const messages = useDemoState().athleteChat;
@@ -92,11 +99,22 @@ export default function DemoCoach() {
     appendAthleteChat({ role: "user", text });
     setInput("");
     setSending(true);
-    const reply = demoReplyFor(text);
-    setTimeout(() => {
-      appendAthleteChat({ role: "assistant", text: reply });
+
+    if (hasKnownTopic(text)) {
+      const reply = demoReplyFor(text);
+      setTimeout(() => {
+        appendAthleteChat({ role: "assistant", text: reply });
+        setSending(false);
+      }, 900);
+      return;
+    }
+
+    // Nothing deterministic matched — ask the real model instead of a
+    // canned "I don't understand" line.
+    fetchDemoChatReply(buildDemoAthleteSystemPrompt(), getDemoState().athleteChat).then((reply) => {
+      appendAthleteChat({ role: "assistant", text: reply ?? demoReplyFor(text) });
       setSending(false);
-    }, 900);
+    });
   }
 
   const composer = (

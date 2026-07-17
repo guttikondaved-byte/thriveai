@@ -15,11 +15,15 @@ import notificationsRouter from "./notifications";
 import stravaRouter from "./strava";
 import coachPlansRouter from "./coach-plans";
 import stripeRouter from "./stripe";
+import demoRouter from "./demo";
 
 const router: IRouter = Router();
 
 router.use(authRouter);
 router.use(healthRouter);
+// Unauthenticated demo chat (marketing-site demo, no login) — must stay
+// ahead of requireActiveAccess since there's no user/subscription to check.
+router.use(demoRouter);
 // Backend backstop for the paywall/trial gate — see requireActiveAccess for
 // the exemption list (auth, profile, billing, and team-join stay open).
 router.use(requireActiveAccess);
