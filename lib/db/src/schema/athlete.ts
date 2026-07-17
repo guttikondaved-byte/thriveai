@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, numeric, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, numeric, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./auth";
@@ -24,6 +24,9 @@ export const athleteProfileTable = pgTable("athlete_profile", {
   prHalf: text("pr_half"),
   prMarathon: text("pr_marathon"),
   healthNotes: text("health_notes"),
+  // Coach-only. When false, AveraAI answers as a plain chatbot instead of using
+  // tools to look up athletes or take real actions (broadcast, alert comments).
+  agenticModeEnabled: boolean("agentic_mode_enabled").notNull().default(true),
   // ── Stripe subscription state (source of truth: Stripe webhooks) ──
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),

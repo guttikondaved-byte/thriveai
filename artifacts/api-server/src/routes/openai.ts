@@ -1232,7 +1232,11 @@ router.post("/openai/conversations/:id/messages", async (req: Request, res): Pro
 
   const [historyRows, profileRows] = await Promise.all([
     db.select().from(messages).where(eq(messages.conversationId, conv.id)).orderBy(messages.createdAt),
-    db.select({ selectedCoach: athleteProfileTable.selectedCoach, userRole: athleteProfileTable.userRole })
+    db.select({
+      selectedCoach: athleteProfileTable.selectedCoach,
+      userRole: athleteProfileTable.userRole,
+      agenticModeEnabled: athleteProfileTable.agenticModeEnabled,
+    })
       .from(athleteProfileTable)
       .where(eq(athleteProfileTable.userId, userId))
       .limit(1),
@@ -1321,7 +1325,7 @@ router.post("/openai/conversations/:id/messages", async (req: Request, res): Pro
   // existing client — which just accumulates `content` events — needs no change.
   let coachAgentHandled = false;
   const agentActions: string[] = [];
-  if (profile?.userRole === "coach") {
+  if (profile?.userRole === "coach" && profile?.agenticModeEnabled !== false) {
     coachAgentHandled = true;
     try {
       const { text, actions } = await runCoachAgent(client, userId, chatMessages);

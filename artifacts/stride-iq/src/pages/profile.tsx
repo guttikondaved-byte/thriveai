@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useClerk } from "@clerk/react";
-import { HelpCircle, X, TriangleAlert, Trash2 } from "lucide-react";
+import { HelpCircle, X, TriangleAlert, Trash2, Bot } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const landingUrl = `${window.location.origin}${basePath || "/"}`;
@@ -360,7 +361,20 @@ function CoachProfile() {
   // has no email field.
   const { data: authData } = useGetCurrentAuthUser();
   const updateProfile = useUpdateAthleteProfile();
+  const agenticToggle = useUpdateAthleteProfile();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  function onAgenticModeChange(checked: boolean) {
+    agenticToggle.mutate({ data: { agenticModeEnabled: checked } }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getGetAthleteProfileQueryKey() });
+        toast({ title: checked ? "Agent mode turned on" : "Agent mode turned off" });
+      },
+      onError: () => {
+        toast({ title: "Couldn't update agent mode", variant: "destructive" });
+      },
+    });
+  }
 
   const form = useForm<CoachFormValues>({
     resolver: zodResolver(coachSchema),
@@ -474,6 +488,29 @@ function CoachProfile() {
               </div>
             </form>
           </Form>
+        </div>
+
+        {/* AveraAI Agent Mode */}
+        <div className="bg-background border border-border rounded-xl p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Bot className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">AveraAI Agent Mode</p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-md">
+                  When on, AveraAI can look up individual athletes, run the injury what-if simulator, message your team, and leave notes on alerts while you chat. When off, it just talks — no lookups, no actions.
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={profile?.agenticModeEnabled ?? true}
+              disabled={agenticToggle.isPending}
+              onCheckedChange={onAgenticModeChange}
+              aria-label="Toggle AveraAI agent mode"
+            />
+          </div>
         </div>
 
         {/* Danger Zone */}

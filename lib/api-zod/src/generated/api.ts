@@ -39,6 +39,7 @@ export const GetAthleteProfileResponse = zod.object({
   "healthNotes": zod.string().nullish(),
   "contactMethod": zod.union([zod.literal('email'),zod.literal('phone'),zod.literal(null)]).nullish(),
   "contactValue": zod.string().nullish(),
+  "agenticModeEnabled": zod.boolean().describe('Coach-only. When false, AveraAI answers as a plain chatbot instead of using tools to look up athletes or take actions.'),
   "createdAt": zod.coerce.date()
 })
 
@@ -64,7 +65,8 @@ export const UpdateAthleteProfileBody = zod.object({
   "prMarathon": zod.string().optional(),
   "healthNotes": zod.string().optional(),
   "contactMethod": zod.enum(['email', 'phone']).optional(),
-  "contactValue": zod.string().optional()
+  "contactValue": zod.string().optional(),
+  "agenticModeEnabled": zod.boolean().optional()
 })
 
 export const UpdateAthleteProfileResponse = zod.object({
@@ -87,6 +89,7 @@ export const UpdateAthleteProfileResponse = zod.object({
   "healthNotes": zod.string().nullish(),
   "contactMethod": zod.union([zod.literal('email'),zod.literal('phone'),zod.literal(null)]).nullish(),
   "contactValue": zod.string().nullish(),
+  "agenticModeEnabled": zod.boolean().describe('Coach-only. When false, AveraAI answers as a plain chatbot instead of using tools to look up athletes or take actions.'),
   "createdAt": zod.coerce.date()
 })
 

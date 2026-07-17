@@ -72,6 +72,7 @@ router.patch("/athlete/profile", async (req, res): Promise<void> => {
   if (parsed.data.healthNotes !== undefined) updateData.healthNotes = parsed.data.healthNotes;
   if (parsed.data.contactMethod !== undefined) updateData.contactMethod = parsed.data.contactMethod;
   if (parsed.data.contactValue !== undefined) updateData.contactValue = parsed.data.contactValue;
+  if (parsed.data.agenticModeEnabled !== undefined) updateData.agenticModeEnabled = parsed.data.agenticModeEnabled;
 
   // If nothing recognized was sent, return the current profile instead of letting
   // drizzle throw "No values to set" on an empty .set() (which 500s every save).

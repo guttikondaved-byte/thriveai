@@ -89,6 +89,8 @@ export interface AthleteProfile {
   contactMethod?: AthleteProfileContactMethod;
   /** @nullable */
   contactValue?: string | null;
+  /** Coach-only. When false, AveraAI answers as a plain chatbot instead of using tools to look up athletes or take actions. */
+  agenticModeEnabled: boolean;
   createdAt: string;
 }
 
@@ -147,6 +149,7 @@ export interface AthleteProfileInput {
   healthNotes?: string;
   contactMethod?: AthleteProfileInputContactMethod;
   contactValue?: string;
+  agenticModeEnabled?: boolean;
 }
 
 export type InjuryStatus = typeof InjuryStatus[keyof typeof InjuryStatus];

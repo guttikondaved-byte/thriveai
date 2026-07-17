@@ -45,5 +45,7 @@ export interface AthleteProfile {
   contactMethod?: AthleteProfileContactMethod;
   /** @nullable */
   contactValue?: string | null;
+  /** Coach-only. When false, AveraAI answers as a plain chatbot instead of using tools to look up athletes or take actions. */
+  agenticModeEnabled: boolean;
   createdAt: Date;
 }

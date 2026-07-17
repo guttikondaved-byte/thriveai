@@ -928,6 +928,9 @@ components:
           enum: [email, phone, null]
         contactValue:
           type: ["string", "null"]
+        agenticModeEnabled:
+          type: boolean
+          description: Coach-only. When false, AveraAI answers as a plain chatbot instead of using tools to look up athletes or take actions.
         createdAt:
           type: string
           format: date-time
@@ -936,6 +939,7 @@ components:
         - name
         - fitnessLevel
         - primaryGoal
+        - agenticModeEnabled
         - createdAt
 
     AthleteProfileInput:
@@ -981,6 +985,8 @@ components:
           enum: [email, phone]
         contactValue:
           type: string
+        agenticModeEnabled:
+          type: boolean
 
     Injury:
       type: object

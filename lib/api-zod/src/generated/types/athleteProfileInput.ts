@@ -29,4 +29,5 @@ export interface AthleteProfileInput {
   healthNotes?: string;
   contactMethod?: AthleteProfileInputContactMethod;
   contactValue?: string;
+  agenticModeEnabled?: boolean;
 }
