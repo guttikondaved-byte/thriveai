@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Users, Copy, Check, Link as LinkIcon, UserPlus, ChevronRight, RefreshCw, Trash2, LogOut, AlertTriangle, MessageSquare } from "lucide-react";
-import { useGetAthleteProfile } from "@workspace/api-client-react";
+import { useGetAthleteProfile, useGetCurrentAuthUser, useListDirectMessages, useCreateDirectMessage, getListDirectMessagesQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { TEAMS_MY_QUERY_KEY } from "@/lib/queryKeys";
 import AthleteProfileModal from "../components/AthleteProfileModal";
 import { PageHeader, Eyebrow } from "@/components/coach/PageHeader";
+import { format } from "date-fns";
 
 interface TeamInfo {
   id: number;
@@ -29,9 +30,72 @@ interface StravaStatus {
   lastSync: string | null;
 }
 
+function CoachMessages({ teamId, myUserId }: { teamId: number; myUserId: string }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [draft, setDraft] = useState("");
+  const { data: thread, isLoading } = useListDirectMessages(teamId, myUserId);
+  const createMessage = useCreateDirectMessage({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListDirectMessagesQueryKey(teamId, myUserId) });
+        setDraft("");
+      },
+      onError: () => toast({ title: "Couldn't send message", variant: "destructive" }),
+    },
+  });
+
+  function send() {
+    const content = draft.trim();
+    if (!content) return;
+    createMessage.mutate({ teamId, userId: myUserId, data: { content } });
+  }
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+      <div className="flex items-center gap-2">
+        <MessageSquare className="w-4 h-4 text-primary" />
+        <h2 className="text-sm font-semibold text-foreground">Messages from your coach</h2>
+      </div>
+      {!isLoading && (thread?.length ?? 0) > 0 && (
+        <div className="space-y-2 max-h-72 overflow-y-auto">
+          {thread!.map(m => (
+            <div key={m.id} className={`rounded-xl px-4 py-2.5 ${m.authorRole === "athlete" ? "bg-primary/10 border border-primary/20" : "bg-secondary/50"}`}>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{m.authorRole === "athlete" ? "You" : "Coach"}</p>
+              <p className="text-sm text-foreground">{m.content}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{format(new Date(m.createdAt), "MMM d, HH:mm")}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      {!isLoading && (thread?.length ?? 0) === 0 && (
+        <p className="text-sm text-muted-foreground">No messages yet.</p>
+      )}
+      <div className="flex gap-2">
+        <input
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && send()}
+          placeholder="Message your coach…"
+          maxLength={1000}
+          className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+        <button
+          onClick={send}
+          disabled={createMessage.isPending || !draft.trim()}
+          className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors disabled:opacity-50 shrink-0"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Team() {
   const basePath = import.meta.env.BASE_URL || "";
   const { data: profile } = useGetAthleteProfile();
+  const { data: authData } = useGetCurrentAuthUser();
   const isCoach = profile?.userRole === "coach";
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -352,6 +416,8 @@ export default function Team() {
             </button>
           </div>
         </div>
+
+        {authData?.user?.id && <CoachMessages teamId={team.id} myUserId={authData.user.id} />}
 
         {/* Leave team confirmation modal */}
         {confirmLeave && (

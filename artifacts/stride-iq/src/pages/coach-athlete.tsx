@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
 import { useLocation, Link } from "wouter";
-import { ArrowLeft, Activity, AlertTriangle, Heart, Target, TrendingUp, Flame, Timer, ShieldAlert } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Activity, AlertTriangle, Heart, Target, TrendingUp, Flame, Timer, ShieldAlert, MessageSquare } from "lucide-react";
 import { StatCard } from "@/components/coach/StatCard";
 import { Eyebrow } from "@/components/coach/PageHeader";
 import { IntensityGrid, type IntensityDay } from "@/components/coach/IntensityGrid";
+import { useListDirectMessages, useCreateDirectMessage, getListDirectMessagesQueryKey } from "@workspace/api-client-react";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 type RiskLevel = "high" | "medium" | "low";
 
@@ -84,9 +88,118 @@ function durationFor(a: AthleteActivity): string | null {
 
 const NOT_SET = <span className="text-muted-foreground/50 text-base italic font-normal">Not set</span>;
 
+function DirectMessages({ teamId, athleteUserId }: { teamId: number; athleteUserId: string }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [draft, setDraft] = useState("");
+  const { data: thread, isLoading } = useListDirectMessages(teamId, athleteUserId);
+  const createMessage = useCreateDirectMessage({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListDirectMessagesQueryKey(teamId, athleteUserId) });
+        setDraft("");
+        toast({ title: "Message sent" });
+      },
+      onError: () => toast({ title: "Couldn't send message", variant: "destructive" }),
+    },
+  });
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-5 mb-6">
+      <Eyebrow className="mb-3 flex items-center gap-1.5">
+        <MessageSquare className="w-3 h-3" /> Messages
+      </Eyebrow>
+      {!isLoading && (thread?.length ?? 0) > 0 && (
+        <div className="space-y-2 mb-3 max-h-72 overflow-y-auto">
+          {thread!.map(m => (
+            <div key={m.id} className={`rounded-xl px-4 py-2.5 ${m.authorRole === "athlete" ? "bg-primary/10 border border-primary/20" : "bg-secondary/50"}`}>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">{m.authorRole === "athlete" ? "Athlete" : "You"}</p>
+              <p className="text-sm text-foreground">{m.content}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{format(new Date(m.createdAt), "MMM d, HH:mm")}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      {!isLoading && (thread?.length ?? 0) === 0 && (
+        <p className="text-sm text-muted-foreground mb-3">No messages yet.</p>
+      )}
+      <div className="flex gap-2">
+        <input
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && draft.trim() && createMessage.mutate({ teamId, userId: athleteUserId, data: { content: draft.trim() } })}
+          placeholder="Message this athlete…"
+          maxLength={1000}
+          className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+        <button
+          onClick={() => draft.trim() && createMessage.mutate({ teamId, userId: athleteUserId, data: { content: draft.trim() } })}
+          disabled={createMessage.isPending || !draft.trim()}
+          className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors disabled:opacity-50 shrink-0"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DemoDirectMessages() {
+  const { toast } = useToast();
+  const [draft, setDraft] = useState("");
+  const [thread, setThread] = useState<Array<{ id: number; authorRole: "coach" | "athlete"; content: string; createdAt: string }>>([]);
+
+  function send() {
+    const content = draft.trim();
+    if (!content) return;
+    setThread(prev => [...prev, { id: Date.now(), authorRole: "coach", content, createdAt: new Date().toISOString() }]);
+    setDraft("");
+    toast({ title: "Message sent" });
+  }
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-5 mb-6">
+      <Eyebrow className="mb-3 flex items-center gap-1.5">
+        <MessageSquare className="w-3 h-3" /> Messages
+      </Eyebrow>
+      {thread.length > 0 ? (
+        <div className="space-y-2 mb-3 max-h-72 overflow-y-auto">
+          {thread.map(m => (
+            <div key={m.id} className="rounded-xl px-4 py-2.5 bg-secondary/50">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">You</p>
+              <p className="text-sm text-foreground">{m.content}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{format(new Date(m.createdAt), "MMM d, HH:mm")}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground mb-3">No messages yet.</p>
+      )}
+      <div className="flex gap-2">
+        <input
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && send()}
+          placeholder="Message this athlete…"
+          maxLength={1000}
+          className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+        <button
+          onClick={send}
+          disabled={!draft.trim()}
+          className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors disabled:opacity-50 shrink-0"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function CoachAthleteDetail({ params }: { params: { userId: string } }) {
   const [, navigate] = useLocation();
   const [data, setData] = useState<AthleteDetail | null>(null);
+  const [teamId, setTeamId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -98,6 +211,7 @@ export default function CoachAthleteDetail({ params }: { params: { userId: strin
       .then(r => r.ok ? r.json() : Promise.reject(new Error("Couldn't load your team.")))
       .then((d: { team: TeamInfo | null }) => {
         if (!d.team) throw new Error("You don't have a team yet.");
+        if (!cancelled) setTeamId(d.team.id);
         return fetch(`/api/teams/${d.team.id}/members/${params.userId}/profile`, { credentials: "include" });
       })
       .then(async r => {
@@ -140,10 +254,10 @@ export default function CoachAthleteDetail({ params }: { params: { userId: strin
     );
   }
 
-  return <AthleteDetailView data={data} onBack={() => navigate("/")} injuryRiskHref={`/athletes/${data.userId}/injury-risk`} />;
+  return <AthleteDetailView data={data} onBack={() => navigate("/")} injuryRiskHref={`/athletes/${data.userId}/injury-risk`} teamId={teamId ?? undefined} />;
 }
 
-export function AthleteDetailView({ data, onBack, injuryRiskHref }: { data: AthleteDetail; onBack: () => void; injuryRiskHref: string }) {
+export function AthleteDetailView({ data, onBack, injuryRiskHref, teamId, demo }: { data: AthleteDetail; onBack: () => void; injuryRiskHref: string; teamId?: number; demo?: boolean }) {
   const [hoveredWeek, setHoveredWeek] = useState<number | null>(null);
   const maxWeekMiles = Math.max(...data.weeklyTrend.map(w => w.distanceKm), 1);
 
@@ -296,6 +410,9 @@ export function AthleteDetailView({ data, onBack, injuryRiskHref }: { data: Athl
           </div>
         </div>
       )}
+
+      {/* Direct messages */}
+      {demo ? <DemoDirectMessages /> : teamId != null ? <DirectMessages teamId={teamId} athleteUserId={data.userId} /> : null}
 
       {/* Activity history */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">

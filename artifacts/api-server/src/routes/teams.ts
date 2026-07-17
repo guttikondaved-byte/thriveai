@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, teamsTable, teamMembershipsTable, teamCoachesTable, usersTable, athleteProfileTable, notificationsTable, stravaTokensTable, activitiesTable, injuryAlertsTable } from "@workspace/db";
+import { db, teamsTable, teamMembershipsTable, teamCoachesTable, usersTable, athleteProfileTable, notificationsTable, stravaTokensTable, activitiesTable, injuryAlertsTable, directMessagesTable } from "@workspace/db";
 import { eq, and, inArray, desc, gte } from "drizzle-orm";
 import crypto from "crypto";
 import { syncCoachTeamSubscriptionQuantity } from "./stripe";
@@ -350,6 +350,118 @@ router.post("/teams/:teamId/broadcast", async (req, res): Promise<void> => {
   );
 
   res.status(201).json({ ok: true, recipientCount: memberships.length });
+});
+
+function serializeDirectMessage(m: typeof directMessagesTable.$inferSelect) {
+  return { ...m, createdAt: m.createdAt.toISOString() };
+}
+
+// GET /teams/:teamId/members/:userId/messages — a 1:1 thread between the
+// coach and one athlete on their team. Either side can read it.
+router.get("/teams/:teamId/members/:userId/messages", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const teamId = Number(req.params.teamId);
+  if (isNaN(teamId)) {
+    res.status(400).json({ error: "Invalid team id" });
+    return;
+  }
+  const athleteUserId = req.params.userId;
+
+  const [membership] = await db.select()
+    .from(teamMembershipsTable)
+    .where(and(eq(teamMembershipsTable.teamId, teamId), eq(teamMembershipsTable.athleteUserId, athleteUserId)))
+    .limit(1);
+  if (!membership) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  const isAthlete = req.user.id === athleteUserId;
+  if (!isAthlete && !(await isTeamCoach(teamId, req.user.id))) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const thread = await db
+    .select()
+    .from(directMessagesTable)
+    .where(eq(directMessagesTable.athleteUserId, athleteUserId))
+    .orderBy(directMessagesTable.createdAt);
+  res.json(thread.map(serializeDirectMessage));
+});
+
+// POST /teams/:teamId/members/:userId/messages — either the coach or the
+// athlete can post into the thread. Notifies whichever side didn't write it.
+router.post("/teams/:teamId/members/:userId/messages", async (req, res): Promise<void> => {
+  if (!req.isAuthenticated()) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const teamId = Number(req.params.teamId);
+  if (isNaN(teamId)) {
+    res.status(400).json({ error: "Invalid team id" });
+    return;
+  }
+  const athleteUserId = req.params.userId;
+  const content = typeof req.body?.content === "string" ? req.body.content.trim() : "";
+  if (!content) {
+    res.status(400).json({ error: "Content is required" });
+    return;
+  }
+  if (content.length > 1000) {
+    res.status(400).json({ error: "Content must be 1000 characters or fewer" });
+    return;
+  }
+
+  const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId)).limit(1);
+  const [membership] = await db.select()
+    .from(teamMembershipsTable)
+    .where(and(eq(teamMembershipsTable.teamId, teamId), eq(teamMembershipsTable.athleteUserId, athleteUserId)))
+    .limit(1);
+  if (!team || !membership) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  const authorUserId = req.user.id;
+  const isAthlete = authorUserId === athleteUserId;
+  const isCoach = !isAthlete && (await isTeamCoach(teamId, authorUserId));
+  if (!isAthlete && !isCoach) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+  const authorRole = isAthlete ? "athlete" : "coach";
+
+  const [message] = await db
+    .insert(directMessagesTable)
+    .values({ athleteUserId, authorUserId, authorRole, content })
+    .returning();
+
+  if (authorRole === "coach") {
+    await db.insert(notificationsTable).values({
+      userId: athleteUserId,
+      type: "direct_message",
+      title: `Message from ${team.name}`,
+      message: content,
+    });
+  } else {
+    const coachIds = new Set<string>([team.coachUserId]);
+    const coCoaches = await db.select({ coachUserId: teamCoachesTable.coachUserId }).from(teamCoachesTable).where(eq(teamCoachesTable.teamId, teamId));
+    for (const c of coCoaches) coachIds.add(c.coachUserId);
+    await db.insert(notificationsTable).values(
+      Array.from(coachIds).map((coachUserId) => ({
+        userId: coachUserId,
+        type: "direct_message",
+        title: "New message from an athlete",
+        message: content,
+      })),
+    );
+  }
+
+  res.status(201).json(serializeDirectMessage(message));
 });
 
 // GET /teams/:teamId/strava-status — coach sees which athletes have Strava connected

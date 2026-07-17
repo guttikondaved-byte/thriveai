@@ -27,9 +27,11 @@ import type {
   AuthUserEnvelope,
   BeginBrowserLoginParams,
   CreateAlertCommentBody,
+  CreateDirectMessageBody,
   CreateSorenessBody,
   CreateTeamBody,
   DashboardSummary,
+  DirectMessage,
   ErrorEnvelope,
   GetInjuryRiskIntensityMapParams,
   HandleBrowserLoginCallbackParams,
@@ -1121,6 +1123,162 @@ export const useCreateAlertComment = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreateAlertCommentMutationOptions(options));
+    }
+
+export const getListDirectMessagesUrl = (teamId: number,
+    userId: string,) => {
+
+
+
+
+  return `/api/teams/${teamId}/members/${userId}/messages`
+}
+
+/**
+ * @summary List the direct-message thread between a coach and one athlete on their team
+ */
+export const listDirectMessages = async (teamId: number,
+    userId: string, options?: RequestInit): Promise<DirectMessage[]> => {
+
+  return customFetch<DirectMessage[]>(getListDirectMessagesUrl(teamId,userId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDirectMessagesQueryKey = (teamId: number,
+    userId: string,) => {
+    return [
+    `/api/teams/${teamId}/members/${userId}/messages`
+    ] as const;
+    }
+
+
+export const getListDirectMessagesQueryOptions = <TData = Awaited<ReturnType<typeof listDirectMessages>>, TError = ErrorType<void>>(teamId: number,
+    userId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDirectMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDirectMessagesQueryKey(teamId,userId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDirectMessages>>> = ({ signal }) => listDirectMessages(teamId,userId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(teamId && userId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDirectMessages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDirectMessagesQueryResult = NonNullable<Awaited<ReturnType<typeof listDirectMessages>>>
+export type ListDirectMessagesQueryError = ErrorType<void>
+
+
+/**
+ * @summary List the direct-message thread between a coach and one athlete on their team
+ */
+
+export function useListDirectMessages<TData = Awaited<ReturnType<typeof listDirectMessages>>, TError = ErrorType<void>>(
+ teamId: number,
+    userId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDirectMessages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDirectMessagesQueryOptions(teamId,userId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateDirectMessageUrl = (teamId: number,
+    userId: string,) => {
+
+
+
+
+  return `/api/teams/${teamId}/members/${userId}/messages`
+}
+
+/**
+ * @summary Send a direct message to/from an athlete on the coach's team
+ */
+export const createDirectMessage = async (teamId: number,
+    userId: string,
+    createDirectMessageBody: CreateDirectMessageBody, options?: RequestInit): Promise<DirectMessage> => {
+
+  return customFetch<DirectMessage>(getCreateDirectMessageUrl(teamId,userId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createDirectMessageBody,)
+  }
+);}
+
+
+
+
+export const getCreateDirectMessageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDirectMessage>>, TError,{teamId: number;userId: string;data: BodyType<CreateDirectMessageBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDirectMessage>>, TError,{teamId: number;userId: string;data: BodyType<CreateDirectMessageBody>}, TContext> => {
+
+const mutationKey = ['createDirectMessage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDirectMessage>>, {teamId: number;userId: string;data: BodyType<CreateDirectMessageBody>}> = (props) => {
+          const {teamId,userId,data} = props ?? {};
+
+          return  createDirectMessage(teamId,userId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDirectMessageMutationResult = NonNullable<Awaited<ReturnType<typeof createDirectMessage>>>
+    export type CreateDirectMessageMutationBody = BodyType<CreateDirectMessageBody>
+    export type CreateDirectMessageMutationError = ErrorType<void>
+
+    /**
+ * @summary Send a direct message to/from an athlete on the coach's team
+ */
+export const useCreateDirectMessage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDirectMessage>>, TError,{teamId: number;userId: string;data: BodyType<CreateDirectMessageBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDirectMessage>>,
+        TError,
+        {teamId: number;userId: string;data: BodyType<CreateDirectMessageBody>},
+        TContext
+      > => {
+      return useMutation(getCreateDirectMessageMutationOptions(options));
     }
 
 export const getGetDashboardSummaryUrl = () => {

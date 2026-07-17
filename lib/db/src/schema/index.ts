@@ -10,3 +10,4 @@ export * from "./soreness";
 export * from "./teams";
 export * from "./notifications";
 export * from "./strava";
+export * from "./directMessages";

@@ -293,6 +293,68 @@ paths:
         "404":
           description: Not found
 
+  /teams/{teamId}/members/{userId}/messages:
+    get:
+      operationId: listDirectMessages
+      tags: [teams]
+      summary: List the direct-message thread between a coach and one athlete on their team
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DirectMessage"
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+    post:
+      operationId: createDirectMessage
+      tags: [teams]
+      summary: Send a direct message to/from an athlete on the coach's team
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDirectMessageBody"
+      responses:
+        "201":
+          description: Created message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectMessage"
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
   /dashboard/summary:
     get:
       operationId: getDashboardSummary
@@ -1379,6 +1441,41 @@ components:
         - createdAt
 
     CreateAlertCommentBody:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+        - content
+
+    DirectMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        athleteUserId:
+          type: string
+        authorUserId:
+          type: string
+        authorRole:
+          type: string
+          enum: [coach, athlete]
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - athleteUserId
+        - authorUserId
+        - authorRole
+        - content
+        - createdAt
+
+    CreateDirectMessageBody:
       type: object
       properties:
         content:

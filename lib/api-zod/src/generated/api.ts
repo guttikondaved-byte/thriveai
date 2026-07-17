@@ -369,6 +369,42 @@ export const CreateAlertCommentBody = zod.object({
 
 
 /**
+ * @summary List the direct-message thread between a coach and one athlete on their team
+ */
+export const ListDirectMessagesParams = zod.object({
+  "teamId": zod.coerce.number(),
+  "userId": zod.coerce.string()
+})
+
+export const ListDirectMessagesResponseItem = zod.object({
+  "id": zod.number(),
+  "athleteUserId": zod.string(),
+  "authorUserId": zod.string(),
+  "authorRole": zod.enum(['coach', 'athlete']),
+  "content": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListDirectMessagesResponse = zod.array(ListDirectMessagesResponseItem)
+
+
+/**
+ * @summary Send a direct message to/from an athlete on the coach's team
+ */
+export const CreateDirectMessageParams = zod.object({
+  "teamId": zod.coerce.number(),
+  "userId": zod.coerce.string()
+})
+
+export const createDirectMessageBodyContentMax = 1000;
+
+
+
+export const CreateDirectMessageBody = zod.object({
+  "content": zod.string().min(1).max(createDirectMessageBodyContentMax)
+})
+
+
+/**
  * @summary Get dashboard summary stats
  */
 export const GetDashboardSummaryResponse = zod.object({

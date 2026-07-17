@@ -12,6 +12,7 @@ import {
   planSessionsTable,
   injuryAlertsTable,
   injuryAlertCommentsTable,
+  directMessagesTable,
   notificationsTable,
   teamsTable,
   teamMembershipsTable,
@@ -562,7 +563,8 @@ async function buildUserContext(userId: string, userRole?: string | null): Promi
 // Coaches get an *agentic* AveraAI: instead of stuffing the whole roster into
 // the prompt and only being able to talk, the model can call tools to look up a
 // specific athlete on demand, run the what-if injury simulator, and take real
-// actions on the coach's behalf (message the team, leave a note on an alert).
+// actions on the coach's behalf (message the team, message one athlete, leave
+// a note on an alert).
 // All tools are scoped to the coach's own team — a tool can never touch an
 // athlete the coach doesn't coach.
 
@@ -636,6 +638,22 @@ const COACH_AGENT_TOOLS: ChatCompletionTool[] = [
           content: { type: "string", description: "The note to leave for the athlete." },
         },
         required: ["alertId", "content"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "message_athlete",
+      description:
+        "Send a direct 1:1 message to ONE specific named athlete (not the whole team, and not tied to an injury alert). The athlete is notified and sees it in their message thread with you. Only use when the coach clearly asked to tell/message/ask/remind one particular athlete something.",
+      parameters: {
+        type: "object",
+        properties: {
+          athleteName: { type: "string", description: "The athlete's name, as shown in list_team_athletes." },
+          content: { type: "string", description: "The message body (max 1000 chars)." },
+        },
+        required: ["athleteName", "content"],
       },
     },
   },
@@ -787,6 +805,24 @@ async function executeCoachTool(
       });
       return { ok: true, action: "alert_comment", commentId: comment.id, bodyPart: alert.bodyPart };
     }
+    case "message_athlete": {
+      const athlete = resolveAthlete(roster, String(args.athleteName ?? ""));
+      if (!athlete) return { ok: false, error: `No athlete named "${args.athleteName}" on your team.` };
+      const content = String(args.content ?? "").trim();
+      if (!content) return { ok: false, error: "Message is empty." };
+      if (content.length > 1000) return { ok: false, error: "Message must be 1000 characters or fewer." };
+      const [message] = await db
+        .insert(directMessagesTable)
+        .values({ athleteUserId: athlete.userId, authorUserId: coachUserId, authorRole: "coach", content })
+        .returning();
+      await db.insert(notificationsTable).values({
+        userId: athlete.userId,
+        type: "direct_message",
+        title: `Message from ${team.name}`,
+        message: content,
+      });
+      return { ok: true, action: "direct_message", messageId: message.id, athleteName: athlete.name };
+    }
     default:
       return { ok: false, error: `Unknown tool: ${name}` };
   }
@@ -797,7 +833,7 @@ const COACH_AGENT_PROMPT = `${COACH_ADVISOR_PROMPT}
 TOOLS & ACTIONS
 - You have tools to look up athletes on demand and to take real actions. Prefer calling a tool over guessing.
 - Use list_team_athletes for an overview, get_athlete_detail for one athlete's specifics (and to get alert IDs), and run_injury_what_if to reason about load changes.
-- send_team_broadcast and comment_on_alert take REAL actions visible to real athletes. Only call them when the coach clearly asked you to. After taking an action, tell the coach plainly what you did.
+- send_team_broadcast, comment_on_alert, and message_athlete take REAL actions visible to real athletes. Only call them when the coach clearly asked you to. Use message_athlete for something directed at ONE named athlete outside the context of a specific alert; use comment_on_alert when it's about a specific alert; use send_team_broadcast only for the whole team. After taking an action, tell the coach plainly what you did.
 - When you don't need to act — the coach just wants analysis or advice — answer directly without calling write tools.`;
 
 const COACH_AGENT_MAX_STEPS = 6;

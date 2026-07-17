@@ -25,6 +25,7 @@ export default function DemoCoachAthleteDetail({ params }: { params: { userId: s
       data={data}
       onBack={() => navigate("/demo-coach")}
       injuryRiskHref={`/demo-coach/athletes/${data.userId}/injury-risk`}
+      demo
     />
   );
 }

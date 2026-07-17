@@ -453,6 +453,31 @@ export interface CreateAlertCommentBody {
   content: string;
 }
 
+export type DirectMessageAuthorRole = typeof DirectMessageAuthorRole[keyof typeof DirectMessageAuthorRole];
+
+
+export const DirectMessageAuthorRole = {
+  coach: 'coach',
+  athlete: 'athlete',
+} as const;
+
+export interface DirectMessage {
+  id: number;
+  athleteUserId: string;
+  authorUserId: string;
+  authorRole: DirectMessageAuthorRole;
+  content: string;
+  createdAt: string;
+}
+
+export interface CreateDirectMessageBody {
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  content: string;
+}
+
 export type DashboardSummaryTrainingLoad = typeof DashboardSummaryTrainingLoad[keyof typeof DashboardSummaryTrainingLoad];
 
 
