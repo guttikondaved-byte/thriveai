@@ -68,7 +68,7 @@ const KEYWORD_REPLIES: Array<{ re: RegExp; reply: () => string }> = [
     },
   },
   {
-    re: /\b(plan|schedule|program|assign)\b/i,
+    re: /\b(plans?|planning|schedule|program|assign\w*)\b/i,
     reply: () => {
       const p = DEMO_COACH_DATA.averaPlanProposal;
       return `Based on ${p.athleteName}'s recent load, I'd propose "${p.name}": ${p.rationale} That's ${p.weeklyMileage} miles/week over a ${p.sessions.length}-session block.`;
@@ -99,8 +99,13 @@ function demoReplyFor(text: string): string {
 // what agent mode actually does rather than just claiming it. Nothing here
 // touches a server — the "actions" are local-only and reset on refresh.
 
-const BROADCAST_RE = /\b(message|tell|notify|announce|broadcast)\b[\s\S]*\b(team|everyone|athletes|roster|squad)\b|\bbroadcast\b/i;
-const NOTE_VERB_RE = /\b(leave (a |him |her |them )?note|comment on|reach out to|check in with)\b/i;
+// Team-wide target words disambiguate a broadcast ("tell the team...") from a
+// message directed at one athlete ("tell Marcus...") even though both start
+// with the same verbs.
+const TEAM_TARGET_RE = /\b(team|everyone|athletes|roster|squad)\b/i;
+const ATHLETE_ACTION_VERB_RE = /\b(tell|message|send|ask|remind|leave (a |him |her |them )?note|comment on|reach out to|check in with)\b/i;
+const ALERT_NOTE_RE = /\b(note|comment|alert)\b/i;
+const BROADCAST_VERB_RE = /\b(message|tell|notify|announce|broadcast)\b/i;
 
 function findMentionedAthlete(text: string) {
   const lower = text.toLowerCase();
@@ -122,32 +127,48 @@ function planAgentResponse(text: string): AgentPlan {
     return { trace: traceByIndex[suggestionIndex], reply: SUGGESTION_REPLIES[suggestionIndex] };
   }
 
-  // Write action: leave a note on an athlete's alert.
-  if (NOTE_VERB_RE.test(text)) {
-    const athlete = findMentionedAthlete(text);
-    if (!athlete) {
-      return { trace: ["Checking your roster…"], reply: "Who should I leave that note for? Name the athlete and I'll pull up their alerts." };
-    }
-    const detail = getDemoAthleteDetail(athlete.userId);
-    const alert = detail?.alerts[0];
-    if (!alert) {
+  const athlete = findMentionedAthlete(text);
+
+  // Write action: something directed at one named athlete — a note on their
+  // alert if the wording references a note/alert, otherwise a direct message.
+  if (athlete && ATHLETE_ACTION_VERB_RE.test(text)) {
+    const quoted = text.match(/["“]([^"”]+)["”]/)?.[1];
+    const firstName = athlete.name.split(" ")[0];
+    const stripRe = new RegExp(
+      `^(please\\s+)?(tell|message|send( a)?( message| note)?|ask|remind|leave( a| him| her| them)? note( to| on)?|comment on|reach out to|check in with)\\s+${firstName}\\S*\\s*(to|that|about)?\\s*`,
+      "i"
+    );
+    const stripped = text.replace(stripRe, "").trim();
+
+    if (ALERT_NOTE_RE.test(text)) {
+      const detail = getDemoAthleteDetail(athlete.userId);
+      const alert = detail?.alerts[0];
+      if (!alert) {
+        return {
+          trace: [`Checking ${athlete.name}'s active alerts…`],
+          reply: `${athlete.name} doesn't have any active alerts right now, so there's nothing to leave a note on.`,
+        };
+      }
+      const content = quoted ?? alert.recommendation;
       return {
-        trace: [`Checking ${athlete.name}'s active alerts…`],
-        reply: `${athlete.name} doesn't have any active alerts right now, so there's nothing to leave a note on.`,
+        trace: [`Checking ${athlete.name}'s active alerts…`, `Drafting a note on their ${alert.bodyPart} alert…`, "Sending note…"],
+        reply: `Done — I left a note on ${athlete.name}'s ${alert.bodyPart} alert: "${content}" They'll see it on their alert and get notified.`,
+        actionChip: `✅ Note sent to ${athlete.name}`,
+        toast: { title: "Note added", description: `Left on ${athlete.name}'s ${alert.bodyPart} alert.` },
       };
     }
-    const quoted = text.match(/["“]([^"”]+)["”]/)?.[1];
-    const content = quoted ?? alert.recommendation;
+
+    const content = quoted ?? (stripped || `a check-in about their training`);
     return {
-      trace: [`Checking ${athlete.name}'s active alerts…`, `Drafting a note on their ${alert.bodyPart} alert…`, "Sending note…"],
-      reply: `Done — I left a note on ${athlete.name}'s ${alert.bodyPart} alert: "${content}" They'll see it on their alert and get notified.`,
-      actionChip: `✅ Note sent to ${athlete.name}`,
-      toast: { title: "Note added", description: `Left on ${athlete.name}'s ${alert.bodyPart} alert.` },
+      trace: [`Looking up ${athlete.name}…`, "Sending message…"],
+      reply: `Done — I sent ${athlete.name} a message: "${content}" They'll see it and get notified.`,
+      actionChip: `✅ Message sent to ${athlete.name}`,
+      toast: { title: "Message sent", description: `Sent to ${athlete.name}.` },
     };
   }
 
-  // Write action: broadcast to the whole team.
-  if (BROADCAST_RE.test(text)) {
+  // Write action: broadcast to the whole team (no specific athlete named).
+  if ((BROADCAST_VERB_RE.test(text) && TEAM_TARGET_RE.test(text)) || /\bbroadcast\b/i.test(text)) {
     const quoted = text.match(/["“]([^"”]+)["”]/)?.[1];
     const stripped = text.replace(/^(please\s+)?(message|tell|notify|announce|broadcast)\b(\s+the)?(\s+team|\s+everyone|\s+athletes|\s+roster|\s+squad)?[:,]?\s*/i, "").trim();
     const message = quoted ?? (stripped || text);
@@ -166,7 +187,7 @@ function planAgentResponse(text: string): AgentPlan {
     { re: /\b(injur|risk|hurt|pain|overtrain\w*)\b/i, trace: ["Checking injury alerts across your roster…"] },
     { re: /\b(mileage|volume|load|distance|training load)\b/i, trace: ["Aggregating this week's training load…"] },
     { re: /\b(hrv|recover\w*|resting heart rate)\b/i, trace: ["Scanning HRV trends for your roster…"] },
-    { re: /\b(plan|schedule|program|assign)\b/i, trace: ["Reviewing recent load for a plan proposal…"] },
+    { re: /\b(plans?|planning|schedule|program|assign\w*)\b/i, trace: ["Reviewing recent load for a plan proposal…"] },
     { re: /\b(roster|team|summar|overview)\b/i, trace: ["Loading your team roster…"] },
   ];
   const matchedTrace = readTraces.find(({ re }) => re.test(text));
@@ -207,7 +228,11 @@ export default function DemoCoachChat() {
     if (!agentMode) {
       // Plain-chat mode: no tool trace, and write-intent requests are declined
       // rather than silently acted on — mirrors the real backend gate.
-      const isWriteIntent = NOTE_VERB_RE.test(text) || BROADCAST_RE.test(text);
+      const mentionsAthlete = !!findMentionedAthlete(text);
+      const isWriteIntent =
+        (mentionsAthlete && ATHLETE_ACTION_VERB_RE.test(text)) ||
+        (BROADCAST_VERB_RE.test(text) && TEAM_TARGET_RE.test(text)) ||
+        /\bbroadcast\b/i.test(text);
       const reply = isWriteIntent ? AGENT_OFF_ACTION_REPLY : demoReplyFor(text);
       setTimeout(() => {
         setMessages(prev => [...prev, { role: "assistant", text: reply }]);
