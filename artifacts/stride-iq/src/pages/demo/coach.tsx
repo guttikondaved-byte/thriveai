@@ -64,7 +64,7 @@ function demoReplyFor(text: string): string {
   if (suggestionIndex !== -1) return SUGGESTION_REPLIES[suggestionIndex];
   const matched = KEYWORD_REPLIES.find(({ re }) => re.test(text));
   if (matched) return matched.reply();
-  return `Your risk score is ${DEMO_DATA.riskDashboard.riskScore}/100 (${DEMO_DATA.riskDashboard.riskLabel.toLowerCase()}) right now, based on your recent mileage, HRV, and open alerts. Ask me about your injury risk, mileage, recovery, or race times and I can go deeper on any of those.`;
+  return `I don't understand that one — but for reference, your risk score is ${DEMO_DATA.riskDashboard.riskScore}/100 (${DEMO_DATA.riskDashboard.riskLabel.toLowerCase()}) right now, based on your recent mileage, HRV, and open alerts. Ask me about your injury risk, mileage, recovery, or race times and I can go deeper on any of those.`;
 }
 
 export default function DemoCoach() {

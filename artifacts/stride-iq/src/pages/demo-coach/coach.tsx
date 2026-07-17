@@ -91,7 +91,7 @@ function demoReplyFor(text: string): string {
   if (suggestionIndex !== -1) return SUGGESTION_REPLIES[suggestionIndex];
   const matched = KEYWORD_REPLIES.find(({ re }) => re.test(text));
   if (matched) return matched.reply();
-  return `I can pull that from your roster data — mileage, HRV, and injury risk per athlete. Try asking who's at risk, about training load, recovery, or your roster summary and I'll go deeper on any of those.`;
+  return `I don't understand that one — I can pull mileage, HRV, and injury risk per athlete from your roster data. Try asking who's at risk, about training load, recovery, or your roster summary and I'll go deeper on any of those.`;
 }
 
 // ── Agent mode: simulated tool calls + real (demo-scoped) write actions ──────
