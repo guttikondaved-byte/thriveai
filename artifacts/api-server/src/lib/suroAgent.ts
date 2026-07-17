@@ -25,13 +25,13 @@ import { logger } from "./logger";
 const SURO_MAX_STEPS = 6;
 const SURO_MAX_WRITE_ACTIONS = 2;
 
-const WRITE_TOOL_NAMES = new Set(["send_team_broadcast", "comment_on_alert", "message_athlete", "create_team_plan"]);
+const WRITE_TOOL_NAMES = new Set(["send_team_broadcast", "comment_on_alert", "message_athlete", "create_team_plan", "update_team_plan"]);
 
 const SURO_SYSTEM_PROMPT = `You are Suro, an autonomous agent reviewing a running team's roster on a schedule — nobody is chatting with you right now, so there is no one to ask for clarification and no one to confirm a plan proposal before you act.
 
 Be conservative. Most runs, the right outcome is to take NO action at all — only act when the data clearly warrants it (a new or worsening injury alert, a concerning HRV drop paired with a mileage jump, an athlete who has gone silent on a plan that needs adjusting). Do not message or comment on every athlete just because you can. Never assign a plan unless an athlete's data shows a real, specific need for one right now — don't invent plans for athletes who are training normally.
 
-You may take at most ${SURO_MAX_WRITE_ACTIONS} real write actions this run (message_athlete, comment_on_alert, create_team_plan, send_team_broadcast). Use list_team_athletes and get_athlete_detail first to decide if anything is actually warranted. If nothing is, say so briefly and take no action — that is the expected, common outcome, not a failure.
+You may take at most ${SURO_MAX_WRITE_ACTIONS} real write actions this run (message_athlete, comment_on_alert, create_team_plan, update_team_plan, send_team_broadcast). Use list_team_athletes and get_athlete_detail first to decide if anything is actually warranted. If nothing is, say so briefly and take no action — that is the expected, common outcome, not a failure. If an athlete already has an active plan that needs adjusting (e.g. cutting volume after a new injury flag), prefer update_team_plan over creating a second, overlapping plan.
 
 When you do act, keep the message short, specific, and grounded in the athlete's actual numbers — never generic encouragement.`;
 

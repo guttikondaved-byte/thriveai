@@ -680,6 +680,25 @@ export const COACH_AGENT_TOOLS: ChatCompletionTool[] = [
   {
     type: "function",
     function: {
+      name: "update_team_plan",
+      description:
+        "Adjust an athlete's EXISTING training plan — weekly mileage, status (active/paused), or dates. This is a REAL action, applied immediately, no separate confirmation step needed beyond the coach's instruction. Get the planId from get_athlete_detail first. Prefer this over create_team_plan when the athlete already has an active plan that just needs adjusting (e.g. cutting volume after an injury flag) rather than creating a second, overlapping plan.",
+      parameters: {
+        type: "object",
+        properties: {
+          planId: { type: "number", description: "The plan's ID, from get_athlete_detail." },
+          weeklyMileage: { type: "number", description: "New target weekly mileage." },
+          status: { type: "string", enum: ["active", "paused"], description: "New plan status." },
+          startDate: { type: "string", description: "New start date, YYYY-MM-DD." },
+          endDate: { type: "string", description: "New end date, YYYY-MM-DD." },
+        },
+        required: ["planId"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "message_athlete",
       description:
         "Send a direct 1:1 message to ONE specific named athlete (not the whole team, and not tied to an injury alert). The athlete is notified and sees it in their message thread with you. Only use when the coach clearly asked to tell/message/ask/remind one particular athlete something.",
@@ -795,7 +814,7 @@ export async function executeCoachTool(
         name: athlete.name,
         metrics: formatMetricsBlock(met),
         alerts: alerts.map((a) => ({ id: a.id, bodyPart: a.bodyPart, riskLevel: a.riskLevel, message: a.message })),
-        plans: plans.map((p) => ({ name: p.name, goal: p.goal, status: p.status, startDate: p.startDate, endDate: p.endDate })),
+        plans: plans.map((p) => ({ id: p.id, name: p.name, goal: p.goal, status: p.status, weeklyMileage: p.weeklyMileage ? Number(p.weeklyMileage) : null, startDate: p.startDate, endDate: p.endDate })),
       };
     }
     case "run_injury_what_if": {
@@ -930,6 +949,38 @@ export async function executeCoachTool(
 
       return { ok: true, action: "create_plan", planId: plan.id, athleteName: athlete.name, planName, sessionCount: sessions.length };
     }
+    case "update_team_plan": {
+      const planId = Number(args.planId);
+      if (!Number.isInteger(planId)) return { ok: false, error: "planId must be a number." };
+      const [existing] = await db.select().from(trainingPlansTable).where(eq(trainingPlansTable.id, planId)).limit(1);
+      if (!existing || !existing.userId) return { ok: false, error: "Plan not found." };
+      // Authorization: the plan must belong to an athlete on THIS coach's team.
+      if (!roster.some((r) => r.userId === existing.userId)) {
+        return { ok: false, error: "That plan doesn't belong to an athlete on your team." };
+      }
+
+      const update: Partial<typeof trainingPlansTable.$inferInsert> = {};
+      if (typeof args.weeklyMileage === "number") update.weeklyMileage = String(args.weeklyMileage);
+      if (args.status === "active" || args.status === "paused") update.status = args.status;
+      if (typeof args.startDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(args.startDate)) update.startDate = args.startDate;
+      if (typeof args.endDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(args.endDate)) update.endDate = args.endDate;
+      if (Object.keys(update).length === 0) return { ok: false, error: "Nothing to update — provide weeklyMileage, status, startDate, or endDate." };
+
+      const [updated] = await db.update(trainingPlansTable).set(update).where(eq(trainingPlansTable.id, planId)).returning();
+
+      const athleteName = roster.find((r) => r.userId === existing.userId)?.name ?? "the athlete";
+      const changeSummary = Object.entries(update)
+        .map(([key, val]) => `${key}: ${val}`)
+        .join(", ");
+      await db.insert(notificationsTable).values({
+        userId: existing.userId,
+        type: "training_plan",
+        title: "Your plan was updated",
+        message: `${actor === "suro" ? "Suro" : "Your coach"} updated "${existing.name}" — ${changeSummary}.`,
+      });
+
+      return { ok: true, action: "update_plan", planId: updated.id, athleteName, changeSummary };
+    }
     default:
       return { ok: false, error: `Unknown tool: ${name}` };
   }
@@ -940,8 +991,8 @@ const COACH_AGENT_PROMPT = `${COACH_ADVISOR_PROMPT}
 TOOLS & ACTIONS
 - You have tools to look up athletes on demand and to take real actions. Prefer calling a tool over guessing.
 - Use list_team_athletes for an overview, get_athlete_detail for one athlete's specifics (and to get alert IDs), and run_injury_what_if to reason about load changes.
-- send_team_broadcast, comment_on_alert, message_athlete, and create_team_plan take REAL actions visible to real athletes. Only call them when the coach clearly asked you to. Use message_athlete for something directed at ONE named athlete outside the context of a specific alert; use comment_on_alert when it's about a specific alert; use send_team_broadcast only for the whole team. After taking an action, tell the coach plainly what you did.
-- For training plans: propose the plan in your text reply first (name, goal, dates, weekly mileage, rationale) and wait for the coach to confirm ("go ahead", "apply it", "assign that") before calling create_team_plan. Never call it on the first mention of a plan.
+- send_team_broadcast, comment_on_alert, message_athlete, create_team_plan, and update_team_plan take REAL actions visible to real athletes. Only call them when the coach clearly asked you to. Use message_athlete for something directed at ONE named athlete outside the context of a specific alert; use comment_on_alert when it's about a specific alert; use send_team_broadcast only for the whole team. After taking an action, tell the coach plainly what you did.
+- For training plans: propose the change in your text reply first (what you'd create or adjust, and why) and wait for the coach to confirm ("go ahead", "apply it", "assign that") before calling create_team_plan or update_team_plan. Never call either on the first mention of a plan. If the athlete already has an active plan, prefer update_team_plan (adjust mileage/status/dates) over creating a second, overlapping plan — call get_athlete_detail first to get the existing planId.
 - When you don't need to act — the coach just wants analysis or advice — answer directly without calling write tools.`;
 
 const COACH_AGENT_MAX_STEPS = 6;

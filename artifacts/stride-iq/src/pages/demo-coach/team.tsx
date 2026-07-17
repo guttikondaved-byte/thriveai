@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Copy, Check, ChevronRight, Bot, Loader2 } from "lucide-react";
+import { Copy, Check, ChevronRight, Radar, Loader2 } from "lucide-react";
 import { DEMO_COACH_DATA, getDemoAthleteDetail } from "@/lib/demoData";
 import { RiskBadge } from "@/components/coach/RiskBadge";
 import { PageHeader, Eyebrow } from "@/components/coach/PageHeader";
@@ -60,7 +60,7 @@ export default function DemoCoachTeam() {
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-              <Bot className="w-5 h-5" />
+              <Radar className="w-5 h-5" />
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground">Suro</p>
@@ -82,7 +82,7 @@ export default function DemoCoachTeam() {
             disabled={suroRunning}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
           >
-            {suroRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Bot className="w-3.5 h-3.5" />}
+            {suroRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radar className="w-3.5 h-3.5" />}
             {suroRunning ? "Running…" : "Run Suro now"}
           </button>
         )}
