@@ -355,13 +355,17 @@ export default function Landing() {
           onClick={dismissAnnouncement}
         >
           <style>{`
-            @keyframes orbit-star {
-              from { transform: rotate(0deg) translateX(16px) rotate(0deg); }
-              to   { transform: rotate(360deg) translateX(16px) rotate(-360deg); }
+            @keyframes energetic-bounce {
+              0%, 100% { transform: translateY(0) scale(1, 1); }
+              15% { transform: translateY(-22px) scale(0.92, 1.12); }
+              30% { transform: translateY(0) scale(1.18, 0.82); }
+              45% { transform: translateY(-10px) scale(0.96, 1.06); }
+              60% { transform: translateY(0) scale(1.08, 0.92); }
+              75% { transform: translateY(-3px) scale(1, 1); }
             }
-            @keyframes orbit-dot {
-              from { transform: rotate(180deg) translateX(16px) rotate(-180deg); }
-              to   { transform: rotate(-180deg) translateX(16px) rotate(180deg); }
+            @keyframes energy-ring {
+              0% { transform: scale(0.6); opacity: 0.6; }
+              100% { transform: scale(1.6); opacity: 0; }
             }
           `}</style>
           <div
@@ -380,14 +384,18 @@ export default function Landing() {
             >
               <X className="w-4 h-4" />
             </button>
-            <div className="relative w-14 h-14 rounded-full bg-primary/10 border border-primary/20 mx-auto mb-4">
-              <Sparkles
-                className="w-5 h-5 text-primary absolute top-1/2 left-1/2 -mt-2.5 -ml-2.5"
-                style={{ animation: "orbit-star 3.5s linear infinite" }}
+            <div className="relative w-28 h-28 rounded-full bg-primary/10 border border-primary/20 mx-auto mb-4 flex items-center justify-center overflow-visible">
+              <span
+                className="absolute inset-0 rounded-full border-2 border-primary/40"
+                style={{ animation: "energy-ring 1.6s cubic-bezier(0.2,0.6,0.4,1) infinite" }}
               />
               <span
-                className="w-2 h-2 rounded-full bg-primary/50 absolute top-1/2 left-1/2 -mt-1 -ml-1"
-                style={{ animation: "orbit-dot 3.5s linear infinite" }}
+                className="absolute inset-0 rounded-full border-2 border-primary/40"
+                style={{ animation: "energy-ring 1.6s cubic-bezier(0.2,0.6,0.4,1) infinite 0.5s" }}
+              />
+              <Sparkles
+                className="w-10 h-10 text-primary relative"
+                style={{ animation: "energetic-bounce 1.1s cubic-bezier(0.34,1.56,0.64,1) infinite" }}
               />
             </div>
             <h2 className="font-display font-extrabold text-xl tracking-[-0.01em] text-foreground">
