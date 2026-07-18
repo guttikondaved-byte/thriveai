@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, X, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const ANNOUNCEMENT_DISMISSED_KEY = "thriveai_announcement_agentic_coach_dismissed";
 
 const REVIEWS = [
   {
@@ -289,6 +291,18 @@ export default function Landing() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [showAnnouncement, setShowAnnouncement] = useState(false);
+
+  useEffect(() => {
+    if (!window.localStorage.getItem(ANNOUNCEMENT_DISMISSED_KEY)) {
+      setShowAnnouncement(true);
+    }
+  }, []);
+
+  function dismissAnnouncement() {
+    setShowAnnouncement(false);
+    window.localStorage.setItem(ANNOUNCEMENT_DISMISSED_KEY, "1");
+  }
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 60);
@@ -323,6 +337,41 @@ export default function Landing() {
 
   return (
     <div className="bg-background overflow-x-clip">
+      {showAnnouncement && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+          onClick={dismissAnnouncement}
+        >
+          <div
+            className="relative bg-card border border-border rounded-2xl shadow-xl max-w-sm w-full p-6 pt-8 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={dismissAnnouncement}
+              aria-label="Close"
+              className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="w-5 h-5 text-primary" />
+            </div>
+            <h2 className="font-display font-extrabold text-xl tracking-[-0.01em] text-foreground">
+              Agentic AI for Coaches is here!
+            </h2>
+            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+              AveraAI can now message athletes, adjust training plans, and act on your roster in real time — right from chat.
+            </p>
+            <button
+              onClick={() => { dismissAnnouncement(); scrollTo("coaches"); }}
+              className="mt-5 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+            >
+              See what's new
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* NAVBAR */}
       <header
         className="sticky top-0 z-50 backdrop-blur-[12px] border-b border-border transition-[background-color,box-shadow] duration-200"
