@@ -427,22 +427,22 @@ export default function Landing() {
               AveraAI can now message athletes, adjust training plans, and act on your roster in real time — right from chat.
             </p>
             <div className="mt-5">
-              {/* Nothing shows at first — the bolt spins in place, then flattens into the logo + prompt box */}
-              <div className="relative h-7 flex justify-start pl-3 overflow-visible">
-                <img
-                  src="/logo.svg"
-                  alt=""
-                  className="w-7 h-7 rounded-[7px]"
-                  style={{ animation: "popup-bolt-bounce 0.8s cubic-bezier(0.45,0,0.2,1) both", animationDelay: "0.25s" }}
-                />
-              </div>
+              {/* Nothing shows at first — the bolt spins in place right where the logo ends up, then flattens into it as the box grows in */}
               <div className="flex items-center gap-2.5">
-                <img
-                  src="/logo.svg"
-                  alt=""
-                  className="w-9 h-9 rounded-[9px] shrink-0"
-                  style={{ animation: "popup-fade-up 0.4s ease-out both", animationDelay: "1.0s" }}
-                />
+                <div className="relative w-9 h-9 shrink-0 flex items-center justify-center overflow-visible">
+                  <img
+                    src="/logo.svg"
+                    alt=""
+                    className="absolute w-9 h-9 rounded-[9px]"
+                    style={{ animation: "popup-bolt-bounce 0.8s cubic-bezier(0.45,0,0.2,1) both", animationDelay: "0.25s" }}
+                  />
+                  <img
+                    src="/logo.svg"
+                    alt=""
+                    className="absolute w-9 h-9 rounded-[9px]"
+                    style={{ animation: "popup-fade-up 0.4s ease-out both", animationDelay: "1.0s" }}
+                  />
+                </div>
                 <div
                   className="flex-1 rounded-xl border border-border bg-background px-3.5 py-2.5 text-left text-sm text-foreground flex items-center min-h-[42px] overflow-hidden"
                   style={{
