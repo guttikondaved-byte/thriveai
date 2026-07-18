@@ -638,7 +638,7 @@ export default function Onboarding({ onDone }: { onDone?: () => void } = {}) {
                   {
                     id: "pro" as const,
                     title: "Athlete Pro",
-                    price: "$4.99",
+                    price: "$7.99",
                     sub: "per month",
                     features: ["Unlimited AveraAI, voice input & AI plans", "Auto Strava sync, intensity map & simulator", "Weekly summary email + CSV export"],
                   },

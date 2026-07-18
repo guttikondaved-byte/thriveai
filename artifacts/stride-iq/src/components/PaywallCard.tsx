@@ -13,7 +13,7 @@ interface PaywallCardProps {
 const PLAN_COPY: Record<PaywallCardProps["planType"], { title: string; price: string; sub: string }> = {
   athlete: {
     title: "Athlete Pro",
-    price: "$4.99/mo",
+    price: "$7.99/mo",
     sub: "Unlimited AveraAI + voice input, automatic Strava sync, unlimited training plans, full activity history, the intensity map and what-if simulator, a weekly summary email, and CSV export.",
   },
   coach: {
