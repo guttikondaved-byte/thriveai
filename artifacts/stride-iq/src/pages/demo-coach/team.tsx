@@ -6,14 +6,19 @@ import { RiskBadge } from "@/components/coach/RiskBadge";
 import { PageHeader, Eyebrow } from "@/components/coach/PageHeader";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { useDemoState, setSuroEnabled, setSuroLastRunAt, addDirectMessage } from "@/lib/demoStore";
+import { useDemoState, setSuroEnabled, setSuroLastRunAt, addDirectMessage, setPlanOverride } from "@/lib/demoStore";
 
 // Simulated autonomous pass — same conservative shape as the real Suro
 // (lib/suroAgent.ts): check the roster, act on at most one athlete only if
 // the data clearly warrants it, otherwise do nothing. Runs against the
 // static demo fixture instead of a live LLM + database.
+//
+// Mirrors the real Suro's preference for update_team_plan over just
+// messaging when an athlete at high risk already has an active plan that
+// needs adjusting — a message alone with no plan change was the actual
+// reported gap here.
 function runSuroDemoPass(): { summary: string; acted: boolean } {
-  const { roster } = DEMO_COACH_DATA;
+  const { roster, plans } = DEMO_COACH_DATA;
   const flagged = roster.filter(m => m.riskLevel === "high" || m.riskLevel === "medium");
   if (flagged.length === 0) {
     return { summary: "Reviewed the roster — nobody needs attention right now.", acted: false };
@@ -21,6 +26,20 @@ function runSuroDemoPass(): { summary: string; acted: boolean } {
   const worst = flagged.find(m => m.riskLevel === "high") ?? flagged[0];
   const detail = getDemoAthleteDetail(worst.userId);
   const alert = detail?.alerts[0];
+  const existingPlan = plans.find(p => p.athleteName === worst.name && p.status === "active");
+
+  // High risk + an existing active plan is exactly when the real Suro
+  // prefers adjusting the plan over a message-only check-in.
+  if (worst.riskLevel === "high" && existingPlan) {
+    const newMileage = Math.max(10, Math.round(existingPlan.weeklyMileage * 0.75));
+    setPlanOverride(existingPlan.id, { weeklyMileage: newMileage, status: "active" });
+    const content = alert
+      ? `Adjusted your plan "${existingPlan.name}" — cut to ${newMileage} mi/week (from ${existingPlan.weeklyMileage}) given your ${alert.bodyPart} alert: ${alert.recommendation}`
+      : `Adjusted your plan "${existingPlan.name}" — cut to ${newMileage} mi/week (from ${existingPlan.weeklyMileage}), your load looked elevated this week.`;
+    addDirectMessage(worst.userId, "coach", content, "suro");
+    return { summary: `Cut ${worst.name}'s "${existingPlan.name}" from ${existingPlan.weeklyMileage} to ${newMileage} mi/week and let them know.`, acted: true };
+  }
+
   const content = alert
     ? `Noticed your ${alert.bodyPart} alert (${alert.riskLevel} risk): ${alert.recommendation}`
     : `Your training load looks elevated this week (${worst.weeklyDistanceKm}km, HRV ${worst.hrv}ms) — consider an easy day before your next hard session.`;
