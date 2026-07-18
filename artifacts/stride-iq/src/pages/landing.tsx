@@ -414,26 +414,40 @@ export default function Landing() {
             >
               <X className="w-4 h-4" />
             </button>
-            <h2 className="font-display font-extrabold text-xl tracking-[-0.01em] text-foreground">
+            <h2
+              className="font-display font-extrabold text-xl tracking-[-0.01em] text-foreground"
+              style={{ animation: "popup-fade-up 0.5s ease-out both", animationDelay: "1.5s" }}
+            >
               Agentic AI for coaches and athletes is here!
             </h2>
-            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+            <p
+              className="text-sm text-muted-foreground mt-2 leading-relaxed"
+              style={{ animation: "popup-fade-up 0.5s ease-out both", animationDelay: "1.65s" }}
+            >
               AveraAI can now message athletes, adjust training plans, and act on your roster in real time — right from chat.
             </p>
             <div className="mt-5">
-              {/* Ball bounces around, then flattens down into the prompt box below */}
+              {/* Nothing shows at first — the bolt drops in, bounces, then flattens into the logo + prompt box */}
               <div className="relative h-7 flex justify-end pr-4 overflow-visible">
-                <div
-                  className="w-4 h-4 rounded-full bg-primary"
-                  style={{ animation: "popup-ball-to-box 2.6s cubic-bezier(0.4,0,0.2,1) infinite" }}
+                <img
+                  src="/logo.svg"
+                  alt=""
+                  className="w-7 h-7 rounded-[7px]"
+                  style={{ animation: "popup-bolt-bounce 1.3s cubic-bezier(0.4,0,0.2,1) both", animationDelay: "0.25s" }}
                 />
               </div>
               <div className="flex items-center gap-2.5">
-                <img src="/logo.svg" alt="" className="w-9 h-9 rounded-[9px] shrink-0" />
+                <img
+                  src="/logo.svg"
+                  alt=""
+                  className="w-9 h-9 rounded-[9px] shrink-0"
+                  style={{ animation: "popup-fade-up 0.4s ease-out both", animationDelay: "1.4s" }}
+                />
                 <div
                   className="flex-1 rounded-xl border border-border bg-background px-3.5 py-2.5 text-left text-sm text-foreground flex items-center min-h-[42px] overflow-hidden"
                   style={{
-                    animation: "popup-box-form 2.6s cubic-bezier(0.34,1.56,0.64,1) infinite",
+                    animation: "popup-box-form 1.3s cubic-bezier(0.34,1.56,0.64,1) both",
+                    animationDelay: "0.25s",
                     transformOrigin: "left center",
                   }}
                 >
@@ -448,6 +462,7 @@ export default function Landing() {
             <button
               onClick={() => { dismissAnnouncement(); scrollTo("coaches"); }}
               className="mt-5 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors hover:scale-[1.02] active:scale-[0.98]"
+              style={{ animation: "popup-fade-up 0.5s ease-out both", animationDelay: "1.85s" }}
             >
               See what's new
             </button>
