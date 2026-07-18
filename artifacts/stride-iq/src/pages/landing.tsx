@@ -1,9 +1,46 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { ChevronDown, X, Sparkles } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ANNOUNCEMENT_DISMISSED_KEY = "thriveai_announcement_agentic_coach_dismissed";
+
+const AGENT_PROMPT_EXAMPLES = [
+  "Message Marcus about his shin splints",
+  "Cut Priya's mileage 20% this week",
+  "Assign Jordan a recovery plan",
+  "Suggest a change to Sam's plan",
+];
+
+// Types out each prompt, pauses, deletes it, then moves to the next —
+// classic ChatGPT-style rotating placeholder. Only runs while `active`, so
+// it stops burning timers once the popup is dismissed.
+function useTypewriter(prompts: string[], active: boolean): string {
+  const [text, setText] = useState("");
+  const [promptIndex, setPromptIndex] = useState(0);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    if (!active) return undefined;
+    const current = prompts[promptIndex % prompts.length];
+    let timeout: ReturnType<typeof setTimeout>;
+    if (!deleting && text.length < current.length) {
+      timeout = setTimeout(() => setText(current.slice(0, text.length + 1)), 45);
+    } else if (!deleting && text.length === current.length) {
+      timeout = setTimeout(() => setDeleting(true), 1400);
+    } else if (deleting && text.length > 0) {
+      timeout = setTimeout(() => setText(current.slice(0, text.length - 1)), 25);
+    } else {
+      timeout = setTimeout(() => {
+        setDeleting(false);
+        setPromptIndex((i) => (i + 1) % prompts.length);
+      }, 300);
+    }
+    return () => clearTimeout(timeout);
+  }, [text, deleting, promptIndex, active, prompts]);
+
+  return text;
+}
 
 const REVIEWS = [
   {
@@ -293,6 +330,7 @@ export default function Landing() {
   const [scrolled, setScrolled] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   const [announcementClosing, setAnnouncementClosing] = useState(false);
+  const typedPrompt = useTypewriter(AGENT_PROMPT_EXAMPLES, showAnnouncement && !announcementClosing);
 
   useEffect(() => {
     if (!window.localStorage.getItem(ANNOUNCEMENT_DISMISSED_KEY)) {
@@ -355,17 +393,35 @@ export default function Landing() {
           onClick={dismissAnnouncement}
         >
           <style>{`
-            @keyframes energetic-bounce {
-              0%, 100% { transform: translateY(0) scale(1, 1); }
-              15% { transform: translateY(-22px) scale(0.92, 1.12); }
-              30% { transform: translateY(0) scale(1.18, 0.82); }
-              45% { transform: translateY(-10px) scale(0.96, 1.06); }
-              60% { transform: translateY(0) scale(1.08, 0.92); }
-              75% { transform: translateY(-3px) scale(1, 1); }
+            @keyframes orb-a-bounce {
+              0%   { transform: translate(-20px, 10px) scale(1); }
+              22%  { transform: translate(-12px, -18px) scale(1); }
+              40%  { transform: translate(-5px, 6px) scale(1); }
+              48%  { transform: translate(0, 0) scale(0.3); }
+              52%  { transform: translate(0, 0) scale(0.3); }
+              62%  { transform: translate(8px, -14px) scale(1); }
+              82%  { transform: translate(16px, 8px) scale(1); }
+              100% { transform: translate(-20px, 10px) scale(1); }
             }
-            @keyframes energy-ring {
-              0% { transform: scale(0.6); opacity: 0.6; }
-              100% { transform: scale(1.6); opacity: 0; }
+            @keyframes orb-b-bounce {
+              0%   { transform: translate(18px, -10px) scale(1); }
+              22%  { transform: translate(12px, 16px) scale(1); }
+              40%  { transform: translate(5px, -6px) scale(1); }
+              48%  { transform: translate(0, 0) scale(0.3); }
+              52%  { transform: translate(0, 0) scale(0.3); }
+              62%  { transform: translate(-8px, 12px) scale(1); }
+              82%  { transform: translate(-16px, -8px) scale(1); }
+              100% { transform: translate(18px, -10px) scale(1); }
+            }
+            @keyframes merge-flash {
+              0%, 44% { transform: scale(0.3); opacity: 0; }
+              48%     { transform: scale(1); opacity: 1; }
+              58%     { transform: scale(1.9); opacity: 0; }
+              100%    { transform: scale(0.3); opacity: 0; }
+            }
+            @keyframes blink-caret {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0; }
             }
           `}</style>
           <div
@@ -384,18 +440,19 @@ export default function Landing() {
             >
               <X className="w-4 h-4" />
             </button>
-            <div className="relative w-28 h-28 rounded-full bg-primary/10 border border-primary/20 mx-auto mb-4 flex items-center justify-center overflow-visible">
-              <span
-                className="absolute inset-0 rounded-full border-2 border-primary/40"
-                style={{ animation: "energy-ring 1.6s cubic-bezier(0.2,0.6,0.4,1) infinite" }}
+            <div className="relative w-28 h-28 mx-auto mb-4 flex items-center justify-center overflow-visible">
+              {/* Flash at the moment the two orbs collide into one */}
+              <div
+                className="absolute w-9 h-9 rounded-full bg-primary"
+                style={{ animation: "merge-flash 2.6s cubic-bezier(0.3,0,0.3,1) infinite" }}
               />
-              <span
-                className="absolute inset-0 rounded-full border-2 border-primary/40"
-                style={{ animation: "energy-ring 1.6s cubic-bezier(0.2,0.6,0.4,1) infinite 0.5s" }}
+              <div
+                className="absolute w-5 h-5 rounded-full bg-primary"
+                style={{ animation: "orb-a-bounce 2.6s cubic-bezier(0.45,0,0.2,1) infinite" }}
               />
-              <Sparkles
-                className="w-10 h-10 text-primary relative"
-                style={{ animation: "energetic-bounce 1.1s cubic-bezier(0.34,1.56,0.64,1) infinite" }}
+              <div
+                className="absolute w-5 h-5 rounded-full bg-primary/60"
+                style={{ animation: "orb-b-bounce 2.6s cubic-bezier(0.45,0,0.2,1) infinite" }}
               />
             </div>
             <h2 className="font-display font-extrabold text-xl tracking-[-0.01em] text-foreground">
@@ -404,6 +461,13 @@ export default function Landing() {
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
               AveraAI can now message athletes, adjust training plans, and act on your roster in real time — right from chat.
             </p>
+            <div className="mt-4 rounded-xl border border-border bg-background px-3.5 py-2.5 text-left text-sm text-foreground flex items-center min-h-[42px]">
+              <span>{typedPrompt}</span>
+              <span
+                className="inline-block w-[2px] h-4 bg-primary ml-0.5"
+                style={{ animation: "blink-caret 1s step-end infinite" }}
+              />
+            </div>
             <button
               onClick={() => { dismissAnnouncement(); scrollTo("coaches"); }}
               className="mt-5 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors hover:scale-[1.02] active:scale-[0.98]"
