@@ -434,7 +434,7 @@ export default function Landing() {
                     src="/logo.svg"
                     alt=""
                     className="absolute w-9 h-9 rounded-[9px]"
-                    style={{ animation: "popup-bolt-bounce 0.9s cubic-bezier(0.16,0.6,0.3,1) both", animationDelay: "0.25s" }}
+                    style={{ animation: "popup-bolt-bounce 0.9s linear both", animationDelay: "0.25s" }}
                   />
                   <img
                     src="/logo.svg"
