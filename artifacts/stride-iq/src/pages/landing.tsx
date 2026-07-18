@@ -292,16 +292,25 @@ export default function Landing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const [announcementClosing, setAnnouncementClosing] = useState(false);
 
   useEffect(() => {
     if (!window.localStorage.getItem(ANNOUNCEMENT_DISMISSED_KEY)) {
-      setShowAnnouncement(true);
+      // Slight delay so it animates in after the page settles, rather than
+      // popping in before the layout has even painted.
+      const t = setTimeout(() => setShowAnnouncement(true), 400);
+      return () => clearTimeout(t);
     }
+    return undefined;
   }, []);
 
   function dismissAnnouncement() {
-    setShowAnnouncement(false);
     window.localStorage.setItem(ANNOUNCEMENT_DISMISSED_KEY, "1");
+    setAnnouncementClosing(true);
+    setTimeout(() => {
+      setShowAnnouncement(false);
+      setAnnouncementClosing(false);
+    }, 200);
   }
 
   useEffect(() => {
@@ -339,11 +348,19 @@ export default function Landing() {
     <div className="bg-background overflow-x-clip">
       {showAnnouncement && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+          className={cn(
+            "fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4",
+            announcementClosing ? "animate-out fade-out duration-200" : "animate-in fade-in duration-300",
+          )}
           onClick={dismissAnnouncement}
         >
           <div
-            className="relative bg-card border border-border rounded-2xl shadow-xl max-w-sm w-full p-6 pt-8 text-center"
+            className={cn(
+              "relative bg-card border border-border rounded-2xl shadow-xl max-w-sm w-full p-6 pt-8 text-center",
+              announcementClosing
+                ? "animate-out fade-out-0 zoom-out-95 slide-out-to-bottom-2 duration-200"
+                : "animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 duration-300 ease-out",
+            )}
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -353,18 +370,18 @@ export default function Landing() {
             >
               <X className="w-4 h-4" />
             </button>
-            <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
+            <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4 animate-in zoom-in-50 spin-in-6 duration-500 delay-150 fill-mode-both">
               <Sparkles className="w-5 h-5 text-primary" />
             </div>
-            <h2 className="font-display font-extrabold text-xl tracking-[-0.01em] text-foreground">
+            <h2 className="font-display font-extrabold text-xl tracking-[-0.01em] text-foreground animate-in fade-in slide-in-from-bottom-1 duration-300 delay-150 fill-mode-both">
               Agentic AI for Coaches is here!
             </h2>
-            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+            <p className="text-sm text-muted-foreground mt-2 leading-relaxed animate-in fade-in slide-in-from-bottom-1 duration-300 delay-200 fill-mode-both">
               AveraAI can now message athletes, adjust training plans, and act on your roster in real time — right from chat.
             </p>
             <button
               onClick={() => { dismissAnnouncement(); scrollTo("coaches"); }}
-              className="mt-5 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+              className="mt-5 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors animate-in fade-in slide-in-from-bottom-1 duration-300 delay-300 fill-mode-both hover:scale-[1.02] active:scale-[0.98]"
             >
               See what's new
             </button>
