@@ -13,6 +13,7 @@ import {
   injuryAlertsTable,
   injuryAlertCommentsTable,
   directMessagesTable,
+  planEditSuggestionsTable,
   notificationsTable,
   teamsTable,
   teamMembershipsTable,
@@ -1060,6 +1061,185 @@ async function runCoachAgent(
   return { text: finalCompletion.choices[0]?.message?.content ?? "", actions };
 }
 
+// ── Athlete agent: tool-calling loop ─────────────────────────────────────────
+// Same idea as the coach agent, scoped to what an athlete can actually act on
+// — themselves, not other people. An athlete not on a team owns their plan
+// outright and can adjust it directly; an athlete on a team has a
+// coach-authored plan they can only suggest changes to (the coach approves),
+// same rule the manual suggest-changes UI already enforces.
+
+async function loadAthletePlanForAgent(userId: string) {
+  const [plan] = await db
+    .select()
+    .from(trainingPlansTable)
+    .where(and(eq(trainingPlansTable.userId, userId), eq(trainingPlansTable.status, "active")))
+    .orderBy(desc(trainingPlansTable.createdAt))
+    .limit(1);
+  if (!plan) return { plan: null, ownedByAthlete: true };
+  const ownedByAthlete = !plan.createdBy || plan.createdBy === userId;
+  return { plan, ownedByAthlete };
+}
+
+function buildAthleteAgentTools(ownedByAthlete: boolean, hasPlan: boolean): ChatCompletionTool[] {
+  const tools: ChatCompletionTool[] = [];
+  if (hasPlan && ownedByAthlete) {
+    tools.push({
+      type: "function",
+      function: {
+        name: "update_own_plan",
+        description:
+          "Adjust the athlete's own active training plan — weekly mileage, status (active/paused), or dates. This is a REAL action, applied immediately. Only call after the athlete has clearly asked for a change; propose it in text first if it's a significant change (e.g. cutting volume) and they haven't explicitly asked yet.",
+        parameters: {
+          type: "object",
+          properties: {
+            weeklyMileage: { type: "number", description: "New target weekly mileage." },
+            status: { type: "string", enum: ["active", "paused"], description: "New plan status." },
+            startDate: { type: "string", description: "New start date, YYYY-MM-DD." },
+            endDate: { type: "string", description: "New end date, YYYY-MM-DD." },
+          },
+          required: [],
+        },
+      },
+    });
+  }
+  if (hasPlan && !ownedByAthlete) {
+    tools.push({
+      type: "function",
+      function: {
+        name: "suggest_plan_change",
+        description:
+          "Submit a suggested change to the athlete's coach-authored plan for their coach to review — this is a REAL action (the coach is notified), but it does NOT change the plan itself; the coach has to approve it. Use when the athlete wants their plan adjusted but their plan was built by their coach, not themselves.",
+        parameters: {
+          type: "object",
+          properties: {
+            note: { type: "string", description: "Plain-language description of the requested change and why, e.g. 'Cut this week's volume ~20% — shin has been sore two days in a row.'" },
+          },
+          required: ["note"],
+        },
+      },
+    });
+  }
+  return tools;
+}
+
+type AthleteToolResult = { ok: boolean; action?: string; [k: string]: unknown };
+
+async function executeAthleteTool(
+  userId: string,
+  plan: typeof trainingPlansTable.$inferSelect | null,
+  name: string,
+  args: Record<string, unknown>,
+): Promise<AthleteToolResult> {
+  switch (name) {
+    case "update_own_plan": {
+      if (!plan) return { ok: false, error: "No active plan to update." };
+      const update: Partial<typeof trainingPlansTable.$inferInsert> = {};
+      if (typeof args.weeklyMileage === "number") update.weeklyMileage = String(args.weeklyMileage);
+      if (args.status === "active" || args.status === "paused") update.status = args.status;
+      if (typeof args.startDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(args.startDate)) update.startDate = args.startDate;
+      if (typeof args.endDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(args.endDate)) update.endDate = args.endDate;
+      if (Object.keys(update).length === 0) return { ok: false, error: "Nothing to update — provide weeklyMileage, status, startDate, or endDate." };
+      const [updated] = await db.update(trainingPlansTable).set(update).where(and(eq(trainingPlansTable.id, plan.id), eq(trainingPlansTable.userId, userId))).returning();
+      const changeSummary = Object.entries(update).map(([k, v]) => `${k}: ${v}`).join(", ");
+      return { ok: true, action: "update_plan", planId: updated.id, changeSummary };
+    }
+    case "suggest_plan_change": {
+      if (!plan || !plan.createdBy) return { ok: false, error: "No coach-authored plan to suggest changes to." };
+      const note = String(args.note ?? "").trim().slice(0, 500);
+      if (!note) return { ok: false, error: "Note is empty." };
+      const [suggestion] = await db.insert(planEditSuggestionsTable).values({ planId: plan.id, submittedBy: userId, sessions: [], note }).returning();
+      await db.insert(notificationsTable).values({
+        userId: plan.createdBy,
+        type: "plan_suggestion",
+        title: "Plan change suggested",
+        message: `Suggested a change to "${plan.name}": ${note}`,
+      });
+      return { ok: true, action: "suggest_plan_change", suggestionId: suggestion.id };
+    }
+    default:
+      return { ok: false, error: `Unknown tool: ${name}` };
+  }
+}
+
+const ATHLETE_AGENT_PROMPT_SUFFIX = `
+
+TOOLS & ACTIONS
+- If the athlete has their own plan (not built by a coach), you can adjust it directly with update_own_plan — a real, immediate change.
+- If their plan was built by their coach, you can only submit a suggestion with suggest_plan_change — their coach has to approve it before it changes. Be clear with the athlete that it's a suggestion, not a done deal, when you use this.
+- Only call a write tool when the athlete has clearly asked for a change, or you proposed one and they confirmed. Never call one on the first mention of wanting to adjust training.
+- When you don't need to act, just answer normally.`;
+
+const ATHLETE_AGENT_MAX_STEPS = 5;
+
+async function runAthleteAgent(
+  client: OpenAI,
+  userId: string,
+  systemPrompt: string,
+  chatMessages: { role: "user" | "assistant"; content: string }[],
+): Promise<{ text: string; actions: string[] }> {
+  const { plan, ownedByAthlete } = await loadAthletePlanForAgent(userId);
+  const tools = buildAthleteAgentTools(ownedByAthlete, !!plan);
+  const actions: string[] = [];
+
+  if (tools.length === 0) {
+    // No plan, or nothing actionable — just answer normally, no tool loop needed.
+    const completion = await client.chat.completions.create({
+      model: COACH_MODEL,
+      temperature: COACH_TEMPERATURE,
+      max_tokens: 2048,
+      messages: [{ role: "system", content: systemPrompt }, ...chatMessages],
+    });
+    return { text: completion.choices[0]?.message?.content ?? "", actions };
+  }
+
+  const messagesForModel: ChatCompletionMessageParam[] = [
+    { role: "system", content: `${systemPrompt}${ATHLETE_AGENT_PROMPT_SUFFIX}` },
+    ...chatMessages,
+  ];
+
+  for (let step = 0; step < ATHLETE_AGENT_MAX_STEPS; step++) {
+    const completion = await client.chat.completions.create({
+      model: COACH_MODEL,
+      temperature: COACH_TEMPERATURE,
+      max_tokens: 2048,
+      messages: messagesForModel,
+      tools,
+    });
+    const choice = completion.choices[0]?.message;
+    if (!choice) break;
+    const toolCalls = choice.tool_calls ?? [];
+    if (toolCalls.length === 0) {
+      return { text: choice.content ?? "", actions };
+    }
+    messagesForModel.push({ role: "assistant", content: choice.content ?? "", tool_calls: toolCalls });
+    for (const call of toolCalls) {
+      if (call.type !== "function") continue;
+      let parsedArgs: Record<string, unknown> = {};
+      try {
+        parsedArgs = call.function.arguments ? JSON.parse(call.function.arguments) : {};
+      } catch {
+        parsedArgs = {};
+      }
+      let result: AthleteToolResult;
+      try {
+        result = await executeAthleteTool(userId, plan, call.function.name, parsedArgs);
+      } catch (err) {
+        logger.error({ err, tool: call.function.name }, "athlete agent tool failed");
+        result = { ok: false, error: "That action failed unexpectedly." };
+      }
+      if (result.ok && result.action) actions.push(result.action);
+      messagesForModel.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result) });
+    }
+  }
+  const finalCompletion = await client.chat.completions.create({
+    model: COACH_MODEL,
+    temperature: COACH_TEMPERATURE,
+    max_tokens: 2048,
+    messages: messagesForModel,
+  });
+  return { text: finalCompletion.choices[0]?.message?.content ?? "", actions };
+}
+
 // ── Voice input ──────────────────────────────────────────────────────────────
 // Transcribes a recorded voice message into text for the AveraAI composer.
 // Expects the raw audio bytes as the request body (see app.ts for the
@@ -1518,10 +1698,10 @@ router.post("/openai/conversations/:id/messages", async (req: Request, res): Pro
   // and take real actions. It runs non-streaming (tool calls interleave with
   // model turns), then we emit the final answer as a single SSE chunk so the
   // existing client — which just accumulates `content` events — needs no change.
-  let coachAgentHandled = false;
+  let agentHandled = false;
   const agentActions: string[] = [];
   if (profile?.userRole === "coach" && profile?.agenticModeEnabled !== false) {
-    coachAgentHandled = true;
+    agentHandled = true;
     try {
       const { text, actions } = await runCoachAgent(client, userId, chatMessages);
       fullResponse = text || "I wasn't able to put together a response — try rephrasing?";
@@ -1533,7 +1713,24 @@ router.post("/openai/conversations/:id/messages", async (req: Request, res): Pro
     res.write(`data: ${JSON.stringify({ content: fullResponse })}\n\n`);
   }
 
-  if (!planCreatedId && !coachAgentHandled) {
+  // Athletes get the same agentic treatment, scoped to what they can act on —
+  // their own plan (direct edit if self-authored, a suggestion if their
+  // coach built it). Skipped if the plan-auto-create shortcut above already
+  // handled this message.
+  if (!planCreatedId && profile?.userRole !== "coach" && profile?.agenticModeEnabled !== false) {
+    agentHandled = true;
+    try {
+      const { text, actions } = await runAthleteAgent(client, userId, systemPrompt, chatMessages);
+      fullResponse = text || "I wasn't able to put together a response — try rephrasing?";
+      agentActions.push(...actions);
+    } catch (err) {
+      logger.error({ err, userId }, "athlete agent failed; falling back to plain reply");
+      fullResponse = "Sorry, I hit an error working through that. Please try again.";
+    }
+    res.write(`data: ${JSON.stringify({ content: fullResponse })}\n\n`);
+  }
+
+  if (!planCreatedId && !agentHandled) {
     try {
       const finalMessages = [{ role: "system" as const, content: systemPrompt }, ...chatMessages];
       // Full prompt sent to the model, verbatim — for debugging/observability.

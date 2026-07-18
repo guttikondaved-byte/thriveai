@@ -539,8 +539,21 @@ function AthleteProfile() {
   const { toast } = useToast();
   const { data: profile, isLoading } = useGetAthleteProfile();
   const updateProfile = useUpdateAthleteProfile();
+  const agenticToggle = useUpdateAthleteProfile();
   const [activeGuide, setActiveGuide] = useState<GuideKey>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  function onAgenticModeChange(checked: boolean) {
+    agenticToggle.mutate({ data: { agenticModeEnabled: checked } }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getGetAthleteProfileQueryKey() });
+        toast({ title: checked ? "Agent mode turned on" : "Agent mode turned off" });
+      },
+      onError: () => {
+        toast({ title: "Couldn't update agent mode", variant: "destructive" });
+      },
+    });
+  }
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -688,6 +701,29 @@ function AthleteProfile() {
                 </div>
               </form>
             </Form>
+          </div>
+
+          {/* AveraAI Agent Mode */}
+          <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <Bot className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">AveraAI Agent Mode</p>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-md">
+                    When on, AveraAI can adjust your own plan directly, or send your coach a suggested change if they built your plan, while you chat. When off, it just talks — no changes, no suggestions.
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={profile?.agenticModeEnabled ?? true}
+                disabled={agenticToggle.isPending}
+                onCheckedChange={onAgenticModeChange}
+                aria-label="Toggle AveraAI agent mode"
+              />
+            </div>
           </div>
 
           {/* Danger Zone */}
