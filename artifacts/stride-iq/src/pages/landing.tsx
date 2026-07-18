@@ -416,13 +416,13 @@ export default function Landing() {
             </button>
             <h2
               className="font-display font-extrabold text-xl tracking-[-0.01em] text-foreground"
-              style={{ animation: "popup-fade-up 0.5s ease-out both", animationDelay: "1.15s" }}
+              style={{ animation: "popup-fade-up 0.5s ease-out both", animationDelay: "1.25s" }}
             >
               Agentic AI for coaches and athletes is here!
             </h2>
             <p
               className="text-sm text-muted-foreground mt-2 leading-relaxed"
-              style={{ animation: "popup-fade-up 0.5s ease-out both", animationDelay: "1.3s" }}
+              style={{ animation: "popup-fade-up 0.5s ease-out both", animationDelay: "1.4s" }}
             >
               AveraAI can now message athletes, adjust training plans, and act on your roster in real time — right from chat.
             </p>
@@ -434,19 +434,19 @@ export default function Landing() {
                     src="/logo.svg"
                     alt=""
                     className="absolute w-9 h-9 rounded-[9px]"
-                    style={{ animation: "popup-bolt-bounce 0.8s cubic-bezier(0.45,0,0.2,1) both", animationDelay: "0.25s" }}
+                    style={{ animation: "popup-bolt-bounce 0.9s cubic-bezier(0.16,0.6,0.3,1) both", animationDelay: "0.25s" }}
                   />
                   <img
                     src="/logo.svg"
                     alt=""
                     className="absolute w-9 h-9 rounded-[9px]"
-                    style={{ animation: "popup-fade-up 0.4s ease-out both", animationDelay: "1.0s" }}
+                    style={{ animation: "popup-fade-up 0.4s ease-out both", animationDelay: "1.1s" }}
                   />
                 </div>
                 <div
                   className="flex-1 rounded-xl border border-border bg-background px-3.5 py-2.5 text-left text-sm text-foreground flex items-center min-h-[42px] overflow-hidden"
                   style={{
-                    animation: "popup-box-form 0.8s cubic-bezier(0.34,1.56,0.64,1) both",
+                    animation: "popup-box-form 0.9s cubic-bezier(0.34,1.56,0.64,1) both",
                     animationDelay: "0.25s",
                     transformOrigin: "left center",
                   }}
@@ -462,7 +462,7 @@ export default function Landing() {
             <button
               onClick={() => { dismissAnnouncement(); scrollTo("coaches"); }}
               className="mt-5 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors hover:scale-[1.02] active:scale-[0.98]"
-              style={{ animation: "popup-fade-up 0.5s ease-out both", animationDelay: "1.45s" }}
+              style={{ animation: "popup-fade-up 0.5s ease-out both", animationDelay: "1.55s" }}
             >
               See what's new
             </button>

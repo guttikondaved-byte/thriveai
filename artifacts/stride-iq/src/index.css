@@ -217,9 +217,12 @@
 
 @keyframes popup-bolt-bounce {
   0%   { transform: rotate(0deg) scaleX(1) scaleY(1); opacity: 1; }
-  70%  { transform: rotate(720deg) scaleX(1) scaleY(1); opacity: 1; }
-  85%  { transform: rotate(900deg) scaleX(1.3) scaleY(0.5); opacity: 1; }
-  100% { transform: rotate(1040deg) scaleX(0.15) scaleY(0.15); opacity: 0; }
+  30%  { transform: rotate(500deg) scaleX(1) scaleY(1); opacity: 1; }
+  50%  { transform: rotate(760deg) scaleX(1) scaleY(1); opacity: 1; }
+  68%  { transform: rotate(920deg) scaleX(1) scaleY(1); opacity: 1; }
+  82%  { transform: rotate(1000deg) scaleX(1) scaleY(1); opacity: 1; }
+  92%  { transform: rotate(1030deg) scaleX(1.3) scaleY(0.5); opacity: 1; }
+  100% { transform: rotate(1044deg) scaleX(0.15) scaleY(0.15); opacity: 0; }
 }
 @keyframes popup-box-form {
   0%, 62%  { transform: scaleX(0.12); opacity: 0; }
