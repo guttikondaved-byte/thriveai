@@ -354,12 +354,22 @@ export default function Landing() {
           )}
           onClick={dismissAnnouncement}
         >
+          <style>{`
+            @keyframes orbit-star {
+              from { transform: rotate(0deg) translateX(16px) rotate(0deg); }
+              to   { transform: rotate(360deg) translateX(16px) rotate(-360deg); }
+            }
+            @keyframes orbit-dot {
+              from { transform: rotate(180deg) translateX(16px) rotate(-180deg); }
+              to   { transform: rotate(-180deg) translateX(16px) rotate(180deg); }
+            }
+          `}</style>
           <div
             className={cn(
               "relative bg-card border border-border rounded-2xl shadow-xl max-w-sm w-full p-6 pt-8 text-center",
               announcementClosing
-                ? "animate-out fade-out-0 zoom-out-95 slide-out-to-bottom-2 duration-200"
-                : "animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-4 duration-300 ease-out",
+                ? "animate-out fade-out-0 zoom-out-95 duration-200"
+                : "animate-in fade-in-0 zoom-in-95 duration-300 ease-out",
             )}
             onClick={(e) => e.stopPropagation()}
           >
@@ -370,18 +380,25 @@ export default function Landing() {
             >
               <X className="w-4 h-4" />
             </button>
-            <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4 animate-in zoom-in-50 spin-in-6 duration-500 delay-150 fill-mode-both">
-              <Sparkles className="w-5 h-5 text-primary" />
+            <div className="relative w-14 h-14 rounded-full bg-primary/10 border border-primary/20 mx-auto mb-4">
+              <Sparkles
+                className="w-5 h-5 text-primary absolute top-1/2 left-1/2 -mt-2.5 -ml-2.5"
+                style={{ animation: "orbit-star 3.5s linear infinite" }}
+              />
+              <span
+                className="w-2 h-2 rounded-full bg-primary/50 absolute top-1/2 left-1/2 -mt-1 -ml-1"
+                style={{ animation: "orbit-dot 3.5s linear infinite" }}
+              />
             </div>
-            <h2 className="font-display font-extrabold text-xl tracking-[-0.01em] text-foreground animate-in fade-in slide-in-from-bottom-1 duration-300 delay-150 fill-mode-both">
+            <h2 className="font-display font-extrabold text-xl tracking-[-0.01em] text-foreground">
               Agentic AI for Coaches is here!
             </h2>
-            <p className="text-sm text-muted-foreground mt-2 leading-relaxed animate-in fade-in slide-in-from-bottom-1 duration-300 delay-200 fill-mode-both">
+            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
               AveraAI can now message athletes, adjust training plans, and act on your roster in real time — right from chat.
             </p>
             <button
               onClick={() => { dismissAnnouncement(); scrollTo("coaches"); }}
-              className="mt-5 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors animate-in fade-in slide-in-from-bottom-1 duration-300 delay-300 fill-mode-both hover:scale-[1.02] active:scale-[0.98]"
+              className="mt-5 w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors hover:scale-[1.02] active:scale-[0.98]"
             >
               See what's new
             </button>
