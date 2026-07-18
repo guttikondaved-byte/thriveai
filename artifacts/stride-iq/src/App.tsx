@@ -53,6 +53,7 @@ import NotFound from "@/pages/not-found";
 import { useGetAthleteProfile, setAuthTokenGetter } from "@workspace/api-client-react";
 import { useSubscription, refreshSubscription, SUBSCRIPTION_QUERY_KEY } from "@/hooks/use-subscription";
 import { TEAMS_MY_QUERY_KEY } from "@/lib/queryKeys";
+import { LoadingScreen } from "@/components/LoadingLogo";
 
 const queryClient = new QueryClient();
 
@@ -136,12 +137,6 @@ const clerkAppearance = {
     main: "",
   },
 };
-
-const Spinner = () => (
-  <div className="min-h-screen bg-background flex items-center justify-center">
-    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-  </div>
-);
 
 function SignInPage() {
   const [, navigate] = useLocation();
@@ -475,7 +470,7 @@ function AppContent() {
     }
   }, [profile, isLoading, location, navigate, forceOnboarding]);
 
-  if (isLoading) return <Spinner />;
+  if (isLoading) return <LoadingScreen />;
 
   const needsOnboarding = !role;
 
@@ -495,8 +490,8 @@ function AppContent() {
   // the paid product here; this is that payment step at the end of a coach's
   // signup flow. Fail open on a transient subscription-load error so a flaky
   // check never locks out a paying coach.
-  if (reconcilingCheckout || joiningTeam) return <Spinner />;
-  if (role === "coach" && subLoading) return <Spinner />;
+  if (reconcilingCheckout || joiningTeam) return <LoadingScreen />;
+  if (role === "coach" && subLoading) return <LoadingScreen />;
   if (role === "coach" && subscription && !subscription.isActive) {
     return (
       <Subscribe
@@ -555,7 +550,7 @@ function ClerkAuthTokenProvider() {
 function HomeContent() {
   const { isLoaded, isSignedIn } = useUser();
 
-  if (!isLoaded) return <Spinner />;
+  if (!isLoaded) return <LoadingScreen />;
   if (!isSignedIn) return <Login />;
 
   return (

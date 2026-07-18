@@ -393,32 +393,6 @@ export default function Landing() {
           onClick={dismissAnnouncement}
         >
           <style>{`
-            @keyframes orb-a-bounce {
-              0%   { transform: translate(-20px, 10px) scale(1); }
-              22%  { transform: translate(-12px, -18px) scale(1); }
-              40%  { transform: translate(-5px, 6px) scale(1); }
-              48%  { transform: translate(0, 0) scale(0.3); }
-              52%  { transform: translate(0, 0) scale(0.3); }
-              62%  { transform: translate(8px, -14px) scale(1); }
-              82%  { transform: translate(16px, 8px) scale(1); }
-              100% { transform: translate(-20px, 10px) scale(1); }
-            }
-            @keyframes orb-b-bounce {
-              0%   { transform: translate(18px, -10px) scale(1); }
-              22%  { transform: translate(12px, 16px) scale(1); }
-              40%  { transform: translate(5px, -6px) scale(1); }
-              48%  { transform: translate(0, 0) scale(0.3); }
-              52%  { transform: translate(0, 0) scale(0.3); }
-              62%  { transform: translate(-8px, 12px) scale(1); }
-              82%  { transform: translate(-16px, -8px) scale(1); }
-              100% { transform: translate(18px, -10px) scale(1); }
-            }
-            @keyframes merge-flash {
-              0%, 44% { transform: scale(0.3); opacity: 0; }
-              48%     { transform: scale(1); opacity: 1; }
-              58%     { transform: scale(1.9); opacity: 0; }
-              100%    { transform: scale(0.3); opacity: 0; }
-            }
             @keyframes blink-caret {
               0%, 100% { opacity: 1; }
               50% { opacity: 0; }
@@ -440,23 +414,25 @@ export default function Landing() {
             >
               <X className="w-4 h-4" />
             </button>
-            <div className="relative w-28 h-28 mx-auto mb-4 flex items-center justify-center overflow-visible">
-              {/* Flash at the moment the two orbs collide into one */}
+            <div className="relative w-28 h-28 mx-auto mb-4 flex items-end justify-center overflow-visible">
+              {/* Ball drops and bounces, then settles into the app logo */}
               <div
-                className="absolute w-9 h-9 rounded-full bg-primary"
-                style={{ animation: "merge-flash 2.6s cubic-bezier(0.3,0,0.3,1) infinite" }}
+                className="absolute w-6 h-6 rounded-full bg-primary"
+                style={{ animation: "popup-ball-bounce 2.6s cubic-bezier(0.4,0,0.2,1) infinite" }}
               />
               <div
-                className="absolute w-5 h-5 rounded-full bg-primary"
-                style={{ animation: "orb-a-bounce 2.6s cubic-bezier(0.45,0,0.2,1) infinite" }}
+                className="absolute bottom-1 w-9 h-2 rounded-full bg-foreground/20 blur-[2px]"
+                style={{ animation: "popup-shadow-pulse 2.6s cubic-bezier(0.4,0,0.2,1) infinite" }}
               />
-              <div
-                className="absolute w-5 h-5 rounded-full bg-primary/60"
-                style={{ animation: "orb-b-bounce 2.6s cubic-bezier(0.45,0,0.2,1) infinite" }}
+              <img
+                src="/logo.svg"
+                alt=""
+                className="absolute w-12 h-12 rounded-[10px]"
+                style={{ animation: "popup-logo-reveal 2.6s cubic-bezier(0.34,1.56,0.64,1) infinite" }}
               />
             </div>
             <h2 className="font-display font-extrabold text-xl tracking-[-0.01em] text-foreground">
-              Agentic AI for Coaches is here!
+              Agentic AI for coaches and athletes is here
             </h2>
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
               AveraAI can now message athletes, adjust training plans, and act on your roster in real time — right from chat.
