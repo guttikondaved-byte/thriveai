@@ -414,35 +414,36 @@ export default function Landing() {
             >
               <X className="w-4 h-4" />
             </button>
-            <div className="relative w-28 h-28 mx-auto mb-4 flex items-end justify-center overflow-visible">
-              {/* Ball drops and bounces, then settles into the app logo */}
-              <div
-                className="absolute w-6 h-6 rounded-full bg-primary"
-                style={{ animation: "popup-ball-bounce 2.6s cubic-bezier(0.4,0,0.2,1) infinite" }}
-              />
-              <div
-                className="absolute bottom-1 w-9 h-2 rounded-full bg-foreground/20 blur-[2px]"
-                style={{ animation: "popup-shadow-pulse 2.6s cubic-bezier(0.4,0,0.2,1) infinite" }}
-              />
-              <img
-                src="/logo.svg"
-                alt=""
-                className="absolute w-12 h-12 rounded-[10px]"
-                style={{ animation: "popup-logo-reveal 2.6s cubic-bezier(0.34,1.56,0.64,1) infinite" }}
-              />
-            </div>
             <h2 className="font-display font-extrabold text-xl tracking-[-0.01em] text-foreground">
-              Agentic AI for coaches and athletes is here
+              Agentic AI for coaches and athletes is here!
             </h2>
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
               AveraAI can now message athletes, adjust training plans, and act on your roster in real time — right from chat.
             </p>
-            <div className="mt-4 rounded-xl border border-border bg-background px-3.5 py-2.5 text-left text-sm text-foreground flex items-center min-h-[42px]">
-              <span>{typedPrompt}</span>
-              <span
-                className="inline-block w-[2px] h-4 bg-primary ml-0.5"
-                style={{ animation: "blink-caret 1s step-end infinite" }}
-              />
+            <div className="mt-5">
+              {/* Ball bounces around, then flattens down into the prompt box below */}
+              <div className="relative h-7 flex justify-end pr-4 overflow-visible">
+                <div
+                  className="w-4 h-4 rounded-full bg-primary"
+                  style={{ animation: "popup-ball-to-box 2.6s cubic-bezier(0.4,0,0.2,1) infinite" }}
+                />
+              </div>
+              <div className="flex items-center gap-2.5">
+                <img src="/logo.svg" alt="" className="w-9 h-9 rounded-[9px] shrink-0" />
+                <div
+                  className="flex-1 rounded-xl border border-border bg-background px-3.5 py-2.5 text-left text-sm text-foreground flex items-center min-h-[42px] overflow-hidden"
+                  style={{
+                    animation: "popup-box-form 2.6s cubic-bezier(0.34,1.56,0.64,1) infinite",
+                    transformOrigin: "left center",
+                  }}
+                >
+                  <span>{typedPrompt}</span>
+                  <span
+                    className="inline-block w-[2px] h-4 bg-primary ml-0.5"
+                    style={{ animation: "blink-caret 1s step-end infinite" }}
+                  />
+                </div>
+              </div>
             </div>
             <button
               onClick={() => { dismissAnnouncement(); scrollTo("coaches"); }}
