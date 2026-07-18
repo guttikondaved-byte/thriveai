@@ -428,12 +428,12 @@ export default function Landing() {
             </p>
             <div className="mt-5">
               {/* Nothing shows at first — the bolt drops in, bounces, then flattens into the logo + prompt box */}
-              <div className="relative h-7 flex justify-end pr-4 overflow-visible">
+              <div className="relative h-7 flex justify-start pl-3 overflow-visible">
                 <img
                   src="/logo.svg"
                   alt=""
                   className="w-7 h-7 rounded-[7px]"
-                  style={{ animation: "popup-bolt-bounce 1.3s cubic-bezier(0.4,0,0.2,1) both", animationDelay: "0.25s" }}
+                  style={{ animation: "popup-bolt-bounce 0.9s linear both", animationDelay: "0.25s" }}
                 />
               </div>
               <div className="flex items-center gap-2.5">
@@ -441,12 +441,12 @@ export default function Landing() {
                   src="/logo.svg"
                   alt=""
                   className="w-9 h-9 rounded-[9px] shrink-0"
-                  style={{ animation: "popup-fade-up 0.4s ease-out both", animationDelay: "1.35s" }}
+                  style={{ animation: "popup-fade-up 0.4s ease-out both", animationDelay: "1.05s" }}
                 />
                 <div
                   className="flex-1 rounded-xl border border-border bg-background px-3.5 py-2.5 text-left text-sm text-foreground flex items-center min-h-[42px] overflow-hidden"
                   style={{
-                    animation: "popup-box-form 1.3s cubic-bezier(0.34,1.56,0.64,1) both",
+                    animation: "popup-box-form 0.9s cubic-bezier(0.34,1.56,0.64,1) both",
                     animationDelay: "0.25s",
                     transformOrigin: "left center",
                   }}
