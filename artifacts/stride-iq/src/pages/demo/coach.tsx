@@ -1,10 +1,21 @@
 import { useState, useRef, useEffect } from "react";
-import { Loader2, ArrowUp, Mic } from "lucide-react";
+import { Loader2, ArrowUp, Mic, Bot, Search } from "lucide-react";
 import { DEMO_DATA, buildDemoAthleteSystemPrompt } from "@/lib/demoData";
 import { useDemoVoiceInput } from "@/hooks/useDemoVoiceInput";
 import { useToast } from "@/hooks/use-toast";
-import { useDemoState, getDemoState, appendAthleteChat } from "@/lib/demoStore";
+import { Switch } from "@/components/ui/switch";
+import { useDemoState, getDemoState, appendAthleteChat, addDirectMessage } from "@/lib/demoStore";
 import { fetchDemoChatReply } from "@/lib/demoLLM";
+
+// Jordan (the demo athlete persona) is on a team with a coach, per
+// demo/team.tsx — matches DEMO_COACH_DATA.roster[0]. Their plan is
+// coach-authored, so agent mode simulates SUGGESTING a change for the coach
+// to approve, not editing it directly — same rule the real athlete agent
+// enforces based on actual plan ownership.
+const DEMO_ATHLETE_USER_ID = "1";
+
+const AGENT_MODE_QUESTION_RE = /\b(agent(ic)? mode|are you (an )?agent\w*)\b/i;
+const PLAN_ADJUST_RE = /\b(cut|reduce|lower|ease off|dial back|pause|change|adjust|update|shorten|extend)\b[^.?!]{0,40}\b(plan|mileage|volume|week|training)\b/i;
 
 // Index-aligned with SUGGESTIONS, so clicking a suggestion gets the reply that
 // actually answers it instead of whatever's next in an unrelated cycling order.
@@ -79,6 +90,8 @@ export default function DemoCoach() {
   const messages = useDemoState().athleteChat;
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [agentMode, setAgentMode] = useState(true);
+  const [traceStep, setTraceStep] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const voice = useDemoVoiceInput((transcript) => {
@@ -100,6 +113,48 @@ export default function DemoCoach() {
     setInput("");
     setSending(true);
 
+    if (AGENT_MODE_QUESTION_RE.test(text)) {
+      const reply = agentMode
+        ? "Yes — Agent Mode is on. Since your plan was built by your coach, I can send them a suggested change (like cutting mileage after an injury) for them to approve, rather than editing it myself. Flip the toggle above off if you'd rather I just talk."
+        : "No — Agent Mode is off right now, so I can only talk. Flip the toggle above the chat on if you want me to suggest changes to your coach.";
+      setTimeout(() => {
+        appendAthleteChat({ role: "assistant", text: reply });
+        setSending(false);
+      }, 900);
+      return;
+    }
+
+    if (PLAN_ADJUST_RE.test(text)) {
+      if (!agentMode) {
+        setTimeout(() => {
+          appendAthleteChat({ role: "assistant", text: "Agent mode is off, so I can only talk — I can't send your coach a suggestion right now. Flip on Agent Mode above the chat to let me do that." });
+          setSending(false);
+        }, 900);
+        return;
+      }
+      let step = 0;
+      const trace = ["Checking your current plan…", `Drafting a suggestion for ${DEMO_DATA.team.coachName}…`];
+      setTraceStep(trace[0]);
+      const interval = setInterval(() => {
+        step++;
+        if (step < trace.length) {
+          setTraceStep(trace[step]);
+        } else {
+          clearInterval(interval);
+          setTraceStep(null);
+          addDirectMessage(DEMO_ATHLETE_USER_ID, "athlete", `Suggested change: "${text}"`);
+          appendAthleteChat({
+            role: "assistant",
+            text: `Done — since ${DEMO_DATA.team.coachName} built your current plan, I sent them a suggestion rather than changing it myself: "${text}". They'll need to approve it before anything changes.`,
+            actionChip: `✅ Suggestion sent to ${DEMO_DATA.team.coachName}`,
+          });
+          toast({ title: "Suggestion sent", description: `${DEMO_DATA.team.coachName} will review it.` });
+          setSending(false);
+        }
+      }, 550);
+      return;
+    }
+
     if (hasKnownTopic(text)) {
       const reply = demoReplyFor(text);
       setTimeout(() => {
@@ -111,7 +166,9 @@ export default function DemoCoach() {
 
     // Nothing deterministic matched — ask the real model instead of a
     // canned "I don't understand" line.
+    setTraceStep("Thinking…");
     fetchDemoChatReply(buildDemoAthleteSystemPrompt(), getDemoState().athleteChat).then((reply) => {
+      setTraceStep(null);
       appendAthleteChat({ role: "assistant", text: reply ?? demoReplyFor(text) });
       setSending(false);
     });
@@ -155,8 +212,13 @@ export default function DemoCoach() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-52px)]">
-      <div className="flex items-center px-4 py-3">
+      <div className="flex items-center justify-between px-4 py-3">
         <span className="font-display font-semibold text-[11px] uppercase tracking-[0.08em] text-muted-foreground">AveraAI</span>
+        <div className="flex items-center gap-2">
+          <Bot className={`w-3.5 h-3.5 ${agentMode ? "text-primary" : "text-muted-foreground"}`} />
+          <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">Agent Mode</span>
+          <Switch checked={agentMode} onCheckedChange={setAgentMode} aria-label="Toggle agent mode" disabled={sending} />
+        </div>
       </div>
 
       {messages.length === 0 && !sending ? (
@@ -196,10 +258,21 @@ export default function DemoCoach() {
                 ) : (
                   <div key={i} className="text-[15px] leading-relaxed text-foreground">
                     {msg.text}
+                    {msg.actionChip && (
+                      <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/5 px-3 py-1 text-[12px] font-medium text-primary">
+                        {msg.actionChip}
+                      </div>
+                    )}
                   </div>
                 )
               ))}
-              {sending && (
+              {sending && traceStep && (
+                <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+                  <Search className="w-3.5 h-3.5 animate-pulse shrink-0" />
+                  <span>{traceStep}</span>
+                </div>
+              )}
+              {sending && !traceStep && (
                 <span className="inline-block w-2 h-4 bg-primary opacity-70 animate-pulse rounded-sm" />
               )}
             </div>
