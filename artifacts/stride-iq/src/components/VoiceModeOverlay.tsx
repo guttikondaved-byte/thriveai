@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { X, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,10 +25,65 @@ const PHASE_LABEL: Record<VoicePhase, string> = {
   responding: "Speaking…",
 };
 
+// Tiny synthesized chimes (Web Audio, no audio files) marking each state
+// change — open/listening, processing, responding, and close — so voice
+// mode has the same audible turn-taking cues as ChatGPT's voice UI.
+function useVoiceModeSounds(open: boolean, phase: VoicePhase) {
+  const ctxRef = useRef<AudioContext | null>(null);
+  const prevPhaseRef = useRef<VoicePhase | null>(null);
+
+  function getCtx(): AudioContext | null {
+    if (typeof window === "undefined") return null;
+    const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return null;
+    if (!ctxRef.current) ctxRef.current = new Ctor();
+    if (ctxRef.current.state === "suspended") ctxRef.current.resume().catch(() => {});
+    return ctxRef.current;
+  }
+
+  function playTone(freqFrom: number, freqTo: number, duration: number, peakGain = 0.1) {
+    const ctx = getCtx();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(freqFrom, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(freqTo, ctx.currentTime + duration);
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(peakGain, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + duration + 0.03);
+  }
+
+  useEffect(() => {
+    if (!open) {
+      prevPhaseRef.current = null;
+      return;
+    }
+    if (phase === prevPhaseRef.current) return;
+    prevPhaseRef.current = phase;
+    if (phase === "listening") playTone(520, 780, 0.14);
+    else if (phase === "processing") playTone(660, 440, 0.1);
+    else if (phase === "responding") playTone(440, 700, 0.13);
+  }, [open, phase]);
+
+  return { playCloseTone: () => playTone(600, 320, 0.16, 0.09) };
+}
+
 export function VoiceModeOverlay({ open, phase, userText, assistantText, onStop, onClose }: VoiceModeOverlayProps) {
+  const { playCloseTone } = useVoiceModeSounds(open, phase);
+
   if (!open) return null;
 
   const caption = phase === "responding" ? assistantText : phase === "processing" ? userText : undefined;
+
+  function handleClose() {
+    playCloseTone();
+    onClose();
+  }
 
   return (
     <div
@@ -36,7 +92,7 @@ export function VoiceModeOverlay({ open, phase, userText, assistantText, onStop,
       aria-label="AveraAI voice mode"
     >
       <button
-        onClick={onClose}
+        onClick={handleClose}
         aria-label="Close voice mode"
         className="self-end w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/70 transition-colors"
       >
