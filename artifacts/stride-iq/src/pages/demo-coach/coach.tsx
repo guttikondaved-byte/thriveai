@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { Loader2, ArrowUp, Mic, AudioLines, Bot, Search } from "lucide-react";
+import { Loader2, ArrowUp, Mic, Bot, Search } from "lucide-react";
 import { DEMO_COACH_DATA, getDemoAthleteDetail, buildDemoCoachSystemPrompt } from "@/lib/demoData";
 import { useDemoVoiceInput } from "@/hooks/useDemoVoiceInput";
 import { useToast } from "@/hooks/use-toast";
@@ -414,7 +414,7 @@ export default function DemoCoachChat() {
         value={input}
         onChange={e => setInput(e.target.value)}
         onKeyDown={e => e.key === "Enter" && handleSend()}
-        placeholder={voice.recording ? "Listening…" : "Ask AveraAI about your roster…"}
+        placeholder="Ask AveraAI about your roster…"
         disabled={sending}
         className="flex-1 bg-transparent text-[15px] leading-6 text-foreground placeholder:text-muted-foreground outline-none disabled:opacity-50"
       />
@@ -422,24 +422,9 @@ export default function DemoCoachChat() {
         <button
           type="button"
           onClick={openVoiceMode}
-          disabled={sending || voice.recording}
+          disabled={sending || voiceModeOpen}
           aria-label="Open voice mode"
           className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-40 bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
-        >
-          <AudioLines className="w-4 h-4" />
-        </button>
-      )}
-      {voice.supported && (
-        <button
-          type="button"
-          onClick={voice.toggle}
-          disabled={sending}
-          aria-label={voice.recording ? "Stop recording" : "Start voice input"}
-          className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${
-            voice.recording
-              ? "bg-destructive text-destructive-foreground animate-pulse"
-              : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
-          }`}
         >
           <Mic className="w-4 h-4" />
         </button>

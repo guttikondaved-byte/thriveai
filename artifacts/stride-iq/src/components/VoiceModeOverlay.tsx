@@ -31,14 +31,14 @@ export function VoiceModeOverlay({ open, phase, userText, assistantText, onStop,
 
   return (
     <div
-      className="fixed inset-0 z-[110] flex flex-col items-center justify-between bg-[#0b0c10] px-6 py-10 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[110] flex flex-col items-center justify-between bg-background/55 backdrop-blur-2xl px-6 py-10 animate-in fade-in duration-200"
       role="dialog"
       aria-label="AveraAI voice mode"
     >
       <button
         onClick={onClose}
         aria-label="Close voice mode"
-        className="self-end w-10 h-10 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+        className="self-end w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/70 transition-colors"
       >
         <X className="w-5 h-5" />
       </button>
@@ -48,11 +48,11 @@ export function VoiceModeOverlay({ open, phase, userText, assistantText, onStop,
           {phase === "listening" && (
             <>
               <span
-                className="absolute inset-0 rounded-full bg-primary/30"
+                className="absolute inset-0 rounded-full bg-primary/25"
                 style={{ animation: "voice-ring-pulse 2.2s ease-out infinite" }}
               />
               <span
-                className="absolute inset-0 rounded-full bg-primary/30"
+                className="absolute inset-0 rounded-full bg-primary/25"
                 style={{ animation: "voice-ring-pulse 2.2s ease-out infinite", animationDelay: "1.1s" }}
               />
             </>
@@ -62,20 +62,20 @@ export function VoiceModeOverlay({ open, phase, userText, assistantText, onStop,
             style={{
               background:
                 phase === "responding"
-                  ? "radial-gradient(circle at 32% 28%, #7fd8ff, #2E90D9 55%, #1a5c8f 100%)"
-                  : "radial-gradient(circle at 32% 28%, #9fe0ff, #2E90D9 60%, #17466b 100%)",
-              boxShadow: "0 0 70px -10px rgba(46,144,217,0.65)",
+                  ? "radial-gradient(circle at 32% 28%, #a9e6ff, #4aa9e6 55%, #2E90D9 100%)"
+                  : "radial-gradient(circle at 32% 28%, #bdedff, #63b6ea 60%, #2E90D9 100%)",
+              boxShadow: "0 0 60px -12px rgba(46,144,217,0.5)",
               animation: PHASE_ANIMATION[phase],
             }}
           />
         </div>
 
         <div className="text-center max-w-md px-4 min-h-[4.5rem]">
-          <p className="text-white/40 text-xs font-medium tracking-wide uppercase mb-2">
+          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase mb-2">
             {PHASE_LABEL[phase]}
           </p>
           {caption && (
-            <p className="text-white text-[15px] leading-relaxed line-clamp-4">{caption}</p>
+            <p className="text-foreground text-[15px] leading-relaxed line-clamp-4">{caption}</p>
           )}
         </div>
       </div>
@@ -87,8 +87,8 @@ export function VoiceModeOverlay({ open, phase, userText, assistantText, onStop,
         className={cn(
           "w-16 h-16 rounded-full flex items-center justify-center transition-all",
           phase === "listening"
-            ? "bg-white text-[#0b0c10] hover:scale-105 active:scale-95"
-            : "bg-white/10 text-white/30",
+            ? "bg-foreground text-background hover:scale-105 active:scale-95"
+            : "bg-secondary/70 text-muted-foreground/50",
         )}
       >
         <Square className="w-5 h-5 fill-current" />

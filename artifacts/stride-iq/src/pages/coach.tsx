@@ -11,7 +11,7 @@ import {
 } from "@workspace/api-client-react";
 import { useGetAthleteProfile } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Loader2, ArrowUp, PanelLeftOpen, PanelLeftClose, SquarePen, Mic, AudioLines } from "lucide-react";
+import { Plus, Trash2, Loader2, ArrowUp, PanelLeftOpen, PanelLeftClose, SquarePen, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
@@ -221,7 +221,6 @@ export default function CoachAI() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [addingPlanMessageIndex, setAddingPlanMessageIndex] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
   const [voiceModeOpen, setVoiceModeOpen] = useState(false);
   const [voicePhase, setVoicePhase] = useState<VoicePhase>("listening");
   const voiceModeOpenRef = useRef(false);
@@ -576,43 +575,8 @@ export default function CoachAI() {
     return (data.text ?? "").trim();
   }
 
-  async function handleMicClick() {
-    if (isStreaming || transcribing) return;
-
-    if (recorder.state === "recording") {
-      const blob = await recorder.stopRecording();
-      setTranscribing(true);
-      try {
-        const text = await transcribeBlob(blob);
-        if (text) {
-          setInput(prev => (prev.trim() ? `${prev.trim()} ${text}` : text));
-          textareaRef.current?.focus();
-        }
-      } catch (err) {
-        toast({
-          title: err instanceof Error && err.message.includes("Pro perk") ? "Athlete Pro perk" : "Voice input failed",
-          description: err instanceof Error ? err.message : "Please try again or type your message.",
-          variant: "destructive",
-        });
-      } finally {
-        setTranscribing(false);
-      }
-      return;
-    }
-
-    try {
-      await recorder.startRecording();
-    } catch {
-      toast({
-        title: "Microphone access needed",
-        description: "Allow microphone access in your browser to use voice input.",
-        variant: "destructive",
-      });
-    }
-  }
-
   async function openVoiceMode() {
-    if (isStreaming || transcribing || recorder.state === "recording") return;
+    if (isStreaming || voiceModeOpen || recorder.state === "recording") return;
     voiceModeOpenRef.current = true;
     setVoiceModeOpen(true);
     setVoicePhase("listening");
@@ -701,9 +665,7 @@ export default function CoachAI() {
         }}
         onKeyDown={handleKeyDown}
         placeholder={
-          recorder.state === "recording"
-            ? "Listening…"
-            : isCoach ? "Ask AveraAI about your team or athletes…" : "Ask AveraAI about your training…"
+          isCoach ? "Ask AveraAI about your team or athletes…" : "Ask AveraAI about your training…"
         }
         disabled={isStreaming}
         rows={1}
@@ -713,26 +675,12 @@ export default function CoachAI() {
       <button
         type="button"
         onClick={openVoiceMode}
-        disabled={isStreaming || transcribing || recorder.state === "recording"}
+        disabled={isStreaming || voiceModeOpen}
         data-testid="button-voice-mode"
         aria-label="Open voice mode"
         className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-40 bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
       >
-        <AudioLines className="w-4 h-4" />
-      </button>
-      <button
-        type="button"
-        onClick={handleMicClick}
-        disabled={isStreaming || transcribing}
-        data-testid="button-voice-input"
-        aria-label={recorder.state === "recording" ? "Stop recording" : "Start voice input"}
-        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${
-          recorder.state === "recording"
-            ? "bg-destructive text-destructive-foreground animate-pulse"
-            : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
-        }`}
-      >
-        {transcribing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4" />}
+        <Mic className="w-4 h-4" />
       </button>
       <button
         onClick={() => sendMessage()}
