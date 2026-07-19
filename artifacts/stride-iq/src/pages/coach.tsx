@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { useVoiceRecorder } from "@workspace/integrations-openai-ai-react";
-import { VoiceModeOverlay, type VoicePhase } from "@/components/VoiceModeOverlay";
+import { VoiceModeOverlay, VoiceModeMiniDot, type VoicePhase, type VoiceStage } from "@/components/VoiceModeOverlay";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -221,9 +221,9 @@ export default function CoachAI() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [addingPlanMessageIndex, setAddingPlanMessageIndex] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [voiceModeOpen, setVoiceModeOpen] = useState(false);
+  const [voiceStage, setVoiceStage] = useState<VoiceStage>("closed");
   const [voicePhase, setVoicePhase] = useState<VoicePhase>("listening");
-  const voiceModeOpenRef = useRef(false);
+  const voiceStageRef = useRef<VoiceStage>("closed");
   const recorder = useVoiceRecorder();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
@@ -575,16 +575,19 @@ export default function CoachAI() {
     return (data.text ?? "").trim();
   }
 
+  // Voice mode is a two-tap flow: tapping the mic starts listening as a small
+  // dot inline in the composer ("mini"); tapping that dot expands it into the
+  // full-screen overlay ("full"). Recording itself is continuous across both.
   async function openVoiceMode() {
-    if (isStreaming || voiceModeOpen || recorder.state === "recording") return;
-    voiceModeOpenRef.current = true;
-    setVoiceModeOpen(true);
+    if (isStreaming || voiceStage !== "closed") return;
+    voiceStageRef.current = "mini";
+    setVoiceStage("mini");
     setVoicePhase("listening");
     try {
       await recorder.startRecording();
     } catch {
-      voiceModeOpenRef.current = false;
-      setVoiceModeOpen(false);
+      voiceStageRef.current = "closed";
+      setVoiceStage("closed");
       toast({
         title: "Microphone access needed",
         description: "Allow microphone access in your browser to use voice mode.",
@@ -593,16 +596,20 @@ export default function CoachAI() {
     }
   }
 
+  function expandVoiceMode() {
+    if (voiceStageRef.current !== "mini") return;
+    voiceStageRef.current = "full";
+    setVoiceStage("full");
+  }
+
   function closeVoiceMode() {
-    voiceModeOpenRef.current = false;
-    setVoiceModeOpen(false);
-    if (recorder.state === "recording") {
-      recorder.stopRecording().catch(() => {});
-    }
+    voiceStageRef.current = "closed";
+    setVoiceStage("closed");
+    recorder.stopRecording().catch(() => {});
   }
 
   async function handleVoiceModeStop() {
-    if (voicePhase !== "listening" || recorder.state !== "recording") return;
+    if (voicePhase !== "listening") return;
     setVoicePhase("processing");
     const blob = await recorder.stopRecording();
     try {
@@ -618,7 +625,7 @@ export default function CoachAI() {
         variant: "destructive",
       });
     } finally {
-      if (voiceModeOpenRef.current) {
+      if (voiceStageRef.current !== "closed") {
         setVoicePhase("listening");
         try {
           await recorder.startRecording();
@@ -672,16 +679,20 @@ export default function CoachAI() {
         data-testid="input-message"
         className="flex-1 resize-none bg-transparent text-[15px] leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-60"
       />
-      <button
-        type="button"
-        onClick={openVoiceMode}
-        disabled={isStreaming || voiceModeOpen}
-        data-testid="button-voice-mode"
-        aria-label="Open voice mode"
-        className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-40 bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
-      >
-        <Mic className="w-4 h-4" />
-      </button>
+      {voiceStage === "closed" ? (
+        <button
+          type="button"
+          onClick={openVoiceMode}
+          disabled={isStreaming}
+          data-testid="button-voice-mode"
+          aria-label="Start voice mode"
+          className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-40 bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+        >
+          <Mic className="w-4 h-4" />
+        </button>
+      ) : (
+        <VoiceModeMiniDot onClick={expandVoiceMode} />
+      )}
       <button
         onClick={() => sendMessage()}
         disabled={!input.trim() || isStreaming}
@@ -700,7 +711,7 @@ export default function CoachAI() {
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden bg-background" data-testid="coach-page">
       <VoiceModeOverlay
-        open={voiceModeOpen}
+        open={voiceStage === "full"}
         phase={voicePhase}
         userText={lastUserMessage?.content}
         assistantText={lastAssistantMessage?.content}

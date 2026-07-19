@@ -4,6 +4,11 @@ import { cn } from "@/lib/utils";
 
 export type VoicePhase = "listening" | "processing" | "responding";
 
+// closed → tap the mic and it becomes a small pulsing dot ("mini") inline in
+// the composer → tap that dot and it expands into the full-screen overlay
+// ("full"). Recording is continuous across the mini → full transition.
+export type VoiceStage = "closed" | "mini" | "full";
+
 interface VoiceModeOverlayProps {
   open: boolean;
   phase: VoicePhase;
@@ -73,6 +78,32 @@ function useVoiceModeSounds(open: boolean, phase: VoicePhase) {
   return { playCloseTone: () => playTone(600, 320, 0.16, 0.09) };
 }
 
+// Small pulsing dot that replaces the mic button once voice mode has started
+// listening — tap it to expand into the full-screen overlay.
+export function VoiceModeMiniDot({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Expand voice mode"
+      className="relative shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+    >
+      <span
+        className="absolute inset-0 rounded-full bg-primary/25"
+        style={{ animation: "voice-ring-pulse 1.8s ease-out infinite" }}
+      />
+      <span
+        className="relative w-3.5 h-3.5 rounded-full"
+        style={{
+          background: "radial-gradient(circle at 32% 28%, #bdedff, #63b6ea 60%, #2E90D9 100%)",
+          boxShadow: "0 0 12px -2px rgba(46,144,217,0.7)",
+          animation: "voice-orb-listen 1.8s ease-in-out infinite",
+        }}
+      />
+    </button>
+  );
+}
+
 export function VoiceModeOverlay({ open, phase, userText, assistantText, onStop, onClose }: VoiceModeOverlayProps) {
   const { playCloseTone } = useVoiceModeSounds(open, phase);
 
@@ -87,51 +118,55 @@ export function VoiceModeOverlay({ open, phase, userText, assistantText, onStop,
 
   return (
     <div
-      className="fixed inset-0 z-[110] flex flex-col items-center justify-between bg-background/55 backdrop-blur-2xl px-6 py-10 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[110] flex flex-col items-center justify-between bg-background/45 backdrop-blur-3xl px-6 py-10 animate-in fade-in duration-200"
       role="dialog"
       aria-label="AveraAI voice mode"
     >
       <button
         onClick={handleClose}
         aria-label="Close voice mode"
-        className="self-end w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/70 transition-colors"
+        className="self-end w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground bg-card/60 border border-border/60 shadow-sm hover:text-foreground hover:bg-card transition-colors"
       >
-        <X className="w-5 h-5" />
+        <X className="w-4.5 h-4.5" />
       </button>
 
-      <div className="flex-1 flex flex-col items-center justify-center gap-8 w-full">
-        <div className="relative w-48 h-48 flex items-center justify-center">
+      <div className="flex-1 flex flex-col items-center justify-center gap-10 w-full">
+        <div className="relative w-56 h-56 flex items-center justify-center">
           {phase === "listening" && (
             <>
               <span
-                className="absolute inset-0 rounded-full bg-primary/25"
+                className="absolute inset-0 rounded-full bg-primary/20"
                 style={{ animation: "voice-ring-pulse 2.2s ease-out infinite" }}
               />
               <span
-                className="absolute inset-0 rounded-full bg-primary/25"
+                className="absolute inset-0 rounded-full bg-primary/20"
                 style={{ animation: "voice-ring-pulse 2.2s ease-out infinite", animationDelay: "1.1s" }}
               />
             </>
           )}
           <div
-            className="w-32 h-32 rounded-full"
+            className="absolute w-40 h-40 rounded-full blur-2xl opacity-60"
+            style={{ background: "radial-gradient(circle, #7fd0ff 0%, transparent 70%)" }}
+          />
+          <div
+            className="relative w-32 h-32 rounded-full"
             style={{
               background:
                 phase === "responding"
-                  ? "radial-gradient(circle at 32% 28%, #a9e6ff, #4aa9e6 55%, #2E90D9 100%)"
-                  : "radial-gradient(circle at 32% 28%, #bdedff, #63b6ea 60%, #2E90D9 100%)",
-              boxShadow: "0 0 60px -12px rgba(46,144,217,0.5)",
+                  ? "radial-gradient(circle at 30% 26%, #b9ecff, #56a9e8 55%, #2670a8 100%)"
+                  : "radial-gradient(circle at 30% 26%, #cdf3ff, #6fc0ee 58%, #2E90D9 100%)",
+              boxShadow: "0 8px 40px -8px rgba(46,144,217,0.55), inset 0 -6px 16px -4px rgba(0,60,100,0.25)",
               animation: PHASE_ANIMATION[phase],
             }}
           />
         </div>
 
         <div className="text-center max-w-md px-4 min-h-[4.5rem]">
-          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase mb-2">
+          <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.14em] uppercase mb-2.5">
             {PHASE_LABEL[phase]}
           </p>
           {caption && (
-            <p className="text-foreground text-[15px] leading-relaxed line-clamp-4">{caption}</p>
+            <p className="text-foreground text-[16px] leading-relaxed line-clamp-4">{caption}</p>
           )}
         </div>
       </div>
@@ -141,13 +176,14 @@ export function VoiceModeOverlay({ open, phase, userText, assistantText, onStop,
         disabled={phase !== "listening"}
         aria-label="Stop and send"
         className={cn(
-          "w-16 h-16 rounded-full flex items-center justify-center transition-all",
+          "flex items-center gap-2.5 pl-5 pr-6 py-3 rounded-full transition-all shadow-lg",
           phase === "listening"
-            ? "bg-foreground text-background hover:scale-105 active:scale-95"
-            : "bg-secondary/70 text-muted-foreground/50",
+            ? "bg-foreground text-background hover:scale-[1.03] active:scale-95"
+            : "bg-card/70 text-muted-foreground/50 border border-border/60 shadow-none",
         )}
       >
-        <Square className="w-5 h-5 fill-current" />
+        <Square className="w-4 h-4 fill-current" />
+        <span className="text-sm font-semibold">Stop</span>
       </button>
     </div>
   );

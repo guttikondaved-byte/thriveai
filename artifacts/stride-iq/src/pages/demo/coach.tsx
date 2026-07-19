@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { useDemoState, getDemoState, appendAthleteChat, addDirectMessage } from "@/lib/demoStore";
 import { fetchDemoChatReply } from "@/lib/demoLLM";
-import { VoiceModeOverlay, type VoicePhase } from "@/components/VoiceModeOverlay";
+import { VoiceModeOverlay, VoiceModeMiniDot, type VoicePhase, type VoiceStage } from "@/components/VoiceModeOverlay";
 
 // Jordan (the demo athlete persona) is on a team with a coach, per
 // demo/team.tsx — matches DEMO_COACH_DATA.roster[0]. Their plan is
@@ -93,12 +93,17 @@ export default function DemoCoach() {
   const [sending, setSending] = useState(false);
   const [agentMode, setAgentMode] = useState(true);
   const [traceStep, setTraceStep] = useState<string | null>(null);
-  const [voiceModeOpen, setVoiceModeOpen] = useState(false);
-  const voiceModeOpenRef = useRef(false);
+  // Two-tap voice mode: tapping the mic starts listening as a small dot
+  // inline in the composer ("mini"); tapping that dot expands into the
+  // full-screen overlay ("full"). Recording is continuous across both.
+  const [voiceStage, setVoiceStage] = useState<VoiceStage>("closed");
+  const [voicePhase, setVoicePhase] = useState<VoicePhase>("listening");
+  const voiceStageRef = useRef<VoiceStage>("closed");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const voice = useDemoVoiceInput((transcript) => {
-    if (voiceModeOpenRef.current) {
+    if (voiceStageRef.current !== "closed") {
+      setVoicePhase("responding");
       handleSend(transcript);
     } else {
       setInput(prev => (prev.trim() ? `${prev.trim()} ${transcript}` : transcript));
@@ -113,23 +118,38 @@ export default function DemoCoach() {
   // fires once recording stops and no reply is in flight (covers both the
   // initial open and the gap after each exchange finishes).
   useEffect(() => {
-    if (!voiceModeOpen || sending || voice.recording) return;
+    if (voiceStage === "closed" || sending || voice.recording) return;
     const t = setTimeout(() => {
-      if (voiceModeOpenRef.current && !voice.recording) voice.toggle();
+      if (voiceStageRef.current !== "closed" && !voice.recording) {
+        setVoicePhase("listening");
+        voice.toggle();
+      }
     }, 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voiceModeOpen, sending, voice.recording]);
+  }, [voiceStage, sending, voice.recording]);
 
   function openVoiceMode() {
     if (!voice.supported) return;
-    voiceModeOpenRef.current = true;
-    setVoiceModeOpen(true);
+    voiceStageRef.current = "mini";
+    setVoiceStage("mini");
+    setVoicePhase("listening");
+    voice.toggle();
+  }
+
+  function expandVoiceMode() {
+    if (voiceStageRef.current !== "mini") return;
+    voiceStageRef.current = "full";
+    setVoiceStage("full");
   }
 
   function closeVoiceMode() {
-    voiceModeOpenRef.current = false;
-    setVoiceModeOpen(false);
+    voiceStageRef.current = "closed";
+    setVoiceStage("closed");
+    if (voice.recording) voice.toggle();
+  }
+
+  function handleVoiceStop() {
     if (voice.recording) voice.toggle();
   }
 
@@ -216,15 +236,19 @@ export default function DemoCoach() {
         className="flex-1 bg-transparent text-[15px] leading-6 text-foreground placeholder:text-muted-foreground outline-none disabled:opacity-50"
       />
       {voice.supported && (
-        <button
-          type="button"
-          onClick={openVoiceMode}
-          disabled={sending || voiceModeOpen}
-          aria-label="Open voice mode"
-          className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-40 bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
-        >
-          <Mic className="w-4 h-4" />
-        </button>
+        voiceStage === "closed" ? (
+          <button
+            type="button"
+            onClick={openVoiceMode}
+            disabled={sending}
+            aria-label="Start voice mode"
+            className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-40 bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+          >
+            <Mic className="w-4 h-4" />
+          </button>
+        ) : (
+          <VoiceModeMiniDot onClick={expandVoiceMode} />
+        )
       )}
       <button
         onClick={() => handleSend()}
@@ -239,16 +263,15 @@ export default function DemoCoach() {
 
   const lastUserMessage = [...messages].reverse().find(m => m.role === "user");
   const lastAssistantMessage = [...messages].reverse().find(m => m.role === "assistant");
-  const voicePhase: VoicePhase = voice.recording ? "listening" : sending ? "responding" : "listening";
 
   return (
     <div className="flex flex-col h-[calc(100vh-52px)]">
       <VoiceModeOverlay
-        open={voiceModeOpen}
+        open={voiceStage === "full"}
         phase={voicePhase}
         userText={lastUserMessage?.text}
         assistantText={lastAssistantMessage?.text}
-        onStop={() => { if (voice.recording) voice.toggle(); }}
+        onStop={handleVoiceStop}
         onClose={closeVoiceMode}
       />
       <div className="flex items-center justify-between px-4 py-3">
