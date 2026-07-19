@@ -11,11 +11,12 @@ import {
 } from "@workspace/api-client-react";
 import { useGetAthleteProfile } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Loader2, ArrowUp, PanelLeftOpen, PanelLeftClose, SquarePen, Mic } from "lucide-react";
+import { Plus, Trash2, Loader2, ArrowUp, PanelLeftOpen, PanelLeftClose, SquarePen, Mic, AudioLines } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { useVoiceRecorder } from "@workspace/integrations-openai-ai-react";
+import { VoiceModeOverlay, type VoicePhase } from "@/components/VoiceModeOverlay";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -221,6 +222,9 @@ export default function CoachAI() {
   const [addingPlanMessageIndex, setAddingPlanMessageIndex] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  const [voiceModeOpen, setVoiceModeOpen] = useState(false);
+  const [voicePhase, setVoicePhase] = useState<VoicePhase>("listening");
+  const voiceModeOpenRef = useRef(false);
   const recorder = useVoiceRecorder();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
@@ -556,6 +560,22 @@ export default function CoachAI() {
     }
   }
 
+  async function transcribeBlob(blob: Blob): Promise<string> {
+    const res = await fetch("/api/openai/transcribe", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": blob.type || "audio/webm" },
+      body: blob,
+    });
+    if (res.status === 402) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? "Voice input is an Athlete Pro perk.");
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error ?? "Couldn't transcribe that. Please try again.");
+    return (data.text ?? "").trim();
+  }
+
   async function handleMicClick() {
     if (isStreaming || transcribing) return;
 
@@ -563,19 +583,7 @@ export default function CoachAI() {
       const blob = await recorder.stopRecording();
       setTranscribing(true);
       try {
-        const res = await fetch("/api/openai/transcribe", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": blob.type || "audio/webm" },
-          body: blob,
-        });
-        if (res.status === 402) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error ?? "Voice input is an Athlete Pro perk.");
-        }
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error ?? "Couldn't transcribe that. Please try again.");
-        const text = (data.text ?? "").trim();
+        const text = await transcribeBlob(blob);
         if (text) {
           setInput(prev => (prev.trim() ? `${prev.trim()} ${text}` : text));
           textareaRef.current?.focus();
@@ -600,6 +608,60 @@ export default function CoachAI() {
         description: "Allow microphone access in your browser to use voice input.",
         variant: "destructive",
       });
+    }
+  }
+
+  async function openVoiceMode() {
+    if (isStreaming || transcribing || recorder.state === "recording") return;
+    voiceModeOpenRef.current = true;
+    setVoiceModeOpen(true);
+    setVoicePhase("listening");
+    try {
+      await recorder.startRecording();
+    } catch {
+      voiceModeOpenRef.current = false;
+      setVoiceModeOpen(false);
+      toast({
+        title: "Microphone access needed",
+        description: "Allow microphone access in your browser to use voice mode.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  function closeVoiceMode() {
+    voiceModeOpenRef.current = false;
+    setVoiceModeOpen(false);
+    if (recorder.state === "recording") {
+      recorder.stopRecording().catch(() => {});
+    }
+  }
+
+  async function handleVoiceModeStop() {
+    if (voicePhase !== "listening" || recorder.state !== "recording") return;
+    setVoicePhase("processing");
+    const blob = await recorder.stopRecording();
+    try {
+      const text = await transcribeBlob(blob);
+      if (text) {
+        setVoicePhase("responding");
+        await sendMessage(text);
+      }
+    } catch (err) {
+      toast({
+        title: err instanceof Error && err.message.includes("Pro perk") ? "Athlete Pro perk" : "Voice input failed",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      if (voiceModeOpenRef.current) {
+        setVoicePhase("listening");
+        try {
+          await recorder.startRecording();
+        } catch {
+          closeVoiceMode();
+        }
+      }
     }
   }
 
@@ -650,6 +712,16 @@ export default function CoachAI() {
       />
       <button
         type="button"
+        onClick={openVoiceMode}
+        disabled={isStreaming || transcribing || recorder.state === "recording"}
+        data-testid="button-voice-mode"
+        aria-label="Open voice mode"
+        className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-40 bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+      >
+        <AudioLines className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
         onClick={handleMicClick}
         disabled={isStreaming || transcribing}
         data-testid="button-voice-input"
@@ -674,8 +746,19 @@ export default function CoachAI() {
     </div>
   );
 
+  const lastUserMessage = [...streamMessages].reverse().find(m => m.role === "user");
+  const lastAssistantMessage = [...streamMessages].reverse().find(m => m.role === "assistant");
+
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden bg-background" data-testid="coach-page">
+      <VoiceModeOverlay
+        open={voiceModeOpen}
+        phase={voicePhase}
+        userText={lastUserMessage?.content}
+        assistantText={lastAssistantMessage?.content}
+        onStop={handleVoiceModeStop}
+        onClose={closeVoiceMode}
+      />
       {/* Collapsible conversation sidebar (desktop only, like before) */}
       {sidebarOpen && (
         <div className="hidden md:flex w-64 border-r border-border flex-col shrink-0 bg-background">
