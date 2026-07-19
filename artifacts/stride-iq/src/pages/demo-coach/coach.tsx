@@ -1,11 +1,12 @@
 import { useRef, useState, useEffect } from "react";
-import { Loader2, ArrowUp, Mic, Bot, Search } from "lucide-react";
+import { Loader2, ArrowUp, Mic, AudioLines, Bot, Search } from "lucide-react";
 import { DEMO_COACH_DATA, getDemoAthleteDetail, buildDemoCoachSystemPrompt } from "@/lib/demoData";
 import { useDemoVoiceInput } from "@/hooks/useDemoVoiceInput";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { useDemoState, getDemoState, appendCoachChat, addDirectMessage, addExtraPlan, setPlanOverride, type DemoChatMessage } from "@/lib/demoStore";
 import { fetchDemoChatReply } from "@/lib/demoLLM";
+import { VoiceModeOverlay, type VoicePhase } from "@/components/VoiceModeOverlay";
 
 type Message = DemoChatMessage;
 
@@ -295,15 +296,45 @@ export default function DemoCoachChat() {
   const [agentMode, setAgentMode] = useState(true);
   const [traceStep, setTraceStep] = useState<string | null>(null);
   const [pendingPlan, setPendingPlan] = useState(false);
+  const [voiceModeOpen, setVoiceModeOpen] = useState(false);
+  const voiceModeOpenRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const voice = useDemoVoiceInput((transcript) => {
-    setInput(prev => (prev.trim() ? `${prev.trim()} ${transcript}` : transcript));
+    if (voiceModeOpenRef.current) {
+      handleSend(transcript);
+    } else {
+      setInput(prev => (prev.trim() ? `${prev.trim()} ${transcript}` : transcript));
+    }
   });
 
   useEffect(() => {
     if (voice.error) toast({ title: "Voice input failed", description: voice.error, variant: "destructive" });
   }, [voice.error, toast]);
+
+  // Keeps the mic listening for the next turn while voice mode is open —
+  // fires once recording stops and no reply is in flight (covers both the
+  // initial open and the gap after each exchange finishes).
+  useEffect(() => {
+    if (!voiceModeOpen || sending || voice.recording) return;
+    const t = setTimeout(() => {
+      if (voiceModeOpenRef.current && !voice.recording) voice.toggle();
+    }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceModeOpen, sending, voice.recording]);
+
+  function openVoiceMode() {
+    if (!voice.supported) return;
+    voiceModeOpenRef.current = true;
+    setVoiceModeOpen(true);
+  }
+
+  function closeVoiceMode() {
+    voiceModeOpenRef.current = false;
+    setVoiceModeOpen(false);
+    if (voice.recording) voice.toggle();
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -390,6 +421,17 @@ export default function DemoCoachChat() {
       {voice.supported && (
         <button
           type="button"
+          onClick={openVoiceMode}
+          disabled={sending || voice.recording}
+          aria-label="Open voice mode"
+          className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-40 bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+        >
+          <AudioLines className="w-4 h-4" />
+        </button>
+      )}
+      {voice.supported && (
+        <button
+          type="button"
           onClick={voice.toggle}
           disabled={sending}
           aria-label={voice.recording ? "Stop recording" : "Start voice input"}
@@ -413,8 +455,20 @@ export default function DemoCoachChat() {
     </div>
   );
 
+  const lastUserMessage = [...messages].reverse().find(m => m.role === "user");
+  const lastAssistantMessage = [...messages].reverse().find(m => m.role === "assistant");
+  const voicePhase: VoicePhase = voice.recording ? "listening" : sending ? "responding" : "listening";
+
   return (
     <div className="flex flex-col h-[calc(100vh-52px)]">
+      <VoiceModeOverlay
+        open={voiceModeOpen}
+        phase={voicePhase}
+        userText={lastUserMessage?.text}
+        assistantText={lastAssistantMessage?.text}
+        onStop={() => { if (voice.recording) voice.toggle(); }}
+        onClose={closeVoiceMode}
+      />
       <div className="flex items-center justify-between px-4 py-3">
         <span className="font-display font-semibold text-[11px] uppercase tracking-[0.08em] text-muted-foreground">AveraAI</span>
         <div className="flex items-center gap-2">
