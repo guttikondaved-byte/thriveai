@@ -53,3 +53,6 @@ Thumbs.db
 .env.local
 .env.*.local
 !.env.example
+
+# Raw/fine-tuning datasets — never commit real user or third-party data
+scripts/data/
