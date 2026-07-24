@@ -7,11 +7,14 @@
     "hello": "tsx ./src/hello.ts",
     "prepare-finetune": "tsx ./src/finetune/prepare-dataset.ts",
     "export-conversations": "tsx ./src/finetune/export-conversations.ts",
+    "recover-paid-subscribers": "tsx ./src/recover-paid-subscribers.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
-    "drizzle-orm": "catalog:"
+    "@clerk/express": "^2.1.30",
+    "drizzle-orm": "catalog:",
+    "stripe": "^12.0.0"
   },
   "devDependencies": {
     "@types/node": "catalog:",
