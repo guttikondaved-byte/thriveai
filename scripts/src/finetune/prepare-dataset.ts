@@ -5,15 +5,19 @@
 // Usage:
 //   pnpm --filter @workspace/scripts prepare-finetune -- <input> <output.jsonl> [--system-prompt-file <path>]
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { extname } from "node:path";
-
-type Role = "system" | "user" | "assistant";
-type ChatMessage = { role: Role; content: string };
-type ChatExample = { messages: ChatMessage[] };
-
-const DEFAULT_SYSTEM_PROMPT =
-  "You are AveraAI, an expert running coach. Give specific, data-grounded training advice.";
+import {
+  type ChatExample,
+  type ChatMessage,
+  type Role,
+  DEFAULT_SYSTEM_PROMPT,
+  injectSystemPrompt,
+  validate,
+  estimateTokens,
+  roleCounts,
+  writeJsonl,
+} from "./chat-format";
 
 function parseArgs(argv: string[]) {
   const positional = argv.filter(a => !a.startsWith("--"));
@@ -116,51 +120,6 @@ function loadRawRecords(input: string): unknown[] {
   throw new Error(`Don't know how to read ${input} — expected a JSON array or a .jsonl/.csv file.`);
 }
 
-function injectSystemPrompt(example: ChatExample, systemPrompt: string): ChatExample {
-  if (example.messages[0]?.role === "system") return example;
-  return { messages: [{ role: "system", content: systemPrompt }, ...example.messages] };
-}
-
-type ValidationResult = { ok: true } | { ok: false; reason: string };
-
-function validate(example: ChatExample): ValidationResult {
-  const { messages } = example;
-  if (messages.length < 2) return { ok: false, reason: "fewer than 2 messages" };
-  if (messages.some(m => !m.content || !m.content.trim())) {
-    return { ok: false, reason: "empty message content" };
-  }
-  if (messages.some(m => !["system", "user", "assistant"].includes(m.role))) {
-    return { ok: false, reason: "invalid role" };
-  }
-
-  const rest = messages[0].role === "system" ? messages.slice(1) : messages;
-  if (rest.length === 0 || rest[rest.length - 1].role !== "assistant") {
-    return { ok: false, reason: "last message isn't from the assistant" };
-  }
-  if (rest[0]?.role !== "user") {
-    return { ok: false, reason: "first non-system message isn't from the user" };
-  }
-  for (let i = 1; i < rest.length; i++) {
-    if (rest[i].role === rest[i - 1].role) {
-      return { ok: false, reason: `consecutive ${rest[i].role} turns` };
-    }
-  }
-  const extraSystem = messages.slice(1).some(m => m.role === "system");
-  if (extraSystem) return { ok: false, reason: "system message not at the start" };
-
-  return { ok: true };
-}
-
-function estimateTokens(examples: ChatExample[]): number {
-  // Rough heuristic (~4 chars/token in English) — good enough for a
-  // ballpark before training, not for billing.
-  const chars = examples.reduce(
-    (sum, ex) => sum + ex.messages.reduce((s, m) => s + m.content.length, 0),
-    0,
-  );
-  return Math.round(chars / 4);
-}
-
 function main() {
   const { input, output, systemPromptFile } = parseArgs(process.argv.slice(2));
   const systemPrompt = systemPromptFile ? readFileSync(systemPromptFile, "utf-8").trim() : DEFAULT_SYSTEM_PROMPT;
@@ -186,10 +145,7 @@ function main() {
     valid.push(withSystem);
   }
 
-  const roleCounts: Record<string, number> = {};
-  for (const ex of valid) for (const m of ex.messages) roleCounts[m.role] = (roleCounts[m.role] ?? 0) + 1;
-
-  writeFileSync(output, valid.map(ex => JSON.stringify(ex)).join("\n") + (valid.length ? "\n" : ""));
+  writeJsonl(output, valid);
 
   console.log(`\nWrote ${valid.length} valid example(s) to ${output}`);
   const droppedTotal = Object.values(dropped).reduce((a, b) => a + b, 0);
@@ -199,7 +155,7 @@ function main() {
       console.log(`  ${count}\t${reason}`);
     }
   }
-  console.log(`Role distribution: ${JSON.stringify(roleCounts)}`);
+  console.log(`Role distribution: ${JSON.stringify(roleCounts(valid))}`);
   console.log(`Estimated tokens: ~${estimateTokens(valid).toLocaleString()}`);
 }
 

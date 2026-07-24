@@ -37,6 +37,8 @@ with one — pass `--system-prompt-file <path>` to control what gets injected.
 
 ## Pipeline
 
+### External datasets
+
 1. Drop the raw external dataset file (CSV, JSON array, or JSONL) somewhere
    under `scripts/data/` (gitignored — never commit raw user data).
 2. Run `pnpm --filter @workspace/scripts prepare-finetune -- <input-file> <output-file.jsonl>`
@@ -45,3 +47,27 @@ with one — pass `--system-prompt-file <path>` to control what gets injected.
    JSONL.
 3. Spot-check the output before training — the converter validates
    structure, not content quality.
+
+### Real AveraAI conversations
+
+`export-conversations.ts` pulls every conversation out of Postgres
+(`conversations`/`messages` tables), trims any trailing unanswered user
+turn, injects the system prompt, validates, and writes the same JSONL
+format — so it can be run again and again as real usage accumulates,
+rather than treated as a one-time export.
+
+```bash
+DATABASE_URL=... pnpm --filter @workspace/scripts export-conversations -- \
+  scripts/data/conversations-$(date +%Y-%m-%d).jsonl \
+  --exclude-emails you@example.com,other-internal@example.com
+```
+
+`--exclude-emails` filters out conversations belonging to internal/test
+accounts (there's no `isDemo`/`isTest` flag in the schema, so this is the
+only lever — keep the exclude list up to date as team accounts change).
+Requires `DATABASE_URL` for the real (external, `?sslmode=require`) Postgres
+instance — see `artifacts/api-server/.env.local`.
+
+To build a combined training set, run both scripts and concatenate their
+JSONL output (or just `cat` the files together — JSONL is line-delimited,
+so this is safe).

@@ -6,7 +6,12 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "prepare-finetune": "tsx ./src/finetune/prepare-dataset.ts",
+    "export-conversations": "tsx ./src/finetune/export-conversations.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@workspace/db": "workspace:*",
+    "drizzle-orm": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
